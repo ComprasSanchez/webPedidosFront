@@ -1,0 +1,21 @@
+@import './global.scss';
+@import './variables.scss';
+
+body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+    color: #1f1f1f;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+* {
+    font-family: 'Roboto', sans-serif;
+    box-sizing: border-box;
+}

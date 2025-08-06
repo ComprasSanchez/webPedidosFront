@@ -1,0 +1,66 @@
+.revisar_wrapper {
+    padding: 2rem;
+}
+
+.revisar_titulo {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.revisar_tabla {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+
+    th,
+    td {
+        border: 1px solid #ccc;
+        padding: 0.75rem;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
+
+    select,
+    input[type="text"] {
+        padding: 0.4rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 0.9rem;
+    }
+}
+
+.revisar_footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+td.celda_activa {
+    background-color: #c8f7dc !important;
+    font-weight: bold;
+    position: relative;
+}
+
+
+.revisar_btn_confirmar {
+    padding: 0.75rem 1.5rem;
+    background-color: #007f96;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+        background-color: #005c6d;
+    }
+}
+
+.precio_celda {
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+}
