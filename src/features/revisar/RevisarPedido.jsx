@@ -29,7 +29,7 @@ const RevisarPedido = () => {
         { value: "Mejor precio", label: "Mejor precio" },
         { value: "Llega más rápido", label: "Llega más rápido" },
         { value: "Condición / Acuerdo", label: "Condición / Acuerdo" },
-        { value: "Otro", label: "Otro" }
+        { value: "Sin troquel", label: "Sin troquel" }
     ];
 
 
@@ -40,7 +40,7 @@ const RevisarPedido = () => {
                 getPreciosMonroe(carrito, usuario?.sucursal_codigo),
                 getPreciosSuizo(carrito, usuario?.sucursal_codigo),
                 getPreciosCofarsur(carrito, usuario?.sucursal_codigo),
-                getStockDeposito(carrito),
+                getStockDeposito(carrito, usuario?.sucursal_codigo),
             ]);
 
             setPreciosMonroe(monroe);
@@ -52,10 +52,8 @@ const RevisarPedido = () => {
 
             carrito.forEach((item) => {
                 const stockDepo = stock.find((s) => s.ean === item.ean)?.stock ?? 0;
-                console.log(`🟡 Producto ${item.ean} | Stock Depósito: ${stockDepo}`);
 
                 if (stockDepo > 0) {
-                    console.log(`✅ Se selecciona DEPÓSITO para ${item.ean}`);
                     seleccionInicial[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
                 } else {
                     const candidatos = [
@@ -141,6 +139,16 @@ const RevisarPedido = () => {
 
 
     const handleConfirmar = () => {
+        const hayFaltantesDeMotivo = carrito.some((item) => {
+            const motivo = seleccion[item.ean]?.motivo;
+            return !motivo || motivo.trim() === "";
+        });
+
+        if (hayFaltantesDeMotivo) {
+            alert("⚠️ Tenés productos sin motivo seleccionado. Completalos antes de confirmar el pedido.");
+            return;
+        }
+
         const carritoConPrecios = carrito.map((item) => {
             const precios = {
                 deposito: 0,
@@ -149,14 +157,17 @@ const RevisarPedido = () => {
                 cofarsur: preciosCofarsur.find((p) => p.ean === item.ean)?.offerPrice ?? preciosCofarsur.find((p) => p.ean === item.ean)?.priceList ?? 0,
             };
 
+            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...stockDeposito].find(p => p.ean === item.ean);
+            const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.id ?? null;
+
             return {
                 ...item,
-                precios
+                precios,
+                idQuantio,
             };
         });
 
         const resumenFinal = construirResumenPedido(carritoConPrecios, seleccion);
-
         setResumenFinal(resumenFinal);
         setMostrarResumen(true);
     };
@@ -178,6 +189,64 @@ const RevisarPedido = () => {
         return mejor.proveedor;
     };
 
+    useEffect(() => {
+        console.log("📦 Carrito actualizado en RevisarPedido:", carrito);
+    }, [carrito]);
+
+    const handleEnviarPedido = async () => {
+
+        const itemsParaEnviar = carrito.map(item => {
+            console.log(`🔍 Procesando item: ${item}`);
+
+            const proveedor = seleccion[item.ean]?.proveedor;
+            const motivo = seleccion[item.ean]?.motivo;
+
+            let precio = 0;
+            if (proveedor === 'monroe') {
+                const p = preciosMonroe.find(p => p.ean === item.ean);
+                precio = p?.offerPrice ?? p?.priceList ?? 0;
+            } else if (proveedor === 'suizo') {
+                const p = preciosSuizo.find(p => p.ean === item.ean);
+                precio = p?.offerPrice ?? p?.priceList ?? 0;
+            } else if (proveedor === 'cofarsur') {
+                const p = preciosCofarsur.find(p => p.ean === item.ean);
+                precio = p?.offerPrice ?? p?.priceList ?? 0;
+            }
+
+            return {
+                idProducto: item.idQuantio ?? null, // asegurate que esté en el carrito
+                codebar: item.ean,
+                cantidad: item.unidades,
+                precio,
+                proveedor,
+                motivo,
+                nroPedidoDrogueria: "", // lo completarás después
+            };
+        });
+
+        try {
+            const response = await fetch("http://localhost:4000/api/pedidos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sucursal: usuario?.sucursal_codigo,
+                    items: itemsParaEnviar,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert("✅ Pedido enviado correctamente");
+                setMostrarResumen(false);
+            } else {
+                alert("❌ Error al enviar pedido");
+            }
+        } catch (err) {
+            console.error("Error enviando pedido:", err);
+            alert("❌ Error inesperado al enviar pedido");
+        }
+    };
 
 
     useEffect(() => {
@@ -337,6 +406,7 @@ const RevisarPedido = () => {
                 <ResumenPedidoModal
                     resumen={resumenFinal}
                     onClose={() => setMostrarResumen(false)}
+                    onEnviar={handleEnviarPedido}
                 />
             )}
         </div>

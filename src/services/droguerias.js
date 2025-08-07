@@ -1,12 +1,12 @@
 // Simulación de respuesta de las droguerías
 // services/droguerias.js
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
 
-// services/droguerias.js
-export const getStockDeposito = async (carrito) => {
-    const sucursal = JSON.parse(localStorage.getItem("usuario"))?.sucursal_codigo;
-    if (!sucursal) return [];
+export const getStockDeposito = async (carrito, sucursalCodigo) => {
+    if (!sucursalCodigo) {
+        console.warn("❌ No se recibió sucursalCodigo para consultar stock");
+        return [];
+    }
 
     const eanUnicos = [...new Set(carrito.map((item) => item.ean))];
 
@@ -14,7 +14,7 @@ export const getStockDeposito = async (carrito) => {
         eanUnicos.map(async (ean) => {
             try {
                 const res = await fetch(
-                    `http://localhost:4000/api/stock/quantio/${ean}?sucursal=${sucursal}`
+                    `http://localhost:4000/api/stock/quantio/${ean}?sucursal=${sucursalCodigo}`
                 );
                 const data = await res.json();
                 return { ean, stock: data.stock ?? 0, error: data.error ?? null };
@@ -27,6 +27,7 @@ export const getStockDeposito = async (carrito) => {
 
     return resultados;
 };
+
 
 export async function getPreciosMonroe(carrito, sucursal) {
     try {

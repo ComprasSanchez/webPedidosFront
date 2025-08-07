@@ -2,7 +2,7 @@
 
 import React from "react";
 
-const ResumenPedidoModal = ({ resumen, onClose }) => {
+const ResumenPedidoModal = ({ resumen, onClose, onEnviar }) => {
     if (!resumen || Object.keys(resumen).length === 0) return null;
 
     const proveedores = Object.entries(resumen).map(([proveedor, items]) => {
@@ -43,7 +43,11 @@ const ResumenPedidoModal = ({ resumen, onClose }) => {
                         ))}
                     </tbody>
                 </table>
-                <button onClick={onClose}>Cerrar</button>
+                <div className="resumen_modal_button">
+                    <button onClick={onClose} className="resumen_modal_button_cerrar">Cerrar</button>
+                    <button onClick={onEnviar} className="resumen_modal_button_enviar">Enviar pedido</button>
+                </div>
+
             </div>
         </div>
     );

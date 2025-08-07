@@ -14,15 +14,11 @@ const BuscadorProductos = () => {
     const handleBuscar = async () => {
         if (!query.trim()) return;
 
-        console.log("Buscando:", query);
-
         if (!usuario || !usuario.sucursal_codigo) {
             console.warn("usuario no definido aún");
             return;
         }
         try {
-
-
             const res = await fetch(`http://localhost:4000/api/productos/buscar/${query}?sucursalId=${usuario.id}`);
             const data = await res.json();
 
@@ -33,14 +29,16 @@ const BuscadorProductos = () => {
                     ean: data.ean,
                     descripcion: data.descripcion,
                     stockSucursal: data.stockSucursal,
-                    precios: { deposito: 0 }
+                    precios: { deposito: 0 },
+                    idQuantio: data.idQuantio ?? data.codPlex ?? null,
                 });
             } else {
                 setProductoSeleccionado({
                     ean: query,
                     descripcion: `Producto no registrado (${query})`,
                     stockSucursal: 0,
-                    precios: { deposito: 0 }
+                    precios: { deposito: 0 },
+                    idQuantio: null,
                 });
             }
 
@@ -50,7 +48,8 @@ const BuscadorProductos = () => {
                 ean: query,
                 descripcion: "Producto no registrado",
                 stockSucursal: 0,
-                precios: { deposito: 0 }
+                precios: { deposito: 0 },
+                idQuantio: null,
             });
         }
     };
@@ -72,7 +71,7 @@ const BuscadorProductos = () => {
                 <input
                     type="text"
                     className="buscador_input"
-                    placeholder="Código de barras o nombre"
+                    placeholder="Código de barras"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleBuscar()}

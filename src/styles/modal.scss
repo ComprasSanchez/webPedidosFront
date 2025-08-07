@@ -50,20 +50,14 @@
 
 .resumen_modal button {
     display: block;
-    margin: 0 auto;
     padding: 0.5rem 1.5rem;
-    background-color: #00bcd4;
     color: white;
-    border: none;
     border-radius: 6px;
     cursor: pointer;
     font-size: 1rem;
     transition: background-color 0.2s ease;
 }
 
-.resumen_modal button:hover {
-    background-color: #009cb3;
-}
 
 @keyframes fadeIn {
     from {
@@ -74,5 +68,33 @@
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+.resumen_modal_button {
+    display: flex;
+    justify-content: space-between;
+
+    &_cerrar {
+        border: 1px solid #d32f2f55;
+        background-color: #f44336;
+    }
+
+    &_cerrar:hover {
+        color: #333;
+        border: 1px solid #d32f2f55;
+        background-color: #d32f2f55;
+    }
+
+    &_enviar {
+        border: 1px solid #4caf50;
+        color: #333;
+        background-color: #4caf50;
+    }
+
+    &_enviar:hover {
+        color: #333;
+        border: 1px solid #43a0484e;
+        background-color: #43a0484e;
     }
 }
