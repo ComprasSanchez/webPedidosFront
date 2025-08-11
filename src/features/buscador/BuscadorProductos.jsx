@@ -129,6 +129,7 @@ const BuscadorProductos = () => {
             idQuantio: p.idQuantio ?? null,
         });
         setResultadosNombre([]);
+        setQueryName("");
     };
 
 
