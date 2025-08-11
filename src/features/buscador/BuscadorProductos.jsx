@@ -1,28 +1,38 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCarrito } from "../../context/CarritoContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { FaSearch, FaMinus, FaPlus, FaTrash } from "react-icons/fa";
 
 const BuscadorProductos = () => {
     const { usuario } = useAuth();
-    const [query, setQuery] = useState("");
+    const [queryCode, setQueryCode] = useState("");
+    const [queryName, setQueryName] = useState("");
     const [cantidad, setCantidad] = useState(1);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-    const { carrito, agregarAlCarrito } = useCarrito();
+    const [resultadosNombre, setResultadosNombre] = useState([]);
+    const [loadingName, setLoadingName] = useState(false);
+    const { carrito, agregarAlCarrito, eliminarDelCarrito } = useCarrito();
     const navigate = useNavigate();
+    const nombreBoxRef = useRef(null);
+    const [loadingCode, setLoadingCode] = useState(false);
 
-    const handleBuscar = async () => {
-        if (!query.trim()) return;
 
+    const handleBuscarCodigo = async () => {
+        const q = queryCode.trim();
+        if (!q) return;
         if (!usuario || !usuario.sucursal_codigo) {
             console.warn("usuario no definido aún");
             return;
         }
-        try {
-            const res = await fetch(`http://localhost:4000/api/productos/buscar/${query}?sucursalId=${usuario.id}`);
-            const data = await res.json();
 
-            console.log("Respuesta del backend:", data);
+        try {
+            setLoadingCode(true);
+            setResultadosNombre([]);          // por las dudas
+            setProductoSeleccionado(null);
+            setQueryCode("");
+            const res = await fetch(`http://localhost:4000/api/productos/buscar/${q}?sucursalId=${usuario.id}`);
+            const data = await res.json();
 
             if (data.encontrado) {
                 setProductoSeleccionado({
@@ -33,64 +43,203 @@ const BuscadorProductos = () => {
                     idQuantio: data.idQuantio ?? data.codPlex ?? null,
                 });
             } else {
+                // No está en nuestra base → igual se puede pedir por EAN si lo escribieron
                 setProductoSeleccionado({
-                    ean: query,
-                    descripcion: `Producto no registrado (${query})`,
+                    ean: q,
+                    descripcion: `Producto no registrado (${q})`,
                     stockSucursal: 0,
                     precios: { deposito: 0 },
                     idQuantio: null,
                 });
             }
-
+            setResultadosNombre([]);
         } catch (err) {
             console.error("Error buscando producto:", err);
             setProductoSeleccionado({
-                ean: query,
+                ean: q,
                 descripcion: "Producto no registrado",
                 stockSucursal: 0,
                 precios: { deposito: 0 },
                 idQuantio: null,
             });
+        } finally {
+            setLoadingCode(false); // ⬅️ termina carga
         }
     };
 
-    const handleAgregar = () => {
-        if (productoSeleccionado) {
-            agregarAlCarrito(productoSeleccionado, cantidad);
-            setQuery("");
-            setCantidad(1);
-            setProductoSeleccionado(null);
+
+    // cerrar dropdown al click afuera o Escape
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (nombreBoxRef.current && !nombreBoxRef.current.contains(e.target)) {
+                setResultadosNombre([]);
+            }
+        };
+        const handleEsc = (e) => {
+            if (e.key === "Escape") setResultadosNombre([]);
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleEsc);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleEsc);
+        };
+    }, []);
+
+    const handleBuscarNombre = async () => {
+        const q = (queryName || "").trim();
+        if (q.length < 2) return;
+
+        if (!usuario?.sucursal_codigo) {
+            console.warn("Falta sucursal_codigo en usuario");
+            return;
         }
+
+        const queryFormateada = q.replace(/\s+/g, "%");
+
+        try {
+            setLoadingName(true);
+            setProductoSeleccionado(null);
+            setResultadosNombre([]);
+            const url = new URL("http://localhost:4000/api/stock/productos/quantio");
+            url.searchParams.set("busqueda", queryFormateada);
+            url.searchParams.set("sucursal", usuario.sucursal_codigo);
+            url.searchParams.set("sucursalId", usuario.id);
+
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+
+            setResultadosNombre(Array.isArray(data.resultados) ? data.resultados : []);
+            setProductoSeleccionado(null);
+        } catch (err) {
+            console.error("Error buscando por nombre:", err);
+            setResultadosNombre([]);
+        } finally {
+            setLoadingName(false);
+        }
+    };
+
+    const handleElegirResultado = (p) => {
+        setProductoSeleccionado({
+            ean: p.ean || null,
+            descripcion: p.descripcion,
+            stockSucursal: p.stockSucursal || 0,   // 👈 ahora viene del backend
+            precios: { deposito: 0 },
+            idQuantio: p.idQuantio ?? null,
+        });
+        setResultadosNombre([]);
+    };
+
+
+
+    const handleAgregar = () => {
+        if (!productoSeleccionado?.ean) {
+            alert("Para agregar, el producto debe tener código de barras. Si no existe en la base, ingresá el EAN.");
+            return;
+        }
+        agregarAlCarrito(productoSeleccionado, cantidad);
+        setQueryCode("");
+        setQueryName("");
+        setCantidad(1);
+        setProductoSeleccionado(null);
+        setResultadosNombre([]);
     };
 
     return (
         <div className="buscador_wrapper">
-            <h2 className="buscador_titulo">BUSCADOR DE PRODUCTOS</h2>
+            <div className="buscadores">
+                <h2 className="buscador_titulo">BUSCADOR DE PRODUCTOS</h2>
+                <div className="buscador_busquedas">
+                    {/* Código de barras (angosto, izquierda) */}
+                    <div className="buscador_form buscador_codigo">
+                        <input
+                            type="text"
+                            className="buscador_input"
+                            placeholder="Código de barras"
+                            value={queryCode}
+                            disabled={loadingCode}                          // 🔹 bloquea escritura
+                            onChange={(e) => setQueryCode(e.target.value)}
+                            onKeyDown={(e) => !loadingCode && e.key === "Enter" && handleBuscarCodigo()}
+                        />
+                        <button className="buscador_btn_buscar" onClick={handleBuscarCodigo} disabled={loadingCode}>
+                            <FaSearch />
+                        </button>
+                        {/* hint de estado */}
+                        {loadingCode && <div className="buscador_hint"><span className="spinner" /> Buscando…</div>}
 
-            <div className="buscador_form">
-                <input
-                    type="text"
-                    className="buscador_input"
-                    placeholder="Código de barras"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleBuscar()}
-                />
-                <button className="buscador_btn_buscar" onClick={handleBuscar}>
-                    🔍
-                </button>
+                    </div>
+
+                    {/* Nombre (derecha) con dropdown */}
+                    <div className="buscador_form buscador_nombre" ref={nombreBoxRef}>
+                        <input
+                            type="text"
+                            className="buscador_input"
+                            placeholder="Buscar por nombre (Quantio)"
+                            value={queryName}
+                            disabled={loadingName}                            // 🔹 bloquea escritura
+                            onChange={(e) => setQueryName(e.target.value)}
+                            onKeyDown={(e) => !loadingName && e.key === "Enter" && handleBuscarNombre()}
+                            aria-expanded={resultadosNombre.length > 0}
+                        />
+                        <button className="buscador_btn_buscar" onClick={handleBuscarNombre} disabled={loadingName}>
+                            <FaSearch />
+                        </button>
+                        {loadingName && <div className="buscador_hint"><span className="spinner" /> Buscando…</div>}
+
+
+                        {/* Dropdown pegado al input */}
+                        {/* Dropdown pegado al input */}
+                        {!loadingName && queryName && resultadosNombre.length > 0 && (
+                            <div
+                                id="lista-resultados-nombre"
+                                className="buscador_resultados_dropdown"
+                                role="listbox"
+                            >
+                                {resultadosNombre.map((p, i) => (
+                                    <button
+                                        key={`${p.ean || p.idQuantio || i}`}
+                                        className="buscador_resultado_item"
+                                        onClick={() => handleElegirResultado(p)}
+                                        role="option"
+                                        title={p.ean ? `EAN ${p.ean}` : "Sin EAN"}
+                                    >
+                                        <span className="resultado_titulo">{p.descripcion}</span>
+                                        <span className={`resultado_tag ${p.ean ? "" : "sin-ean"}`}>
+                                            {p.ean ? `EAN ${p.ean}` : "SIN EAN"}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Sin resultados */}
+                        {!loadingName && queryName && resultadosNombre.length === 0 && (
+                            <div className="buscador_resultados_dropdown sin-resultados">
+                                Sin resultados…
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
+            {/* Selección + agregar */}
             {productoSeleccionado && (
                 <div className="buscador_seleccionado">
-                    <span>{productoSeleccionado.descripcion}</span>
-                    <div className="buscador_contador">
-                        <button onClick={() => setCantidad(Math.max(1, cantidad - 1))}>
-                            ➖
-                        </button>
-                        <span>{cantidad}</span>
-                        <button onClick={() => setCantidad(cantidad + 1)}>➕</button>
+                    <span>
+                        {productoSeleccionado.descripcion}
+                        {!productoSeleccionado.ean && (
+                            <em style={{ marginLeft: 8, color: "#c00" }}>
+                                (Debe tener EAN para poder agregar)
+                            </em>
+                        )}
+                    </span>
+                    <div className="qty">
+                        <button className="qty__btn" onClick={() => setCantidad(Math.max(1, cantidad - 1))}>−</button>
+                        <span className="qty__num">{cantidad}</span>
+                        <button className="qty__btn" onClick={() => setCantidad(cantidad + 1)}>+</button>
                     </div>
+
                     <button className="buscador_agregar" onClick={handleAgregar}>
                         AGREGAR
                     </button>
@@ -105,6 +254,7 @@ const BuscadorProductos = () => {
                         <th>Descripción</th>
                         <th>Stock sucursal</th>
                         <th>Unidades</th>
+                        <th><FaTrash /></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -114,6 +264,16 @@ const BuscadorProductos = () => {
                             <td>{item.descripcion}</td>
                             <td>{item.stockSucursal}</td>
                             <td>{item.unidades}</td>
+                            <td>
+                                <button
+                                    className="carrito_icon_btn"
+                                    onClick={() => eliminarDelCarrito(item.ean)}
+                                    aria-label={`Eliminar ${item.descripcion}`}
+                                    title="Eliminar"
+                                >
+                                    <FaTrash />
+                                </button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>
@@ -121,15 +281,12 @@ const BuscadorProductos = () => {
 
             {carrito.length > 0 && (
                 <div style={{ marginTop: "2rem", textAlign: "right" }}>
-                    <button
-                        className="buscador_btn_revisar"
-                        onClick={() => navigate("/revisar")}
-                    >
-                        Revisar pedido
+                    <button className="buscador_btn_revisar" onClick={() => navigate("/revisar")}>
+                        Realizar pedido
                     </button>
                 </div>
             )}
-        </div >
+        </div>
     );
 };
 

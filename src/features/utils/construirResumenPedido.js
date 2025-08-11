@@ -4,7 +4,6 @@ export const construirResumenPedido = (carrito, seleccion) => {
     const resumen = {};
 
     carrito.forEach((item) => {
-        console.log(`Procesando item: ${item.ean}, unidades: ${item.unidades}, precios:`, item.precios);
 
         const sel = seleccion[item.ean];
         if (!sel || !sel.proveedor) return;

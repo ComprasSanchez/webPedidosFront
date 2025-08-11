@@ -74,13 +74,10 @@ export async function getPreciosSuizo(carrito, sucursal) {
 
 
 export const getPreciosCofarsur = async (carrito, sucursal) => {
-    console.log(`🔍 Consultando Cofarsur para ${carrito.length} productos en sucursal: ${sucursal}`);
 
     try {
         const responses = await Promise.all(
             carrito.map((item) => {
-                console.log("➡️ Llamando a:", `/api/droguerias/cofarsur/${item.ean}`);
-
                 return axios.get(`/api/droguerias/cofarsur/${item.ean}`, {
                     params: { sucursal },
                 });

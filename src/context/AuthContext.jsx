@@ -24,7 +24,6 @@ export const AuthProvider = ({ children }) => {
             const user = await res.json();
             setUsuario(user);
             localStorage.setItem("usuario", JSON.stringify(user));
-            console.log("Usuario logueado:", user);
 
             return true;
         } catch (err) {

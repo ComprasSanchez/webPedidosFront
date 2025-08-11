@@ -6,8 +6,6 @@ export const CarritoProvider = ({ children }) => {
     const [carrito, setCarrito] = useState([]);
 
     const agregarAlCarrito = (producto, cantidad) => {
-        console.log("Agregando al carrito:", producto, "Cantidad:", cantidad);
-
         setCarrito((prev) => [
             ...prev,
             { ...producto, unidades: cantidad },
@@ -16,8 +14,12 @@ export const CarritoProvider = ({ children }) => {
 
     const vaciarCarrito = () => setCarrito([]);
 
+    const eliminarDelCarrito = (ean) => {
+        setCarrito(prev => prev.filter(p => p.ean !== ean));
+    };
+
     return (
-        <CarritoContext.Provider value={{ carrito, agregarAlCarrito, vaciarCarrito }}>
+        <CarritoContext.Provider value={{ carrito, agregarAlCarrito, vaciarCarrito, eliminarDelCarrito }}>
             {children}
         </CarritoContext.Provider>
     );

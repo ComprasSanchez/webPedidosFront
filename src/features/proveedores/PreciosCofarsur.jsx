@@ -2,16 +2,22 @@ const PreciosCofarsur = ({ ean, precios, seleccionado, onSelect }) => {
     const p = precios.find((c) => c.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
-    const handleClick = () => {
-        if (p && p.priceList != null) {
-            onSelect(ean, "cofarsur");
-        }
-    };
-
     if (!p) return <div className={clase}>No disponible</div>;
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
     const precio = p.offerPrice ?? p.priceList;
+
+    // Mostrar "Sin precio" si no hay valor numérico o es 0
+    if (!precio || precio === 0) return <div className={clase}>Sin precio</div>;
+
+
+    const handleClick = () => {
+        if (p && precio && precio > 0) {
+            onSelect(ean, "cofarsur");
+        }
+    };
+
+
 
     return (
         <div className={clase} onClick={handleClick}>
@@ -40,7 +46,6 @@ const PreciosCofarsur = ({ ean, precios, seleccionado, onSelect }) => {
                 </div>
             )}
         </div>
-
     );
 };
 
