@@ -1,7 +1,7 @@
 // front/src/features/admin/PanelCredenciales.jsx
 
 import { useEffect, useState } from "react";
-import "../../styles/PanelCredenciales.scss";
+import "../../styles/panelCredenciales.scss";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../../config/api";
 
