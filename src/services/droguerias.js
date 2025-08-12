@@ -4,6 +4,7 @@ import axios from "axios";
 import { API_URL } from "../config/api";
 import { http } from "../lib/http";
 
+
 export const getStockDeposito = async (carrito, sucursalCodigo) => {
     if (!sucursalCodigo) {
         console.warn("❌ No se recibió sucursalCodigo para consultar stock");
@@ -12,24 +13,31 @@ export const getStockDeposito = async (carrito, sucursalCodigo) => {
 
     const eanUnicos = [...new Set(carrito.map((item) => item.ean))];
 
-    const resultados = await Promise.all(
-        eanUnicos.map(async (ean) => {
-            try {
-                const res = await fetch(
-                    `${API_URL}/api/stock/quantio/${ean}?sucursal=${sucursalCodigo}`
-                );
-                const data = await res.json();
-                return { ean, stock: data.stock ?? 0, error: data.error ?? null };
-            } catch (err) {
-                console.error("Error consultando stock Quantio:", err);
-                return { ean, stock: "-", error: "ERROR_CONEXION" };
-            }
-        })
-    );
+    try {
+        const res = await fetch(`${API_URL}/api/stock/quantio/batch`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+            body: JSON.stringify({ sucursal: sucursalCodigo, eans: eanUnicos }),
+        });
 
-    return resultados;
+        if (!res.ok) {
+            const txt = await res.text().catch(() => "");
+            console.error("Batch stock HTTP", res.status, txt);
+            return eanUnicos.map(ean => ({ ean, stock: "-", error: "HTTP_ERROR" }));
+        }
+
+        const data = await res.json(); // [{ean, stock}]
+        // Mapear a salida alineada al carrito (por si hay repetidos)
+        const map = new Map(data.map(d => [String(d.ean), d]));
+        return carrito.map(item => {
+            const d = map.get(String(item.ean));
+            return { ean: item.ean, stock: d ? d.stock : "-", error: d?.error || null };
+        });
+    } catch (err) {
+        console.error("Error consultando stock Quantio (batch):", err);
+        return carrito.map(item => ({ ean: item.ean, stock: "-", error: "ERROR_CONEXION" }));
+    }
 };
-
 
 export async function getPreciosMonroe(carrito, sucursal) {
     try {
