@@ -2,7 +2,8 @@
 
 import React from "react";
 
-const ResumenPedidoModal = ({ resumen, onClose, onEnviar }) => {
+
+const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending }) => {
     if (!resumen || Object.keys(resumen).length === 0) return null;
 
     const proveedores = Object.entries(resumen).map(([proveedor, items]) => {
@@ -14,11 +15,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar }) => {
         const totalUnidades = items.reduce((sum, item) => sum + item.unidades, 0);
         const totalMonto = items.reduce((sum, item) => sum + (item.precio * item.unidades), 0);
 
-        return {
-            proveedor,
-            totalUnidades,
-            totalMonto,
-        };
+        return { proveedor, totalUnidades, totalMonto };
     }).filter(Boolean);
 
     return (
@@ -45,9 +42,18 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar }) => {
                 </table>
                 <div className="resumen_modal_button">
                     <button onClick={onClose} className="resumen_modal_button_cerrar">Cerrar</button>
-                    <button onClick={onEnviar} className="resumen_modal_button_enviar">Enviar pedido</button>
+                    <button
+                        onClick={onEnviar}
+                        className="resumen_modal_button_enviar"
+                        disabled={isSending}
+                        style={{
+                            opacity: isSending ? 0.6 : 1,
+                            cursor: isSending ? "not-allowed" : "pointer"
+                        }}
+                    >
+                        {isSending ? "Enviando pedido..." : "Enviar pedido"}
+                    </button>
                 </div>
-
             </div>
         </div>
     );

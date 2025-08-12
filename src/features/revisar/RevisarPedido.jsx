@@ -11,6 +11,7 @@ import { getStock } from "../utils/obtenerStock";
 import { construirResumenPedido } from "../utils/construirResumenPedido";
 import ResumenPedidoModal from "../../components/ui/ResumenPedidoModal";
 import { API_URL } from "../../config/api";
+import { Toaster, toast } from 'react-hot-toast';
 
 const RevisarPedido = () => {
     const { carrito } = useCarrito();
@@ -24,6 +25,7 @@ const RevisarPedido = () => {
     const [modalAbierto, setModalAbierto] = useState(false);
     const [resumenFinal, setResumenFinal] = useState({});
     const [mostrarResumen, setMostrarResumen] = useState(false);
+    const [isSending, setIsSending] = useState(false);
 
     const opcionesMotivo = [
         { value: "", label: "Seleccionar motivo" },
@@ -241,6 +243,10 @@ const RevisarPedido = () => {
     }, [carrito]);
 
     const handleEnviarPedido = async () => {
+        if (isSending) return;
+        setIsSending(true);
+
+        const toastId = toast.loading("Enviando pedido...");
 
         const itemsParaEnviar = carrito.map(item => {
             const provSel = seleccion[item.ean]?.proveedor;
@@ -288,14 +294,16 @@ const RevisarPedido = () => {
             const data = await response.json();
 
             if (data.success) {
-                alert("✅ Pedido enviado correctamente");
+                toast.success("Pedido enviado correctamente", { id: toastId });
                 setMostrarResumen(false);
             } else {
-                alert("❌ Error al enviar pedido");
+                toast.error(`Error al enviar pedido${data?.error ? `: ${data.error}` : ""}`, { id: toastId });
             }
         } catch (err) {
             console.error("Error enviando pedido:", err);
-            alert("❌ Error inesperado al enviar pedido");
+            toast.error("Error inesperado al enviar pedido", { id: toastId });
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -349,6 +357,7 @@ const RevisarPedido = () => {
 
     return (
         <div className="revisar_wrapper">
+            <Toaster position="top-center" />
             <h2 className="revisar_titulo">Revisar pedido</h2>
             <table className="revisar_tabla">
                 <thead>
@@ -476,6 +485,7 @@ const RevisarPedido = () => {
                     resumen={resumenFinal}
                     onClose={() => setMostrarResumen(false)}
                     onEnviar={handleEnviarPedido}
+                    isSending={isSending}
                 />
             )}
         </div>
