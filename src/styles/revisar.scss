@@ -64,3 +64,35 @@ td.celda_activa {
     padding: 6px;
     border-radius: 4px;
 }
+
+.boton-volver {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 2px solid #d1d5db;
+    background-color: #f9fafb;
+    color: #111827;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    .icono {
+        display: flex;
+        align-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+    }
+
+    &:hover {
+        background-color: #f4f4f4;
+        border-color: #595c62;
+        color: #595c62;
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+}

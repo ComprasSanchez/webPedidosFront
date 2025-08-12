@@ -12,6 +12,8 @@ import { construirResumenPedido } from "../utils/construirResumenPedido";
 import ResumenPedidoModal from "../../components/ui/ResumenPedidoModal";
 import { API_URL } from "../../config/api";
 import { Toaster, toast } from 'react-hot-toast';
+import { useNavigate } from "react-router-dom";
+import { FaArrowLeft } from "react-icons/fa";
 
 const RevisarPedido = () => {
     const { carrito } = useCarrito();
@@ -26,6 +28,7 @@ const RevisarPedido = () => {
     const [resumenFinal, setResumenFinal] = useState({});
     const [mostrarResumen, setMostrarResumen] = useState(false);
     const [isSending, setIsSending] = useState(false);
+    const navigate = useNavigate();
 
     const opcionesMotivo = [
         { value: "", label: "Seleccionar motivo" },
@@ -357,6 +360,14 @@ const RevisarPedido = () => {
 
     return (
         <div className="revisar_wrapper">
+            <button className="boton-volver" onClick={() => navigate("/buscador")}>
+                <span className="icono">
+                    <FaArrowLeft size={12} />
+                </span>
+                Volver
+            </button>
+
+
             <Toaster position="top-center" />
             <h2 className="revisar_titulo">Revisar pedido</h2>
             <table className="revisar_tabla">
@@ -379,7 +390,6 @@ const RevisarPedido = () => {
                         const proveedorActual = seleccion[item.ean]?.proveedor;
                         const stockDepo = getStock(item.ean, stockDeposito);
                         const proveedorIdeal = mejorProveedor(item.ean);
-                        console.log(item);
 
                         const motivoBloqueado =
                             (motivoActual === "Stock Depo" && proveedorActual === "deposito" && stockDepo > 0) ||
