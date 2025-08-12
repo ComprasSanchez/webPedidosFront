@@ -2,6 +2,7 @@
 // services/droguerias.js
 import axios from "axios";
 import { API_URL } from "../config/api";
+import { http } from "../lib/http";
 
 export const getStockDeposito = async (carrito, sucursalCodigo) => {
     if (!sucursalCodigo) {
@@ -71,31 +72,29 @@ export async function getPreciosSuizo(carrito, sucursal) {
 }
 
 
-
-
-
 export const getPreciosCofarsur = async (carrito, sucursal) => {
-
     try {
-        const responses = await Promise.all(
-            carrito.map((item) => {
-                return axios.get(`/api/droguerias/cofarsur/${item.ean}`, {
-                    params: { sucursal },
-                });
-            })
-        );
+        const calls = carrito.map((item) => {
+            const url = `/api/droguerias/cofarsur/${encodeURIComponent(item.ean)}`;
+            console.log("[Cofarsur][GET]", http.defaults.baseURL + url, { sucursal });
+            return http.get(url, { params: { sucursal }, validateStatus: s => s < 500 });
+        });
+
+        const responses = await Promise.all(calls);
+
+        responses.forEach((res, i) => {
+            console.log("[Cofarsur][OK]", carrito[i].ean, res.status, res.data);
+        });
 
         return responses.map((res, i) => ({
             ean: carrito[i].ean,
             ...res.data,
         }));
     } catch (err) {
-        console.error("Error en getPreciosCofarsur:", err);
+        console.error("Error en getPreciosCofarsur:", err?.message || err);
         return [];
     }
 };
-
-
 
 
 // Simula delay de red
