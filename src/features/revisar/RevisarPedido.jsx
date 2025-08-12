@@ -1,3 +1,4 @@
+// front/src/features/revisar/RevisarPedido.jsx
 
 import { useEffect, useState } from "react";
 import { useCarrito } from "../../context/CarritoContext";
@@ -9,6 +10,7 @@ import PreciosCofarsur from "../proveedores/PreciosCofarsur";
 import { getStock } from "../utils/obtenerStock";
 import { construirResumenPedido } from "../utils/construirResumenPedido";
 import ResumenPedidoModal from "../../components/ui/ResumenPedidoModal";
+import { API_URL } from "../../config/api";
 
 const RevisarPedido = () => {
     const { carrito } = useCarrito();
@@ -274,7 +276,7 @@ const RevisarPedido = () => {
 
 
         try {
-            const response = await fetch("http://localhost:4000/api/pedidos", {
+            const response = await fetch(`${API_URL}/api/pedidos`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

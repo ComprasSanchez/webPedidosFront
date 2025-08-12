@@ -1,6 +1,7 @@
 // Simulación de respuesta de las droguerías
 // services/droguerias.js
 import axios from "axios";
+import { API_URL } from "../config/api";
 
 export const getStockDeposito = async (carrito, sucursalCodigo) => {
     if (!sucursalCodigo) {
@@ -14,7 +15,7 @@ export const getStockDeposito = async (carrito, sucursalCodigo) => {
         eanUnicos.map(async (ean) => {
             try {
                 const res = await fetch(
-                    `http://localhost:4000/api/stock/quantio/${ean}?sucursal=${sucursalCodigo}`
+                    `${API_URL}/api/stock/quantio/${ean}?sucursal=${sucursalCodigo}`
                 );
                 const data = await res.json();
                 return { ean, stock: data.stock ?? 0, error: data.error ?? null };
@@ -34,7 +35,7 @@ export async function getPreciosMonroe(carrito, sucursal) {
         const resultados = await Promise.all(
             carrito.map(async (item) => {
                 const res = await fetch(
-                    `http://localhost:4000/api/droguerias/monroe/${item.ean}?sucursal=${sucursal}&unidades=${item.unidades}`
+                    `${API_URL}/api/droguerias/monroe/${item.ean}?sucursal=${sucursal}&unidades=${item.unidades}`
                 );
                 const data = await res.json();
                 return { ean: item.ean, ...data };
@@ -53,7 +54,7 @@ export async function getPreciosSuizo(carrito, sucursal) {
         const resultados = await Promise.all(
             carrito.map(async item => {
                 const res = await fetch(
-                    `http://localhost:4000/api/droguerias/suizo/${item.ean}?sucursal=${sucursal}`
+                    `${API_URL}/api/droguerias/suizo/${item.ean}?sucursal=${sucursal}`
                 );
                 const data = await res.json();
                 return {

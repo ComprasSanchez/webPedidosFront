@@ -1,8 +1,11 @@
+// front/src/features/buscador/BuscadorProductos.jsx
+
 import { useEffect, useRef, useState } from "react";
 import { useCarrito } from "../../context/CarritoContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { FaSearch, FaMinus, FaPlus, FaTrash } from "react-icons/fa";
+import { API_URL } from "../../config/api";
 
 const BuscadorProductos = () => {
     const { usuario } = useAuth();
@@ -31,7 +34,7 @@ const BuscadorProductos = () => {
             setResultadosNombre([]);
             setProductoSeleccionado(null);
             setQueryCode("");
-            const res = await fetch(`http://localhost:4000/api/productos/buscar/${q}?sucursalId=${usuario.id}`);
+            const res = await fetch(`${API_URL}/api/productos/buscar/${q}?sucursalId=${usuario.id}`);
             const data = await res.json();
 
             if (data.encontrado) {
@@ -102,7 +105,7 @@ const BuscadorProductos = () => {
             setLoadingName(true);
             setProductoSeleccionado(null);
             setResultadosNombre([]);
-            const url = new URL("http://localhost:4000/api/stock/productos/quantio");
+            const url = new URL(`${API_URL}/api/stock/productos/quantio`);
             console.log("Buscando productos en Quantio con la siguiente URL:", url.toString());
 
             url.searchParams.set("busqueda", queryFormateada);

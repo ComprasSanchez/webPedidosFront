@@ -1,6 +1,9 @@
+// front/src/features/admin/PanelCredenciales.jsx
+
 import { useEffect, useState } from "react";
 import "../../styles/PanelCredenciales.scss";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../../config/api";
 
 const PanelCredenciales = () => {
     const [credenciales, setCredenciales] = useState([]);
@@ -8,7 +11,7 @@ const PanelCredenciales = () => {
     const [formData, setFormData] = useState({});
     const navigate = useNavigate();
     useEffect(() => {
-        fetch("http://localhost:4000/api/credenciales")
+        fetch(`${API_URL}/api/credenciales`)
             .then((res) => res.json())
             .then((data) => {
                 setCredenciales(data);
@@ -32,7 +35,7 @@ const PanelCredenciales = () => {
         try {
             const { id: _, creado_en, fecha_ult_modificacion, ...datosParaActualizar } = formData[id];
 
-            const res = await fetch(`http://localhost:4000/api/credenciales/${id}`, {
+            const res = await fetch(`${API_URL}/api/credenciales/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(datosParaActualizar),

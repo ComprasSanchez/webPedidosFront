@@ -1,4 +1,7 @@
+// front/src/context/AuthContext.jsx
+
 import { createContext, useContext, useState, useEffect } from "react";
+import { API_URL } from "../config/api";
 
 const AuthContext = createContext();
 
@@ -13,7 +16,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (usuario, contrasena) => {
         try {
-            const res = await fetch("http://localhost:4000/api/usuarios/login", {
+            const res = await fetch(`${API_URL}/api/usuarios/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ usuario, contrasena }),

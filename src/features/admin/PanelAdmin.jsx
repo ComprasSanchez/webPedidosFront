@@ -1,7 +1,10 @@
+// front/src/features/admin/PanelAdmin.jsx
+
 import { useEffect, useState } from "react";
 import CrearUsuarioForm from "./CrearUsuarioForm";
 import Modal from "../../components/ui/Modal";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../../config/api";
 
 const PanelAdmin = () => {
     const [usuarios, setUsuarios] = useState([]);
@@ -23,7 +26,7 @@ const PanelAdmin = () => {
 
     const handleUpdate = async () => {
         try {
-            const res = await fetch(`http://localhost:4000/api/usuarios/${usuarioEditando}`, {
+            const res = await fetch(`${API_URL}/api/usuarios/${usuarioEditando}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formEdit),
@@ -41,7 +44,7 @@ const PanelAdmin = () => {
 
     const cargarUsuarios = async () => {
         try {
-            const res = await fetch("http://localhost:4000/api/usuarios");
+            const res = await fetch(`${API_URL}/api/usuarios`);
             const data = await res.json();
             setUsuarios(data);
         } catch (err) {

@@ -1,4 +1,6 @@
+// front/src/features/admin/CrearUsuarioForm.jsx
 import { useState } from "react";
+import { API_URL } from "../../config/api";
 
 const CrearUsuarioForm = ({ onUsuarioCreado }) => {
     const [form, setForm] = useState({
@@ -18,7 +20,7 @@ const CrearUsuarioForm = ({ onUsuarioCreado }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch("http://localhost:4000/api/usuarios", {
+            const res = await fetch(`${API_URL}/api/usuarios`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(form),
