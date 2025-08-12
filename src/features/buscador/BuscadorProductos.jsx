@@ -28,7 +28,7 @@ const BuscadorProductos = () => {
 
         try {
             setLoadingCode(true);
-            setResultadosNombre([]);          // por las dudas
+            setResultadosNombre([]);
             setProductoSeleccionado(null);
             setQueryCode("");
             const res = await fetch(`http://localhost:4000/api/productos/buscar/${q}?sucursalId=${usuario.id}`);
@@ -87,6 +87,7 @@ const BuscadorProductos = () => {
     }, []);
 
     const handleBuscarNombre = async () => {
+
         const q = (queryName || "").trim();
         if (q.length < 2) return;
 
@@ -102,6 +103,8 @@ const BuscadorProductos = () => {
             setProductoSeleccionado(null);
             setResultadosNombre([]);
             const url = new URL("http://localhost:4000/api/stock/productos/quantio");
+            console.log("Buscando productos en Quantio con la siguiente URL:", url.toString());
+
             url.searchParams.set("busqueda", queryFormateada);
             url.searchParams.set("sucursal", usuario.sucursal_codigo);
             url.searchParams.set("sucursalId", usuario.id);
@@ -163,7 +166,7 @@ const BuscadorProductos = () => {
                             onChange={(e) => setQueryCode(e.target.value)}
                             onKeyDown={(e) => !loadingCode && e.key === "Enter" && handleBuscarCodigo()}
                         />
-                        <button className="buscador_btn_buscar" onClick={handleBuscarCodigo} disabled={loadingCode}>
+                        <button type="button" className="buscador_btn_buscar" onClick={handleBuscarCodigo} disabled={loadingCode}>
                             <FaSearch />
                         </button>
                         {/* hint de estado */}
@@ -183,13 +186,11 @@ const BuscadorProductos = () => {
                             onKeyDown={(e) => !loadingName && e.key === "Enter" && handleBuscarNombre()}
                             aria-expanded={resultadosNombre.length > 0}
                         />
-                        <button className="buscador_btn_buscar" onClick={handleBuscarNombre} disabled={loadingName}>
+                        <button type="button" className="buscador_btn_buscar" onClick={handleBuscarNombre} disabled={loadingName}>
                             <FaSearch />
                         </button>
                         {loadingName && <div className="buscador_hint"><span className="spinner" /> Buscando…</div>}
 
-
-                        {/* Dropdown pegado al input */}
                         {/* Dropdown pegado al input */}
                         {!loadingName && queryName && resultadosNombre.length > 0 && (
                             <div
