@@ -84,15 +84,10 @@ export const getPreciosCofarsur = async (carrito, sucursal) => {
     try {
         const calls = carrito.map((item) => {
             const url = `/api/droguerias/cofarsur/${encodeURIComponent(item.ean)}`;
-            console.log("[Cofarsur][GET]", http.defaults.baseURL + url, { sucursal });
             return http.get(url, { params: { sucursal }, validateStatus: s => s < 500 });
         });
 
         const responses = await Promise.all(calls);
-
-        responses.forEach((res, i) => {
-            console.log("[Cofarsur][OK]", carrito[i].ean, res.status, res.data);
-        });
 
         return responses.map((res, i) => ({
             ean: carrito[i].ean,
