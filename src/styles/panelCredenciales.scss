@@ -81,3 +81,35 @@
 .cred_form button:hover {
     background-color: #005c6d;
 }
+
+.nueva_cred_card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+
+    .nueva_cred_grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 10px;
+    }
+}
+
+.cred_input_group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+        font-size: 12px;
+        color: #374151;
+    }
+
+    input,
+    select {
+        padding: 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+    }
+}
