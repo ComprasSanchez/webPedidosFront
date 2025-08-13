@@ -1,6 +1,6 @@
 // front/src/features/revisar/RevisarPedido.jsx
 
-import { useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useCarrito } from "../../context/CarritoContext";
 import { getPreciosMonroe, getPreciosSuizo, getPreciosCofarsur, getStockDeposito } from "../../services/droguerias";
 import { useAuth } from "../../context/AuthContext";
@@ -13,12 +13,12 @@ import ResumenPedidoModal from "../../components/ui/ResumenPedidoModal";
 import { API_URL } from "../../config/api";
 import { Toaster, toast } from 'react-hot-toast';
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaTrash } from "react-icons/fa";
 import logo from "../../assets/logo.png";
 
 
 const RevisarPedido = () => {
-    const { carrito, limpiarCarritoPostPedido } = useCarrito();
+    const { carrito, limpiarCarritoPostPedido, eliminarDelCarrito } = useCarrito();
     const [preciosMonroe, setPreciosMonroe] = useState([]);
     const [preciosSuizo, setPreciosSuizo] = useState([]);
     const [preciosCofarsur, setPreciosCofarsur] = useState([]);
@@ -31,6 +31,8 @@ const RevisarPedido = () => {
     const [mostrarResumen, setMostrarResumen] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const navigate = useNavigate();
+    const [eanList, setEanList] = useState([]);
+    const eanListRef = useRef([]);
 
     const opcionesMotivo = [
         { value: "", label: "Seleccionar motivo" },
@@ -49,88 +51,97 @@ const RevisarPedido = () => {
 
 
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            const [monroe, suizo, cofarsur, stock] = await Promise.all([
-                getPreciosMonroe(carrito, usuario?.sucursal_codigo),
-                getPreciosSuizo(carrito, usuario?.sucursal_codigo),
-                getPreciosCofarsur(carrito, usuario?.sucursal_codigo),
-                getStockDeposito(carrito, usuario?.sucursal_codigo),
-            ]);
+        // EANs actuales en el carrito
+        const carritoEans = carrito.map(i => i.ean).sort();
+        const prevEans = eanListRef.current.sort();
 
-            setPreciosMonroe(monroe);
-            setPreciosSuizo(suizo);
-            setPreciosCofarsur(cofarsur);
-            setStockDeposito(stock);
+        // Si hay algún EAN nuevo, recargar precios
+        const hayNuevo = carritoEans.some(ean => !prevEans.includes(ean));
 
-            const seleccionInicial = {};
+        if (carrito.length > 0 && usuario?.sucursal_codigo && hayNuevo) {
+            const fetchData = async () => {
+                setLoading(true);
+                const [monroe, suizo, cofarsur, stock] = await Promise.all([
+                    getPreciosMonroe(carrito, usuario?.sucursal_codigo),
+                    getPreciosSuizo(carrito, usuario?.sucursal_codigo),
+                    getPreciosCofarsur(carrito, usuario?.sucursal_codigo),
+                    getStockDeposito(carrito, usuario?.sucursal_codigo),
+                ]);
 
-            carrito.forEach((item) => {
-                const stockDepo = stock.find((s) => s.ean === item.ean)?.stock ?? 0;
+                setPreciosMonroe(monroe);
+                setPreciosSuizo(suizo);
+                setPreciosCofarsur(cofarsur);
+                setStockDeposito(stock);
 
-                if (stockDepo > 0) {
-                    seleccionInicial[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
-                } else {
-                    const candidatos = [
-                        {
-                            proveedor: "monroe", ...monroe.find(p =>
-                                p.ean === item.ean &&
-                                p.stock > 0 &&
-                                (p.offerPrice ?? p.priceList) != null &&
-                                (p.offerPrice ?? p.priceList) > 0
-                            )
-                        },
-                        {
-                            proveedor: "suizo", ...suizo.find(p =>
-                                p.ean === item.ean &&
-                                p.stock > 0 &&
-                                (p.offerPrice ?? p.priceList) != null &&
-                                (p.offerPrice ?? p.priceList) > 0
-                            )
-                        },
-                        {
-                            proveedor: "cofarsur", ...cofarsur.find(p =>
-                                p.ean === item.ean &&
-                                p.stock > 0 &&
-                                (p.offerPrice ?? p.priceList) != null &&
-                                (p.offerPrice ?? p.priceList) > 0
-                            )
-                        },
-                    ].filter(p => p.ean);
+                const seleccionInicial = {};
 
+                carrito.forEach((item) => {
+                    const stockDepo = stock.find((s) => s.ean === item.ean)?.stock ?? 0;
 
-
-                    console.log(`🔎 Candidatos con stock para ${item.ean}:`, candidatos.map(c => ({
-                        proveedor: c.proveedor,
-                        precio: c.offerPrice ?? c.priceList,
-                        stock: c.stock,
-                    })));
-
-                    if (candidatos.length > 0) {
-                        const mejor = candidatos.reduce((a, b) =>
-                            (a.offerPrice ?? a.priceList) < (b.offerPrice ?? b.priceList) ? a : b
-                        );
-
-                        seleccionInicial[item.ean] = {
-                            proveedor: mejor.proveedor,
-                            motivo: "Mejor precio"
-                        };
-
+                    if (stockDepo > 0) {
+                        seleccionInicial[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
                     } else {
-                        seleccionInicial[item.ean] = { proveedor: "faltante", motivo: "Faltante" };
+                        const candidatos = [
+                            {
+                                proveedor: "monroe", ...monroe.find(p =>
+                                    p.ean === item.ean &&
+                                    p.stock > 0 &&
+                                    (p.offerPrice ?? p.priceList) != null &&
+                                    (p.offerPrice ?? p.priceList) > 0
+                                )
+                            },
+                            {
+                                proveedor: "suizo", ...suizo.find(p =>
+                                    p.ean === item.ean &&
+                                    p.stock > 0 &&
+                                    (p.offerPrice ?? p.priceList) != null &&
+                                    (p.offerPrice ?? p.priceList) > 0
+                                )
+                            },
+                            {
+                                proveedor: "cofarsur", ...cofarsur.find(p =>
+                                    p.ean === item.ean &&
+                                    p.stock > 0 &&
+                                    (p.offerPrice ?? p.priceList) != null &&
+                                    (p.offerPrice ?? p.priceList) > 0
+                                )
+                            },
+                        ].filter(p => p.ean);
+
+                        if (candidatos.length > 0) {
+                            const mejor = candidatos.reduce((a, b) =>
+                                (a.offerPrice ?? a.priceList) < (b.offerPrice ?? b.priceList) ? a : b
+                            );
+
+                            seleccionInicial[item.ean] = {
+                                proveedor: mejor.proveedor,
+                                motivo: "Mejor precio"
+                            };
+
+                        } else {
+                            seleccionInicial[item.ean] = { proveedor: "faltante", motivo: "Faltante" };
+                        }
                     }
+                });
+                setSeleccion(seleccionInicial);
+                setLoading(false);
+                setEanList(carritoEans);
+                eanListRef.current = carritoEans;
+            };
 
-                }
-            });
-            setSeleccion(seleccionInicial);
-            setLoading(false);
-        };
-
-
-        if (carrito.length > 0 && usuario?.sucursal_codigo) {
             fetchData();
         }
-    }, [carrito, usuario]);
+
+        // Si el carrito quedó vacío, limpiá los precios
+        if (carrito.length === 0) {
+            setPreciosMonroe([]);
+            setPreciosSuizo([]);
+            setPreciosCofarsur([]);
+            setStockDeposito([]);
+            setEanList([]);
+            eanListRef.current = [];
+        }
+    }, [carrito, usuario?.sucursal_codigo]);
 
 
     const handleMotivo = (ean, motivo) => {
@@ -387,6 +398,7 @@ const RevisarPedido = () => {
                         <th>Suizo</th>
                         <th>Cofarsur</th>
                         <th>Motivo</th>
+                        <th>Eliminar</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -480,6 +492,15 @@ const RevisarPedido = () => {
 
                                     </select>
 
+                                </td>
+                                <td>
+                                    <button
+                                        className="carrito_icon_btn"
+                                        title="Eliminar del carrito"
+                                        onClick={() => eliminarDelCarrito(item.ean)}
+                                    >
+                                        <FaTrash />
+                                    </button>
                                 </td>
                             </tr>
                         );
