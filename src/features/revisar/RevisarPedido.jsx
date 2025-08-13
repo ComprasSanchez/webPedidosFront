@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 
 const RevisarPedido = () => {
-    const { carrito } = useCarrito();
+    const { carrito, limpiarCarritoPostPedido } = useCarrito();
     const [preciosMonroe, setPreciosMonroe] = useState([]);
     const [preciosSuizo, setPreciosSuizo] = useState([]);
     const [preciosCofarsur, setPreciosCofarsur] = useState([]);
@@ -299,6 +299,7 @@ const RevisarPedido = () => {
             if (data.success) {
                 toast.success("Pedido enviado correctamente", { id: toastId });
                 setMostrarResumen(false);
+                await limpiarCarritoPostPedido();
             } else {
                 toast.error(`Error al enviar pedido${data?.error ? `: ${data.error}` : ""}`, { id: toastId });
             }

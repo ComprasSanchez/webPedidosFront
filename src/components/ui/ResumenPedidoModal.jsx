@@ -1,7 +1,5 @@
 // src/features/revisar/ResumenPedidoModal.jsx
-
 import React from "react";
-
 
 const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending }) => {
     if (!resumen || Object.keys(resumen).length === 0) return null;
@@ -51,7 +49,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending }) => {
                             cursor: isSending ? "not-allowed" : "pointer"
                         }}
                     >
-                        {isSending ? "Enviando pedido..." : "Enviar pedido"}
+                        {isSending ? "..." : "Enviar pedido"}
                     </button>
                 </div>
             </div>
