@@ -87,12 +87,17 @@ export const getPreciosCofarsur = async (carrito, sucursal) => {
             return http.get(url, { params: { sucursal }, validateStatus: s => s < 500 });
         });
 
+        console.log("Llamadas a Cofarsur:", calls);
+
         const responses = await Promise.all(calls);
+
+        console.log("Respuestas de Cofarsur:", responses);
 
         return responses.map((res, i) => ({
             ean: carrito[i].ean,
             ...res.data,
         }));
+
     } catch (err) {
         console.error("Error en getPreciosCofarsur:", err?.message || err);
         return [];
