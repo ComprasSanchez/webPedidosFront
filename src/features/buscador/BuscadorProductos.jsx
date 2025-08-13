@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { FaSearch, FaMinus, FaPlus, FaTrash } from "react-icons/fa";
 import { API_URL } from "../../config/api";
+import logo from "../../assets/logo.png";
+
 
 const BuscadorProductos = () => {
     const { usuario } = useAuth();
@@ -155,6 +157,8 @@ const BuscadorProductos = () => {
 
     return (
         <div className="buscador_wrapper">
+            <img src={logo} alt="Logo" className="buscador_logo" />
+
             <div className="buscadores">
                 <h2 className="buscador_titulo">BUSCADOR DE PRODUCTOS</h2>
                 <div className="buscador_busquedas">

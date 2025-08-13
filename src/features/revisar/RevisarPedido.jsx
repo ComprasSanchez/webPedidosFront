@@ -14,6 +14,8 @@ import { API_URL } from "../../config/api";
 import { Toaster, toast } from 'react-hot-toast';
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
+import logo from "../../assets/logo.png";
+
 
 const RevisarPedido = () => {
     const { carrito, limpiarCarritoPostPedido } = useCarrito();
@@ -361,6 +363,8 @@ const RevisarPedido = () => {
 
     return (
         <div className="revisar_wrapper">
+            <img src={logo} alt="Logo" className="buscador_logo" />
+
             <button className="boton-volver" onClick={() => navigate("/buscador")}>
                 <span className="icono">
                     <FaArrowLeft size={12} />
