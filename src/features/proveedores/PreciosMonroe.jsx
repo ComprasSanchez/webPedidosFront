@@ -32,8 +32,14 @@ const PreciosMonroe = ({ ean, precios, seleccionado, onSelect }) => {
                     ✔
                 </span>
             </div>
+            {p.offers?.length > 0 && (
+                <div style={{ marginTop: "4px", fontSize: "11px", color: "#333" }}>
+                    {p.offers.map((o, idx) => (
+                        <div key={idx}>{o.descripcion}</div>
+                    ))}
+                </div>
+            )}
         </div>
-
     );
 };
 

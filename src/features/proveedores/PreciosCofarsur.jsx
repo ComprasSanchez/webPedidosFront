@@ -41,7 +41,7 @@ const PreciosCofarsur = ({ ean, precios, seleccionado, onSelect }) => {
             {p.offers?.length > 0 && (
                 <div style={{ marginTop: "4px", fontSize: "11px", color: "#333" }}>
                     {p.offers.map((o, idx) => (
-                        <div key={idx}>• {o.descripcion}</div>
+                        <div key={idx}>{o.descripcion}</div>
                     ))}
                 </div>
             )}
