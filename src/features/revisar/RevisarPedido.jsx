@@ -187,9 +187,10 @@ const RevisarPedido = () => {
         });
 
         if (hayFaltantesDeMotivo) {
-            alert("⚠️ Tenés productos sin motivo seleccionado. Completalos antes de confirmar el pedido.");
+            toast.error("Tenés productos sin motivo seleccionado. Completalos antes de confirmar el pedido.");
             return;
         }
+
 
         // Evitar confirmar si algún item seleccionado (no depósito) no tiene precio válido (> 0)
         const haySinPrecioValido = carrito.some((item) => {
@@ -409,8 +410,7 @@ const RevisarPedido = () => {
                         const proveedorIdeal = mejorProveedor(item.ean);
 
                         const motivoBloqueado =
-                            (motivoActual === "Stock Depo" && proveedorActual === "deposito" && stockDepo > 0) ||
-                            (motivoActual === "Mejor precio" && proveedorActual === proveedorIdeal);
+                            (motivoActual === "Stock Depo" && proveedorActual === "deposito" && stockDepo > 0);
 
                         const tieneAlgunoConPrecio = !![
                             preciosMonroe.find(p => p.ean === item.ean && p.stock > 0 && precioValido(p)),
@@ -480,8 +480,7 @@ const RevisarPedido = () => {
                                     >
                                         {opcionesMotivo.map((op) => {
                                             const isBlocked =
-                                                (op.value === "Stock Depo" && (proveedorActual !== "deposito" || stockDepo <= 0)) ||
-                                                (op.value === "Mejor precio" && proveedorActual !== proveedorIdeal) ||
+                                                (op.value === "Stock Depo" && (proveedorActual !== "deposito" || stockDepo <= 0)) |
                                                 (op.value === "Faltante" && tieneAlgunoConPrecio);
                                             return (
                                                 <option key={op.value} value={op.value} disabled={op.value === "" || isBlocked}>
