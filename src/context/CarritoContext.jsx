@@ -114,6 +114,20 @@ export const CarritoProvider = ({ children }) => {
         await vaciarCarrito();
     };
 
+    // CarritoContext.jsx (ejemplo)
+    const actualizarUnidades = (ean, nuevasUnidades) => {
+        setCarrito((prev) => {
+            if (nuevasUnidades <= 0) {
+                // si ponen 0 o negativo, lo eliminamos
+                return prev.filter((it) => it.ean !== ean);
+            }
+            return prev.map((it) =>
+                it.ean === ean ? { ...it, unidades: nuevasUnidades } : it
+            );
+        });
+    };
+
+
     return (
         <CarritoContext.Provider
             value={{
@@ -124,7 +138,8 @@ export const CarritoProvider = ({ children }) => {
                 actualizarCantidad,
                 eliminarDelCarrito,
                 vaciarCarrito,
-                limpiarCarritoPostPedido
+                limpiarCarritoPostPedido,
+                actualizarUnidades
             }}
         >
             {children}

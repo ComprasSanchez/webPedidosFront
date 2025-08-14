@@ -17,7 +17,7 @@ const BuscadorProductos = () => {
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const [resultadosNombre, setResultadosNombre] = useState([]);
     const [loadingName, setLoadingName] = useState(false);
-    const { carrito, agregarAlCarrito, eliminarDelCarrito } = useCarrito();
+    const { carrito, agregarAlCarrito, eliminarDelCarrito, actualizarUnidades } = useCarrito();
     const navigate = useNavigate();
     const nombreBoxRef = useRef(null);
     const [loadingCode, setLoadingCode] = useState(false);
@@ -254,8 +254,6 @@ const BuscadorProductos = () => {
                     </button>
                 </div>
             )}
-
-
             {carrito.length === 0 ? (
                 <div style={{
                     display: "flex",
@@ -286,7 +284,31 @@ const BuscadorProductos = () => {
                                     <td>{item.ean}</td>
                                     <td>{item.descripcion}</td>
                                     <td>{item.stockSucursal}</td>
-                                    <td>{item.unidades}</td>
+                                    <td>
+                                        <div className="qty">
+                                            <button
+                                                className="qty__btn"
+                                                onClick={() =>
+                                                    actualizarUnidades(item.ean, Math.max(1, (item.unidades || 1) - 1))
+                                                }
+                                            >
+                                                −
+                                            </button>
+
+                                            <span className="qty__num">{item.unidades || 1}</span>
+
+                                            <button
+                                                className="qty__btn"
+                                                onClick={() =>
+                                                    actualizarUnidades(item.ean, (item.unidades || 1) + 1)
+                                                }
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </td>
+
+
                                     <td>
                                         <button
                                             className="carrito_icon_btn"

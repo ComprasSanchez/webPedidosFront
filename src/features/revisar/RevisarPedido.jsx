@@ -18,7 +18,7 @@ import logo from "../../assets/logo.png";
 
 
 const RevisarPedido = () => {
-    const { carrito, limpiarCarritoPostPedido, eliminarDelCarrito } = useCarrito();
+    const { carrito, limpiarCarritoPostPedido, eliminarDelCarrito, actualizarUnidades } = useCarrito();
     const [preciosMonroe, setPreciosMonroe] = useState([]);
     const [preciosSuizo, setPreciosSuizo] = useState([]);
     const [preciosCofarsur, setPreciosCofarsur] = useState([]);
@@ -437,7 +437,30 @@ const RevisarPedido = () => {
                                     <tr key={item.ean}>
                                         <td>{item.ean}</td>
                                         <td>{item.descripcion}</td>
-                                        <td>{item.unidades}</td>
+                                        <td>
+                                            <div className="qty">
+                                                <button
+                                                    className="qty__btn"
+                                                    onClick={() =>
+                                                        actualizarUnidades(item.ean, Math.max(1, (item.unidades || 1) - 1))
+                                                    }
+                                                >
+                                                    −
+                                                </button>
+
+                                                <span className="qty__num">{item.unidades || 1}</span>
+
+                                                <button
+                                                    className="qty__btn"
+                                                    onClick={() =>
+                                                        actualizarUnidades(item.ean, (item.unidades || 1) + 1)
+                                                    }
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </td>
+
                                         <td>{item.stockSucursal}</td>
                                         <td className={seleccion[item.ean]?.proveedor === "deposito" ? "celda_activa" : ""}>
                                             <div
