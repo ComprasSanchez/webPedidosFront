@@ -387,126 +387,142 @@ const RevisarPedido = () => {
 
             <Toaster position="top-center" />
             <h2 className="revisar_titulo">Revisar pedido</h2>
-            <table className="revisar_tabla">
-                <thead>
-                    <tr>
-                        <th>EAN</th>
-                        <th>Descripción</th>
-                        <th>Unidades pedidas</th>
-                        <th>Stock Sucu</th>
-                        <th>Stock Depo</th>
-                        <th>Monroe</th>
-                        <th>Suizo</th>
-                        <th>Cofarsur</th>
-                        <th>Motivo</th>
-                        <th>Eliminar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {carrito.map((item) => {
-                        const motivoActual = seleccion[item.ean]?.motivo;
-                        const proveedorActual = seleccion[item.ean]?.proveedor;
-                        const stockDepo = getStock(item.ean, stockDeposito);
-                        const proveedorIdeal = mejorProveedor(item.ean);
 
-                        const motivoBloqueado =
-                            (motivoActual === "Stock Depo" && proveedorActual === "deposito" && stockDepo > 0);
-
-                        const tieneAlgunoConPrecio = !![
-                            preciosMonroe.find(p => p.ean === item.ean && p.stock > 0 && precioValido(p)),
-                            preciosSuizo.find(p => p.ean === item.ean && p.stock > 0 && precioValido(p)),
-                            preciosCofarsur.find(p => p.ean === item.ean && p.stock > 0 && precioValido(p)),
-                        ].filter(Boolean).length || getStock(item.ean, stockDeposito) > 0;
-
-
-                        return (
-                            <tr key={item.ean}>
-                                <td>{item.ean}</td>
-                                <td>{item.descripcion}</td>
-                                <td>{item.unidades}</td>
-                                <td>{item.stockSucursal}</td>
-                                <td className={seleccion[item.ean]?.proveedor === "deposito" ? "celda_activa" : ""}>
-                                    <div
-                                        className="precio_celda"
-                                        onClick={() => {
-                                            const stock = getStock(item.ean, stockDeposito);
-                                            if (typeof stock === "number" && stock > 0) {
-                                                handleElegirProveedor(item.ean, "deposito");
-                                            }
-                                        }}
-                                        style={{ fontWeight: "bold", cursor: "pointer" }}
-                                    >
-                                        {getStock(item.ean, stockDeposito)}
-                                        <span
-                                            style={{
-                                                color: "#00bcd4",
-                                                marginLeft: "5px",
-                                                visibility: seleccion[item.ean]?.proveedor === "deposito" ? "visible" : "hidden",
-                                            }}
-                                        >
-                                            ✔
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className={seleccion[item.ean]?.proveedor === "monroe" ? "celda_activa" : ""}>
-                                    <PreciosMonroe
-                                        ean={item.ean}
-                                        precios={preciosMonroe}
-                                        seleccionado={seleccion[item.ean]?.proveedor === "monroe"}
-                                        onSelect={handleElegirProveedor}
-                                    />
-                                </td>
-                                <td className={seleccion[item.ean]?.proveedor === "suizo" ? "celda_activa" : ""}>
-                                    <PreciosSuizo
-                                        ean={item.ean}
-                                        precios={preciosSuizo}
-                                        seleccionado={seleccion[item.ean]?.proveedor === "suizo"}
-                                        onSelect={handleElegirProveedor}
-                                    />
-                                </td>
-                                <td className={seleccion[item.ean]?.proveedor === "cofarsur" ? "celda_activa" : ""}>
-                                    <PreciosCofarsur
-                                        ean={item.ean}
-                                        precios={preciosCofarsur}
-                                        seleccionado={seleccion[item.ean]?.proveedor === "cofarsur"}
-                                        onSelect={handleElegirProveedor}
-                                    />
-                                </td>
-                                <td>
-                                    <select
-                                        value={motivoActual || ""}
-                                        onChange={(e) => handleMotivo(item.ean, e.target.value)}
-                                        disabled={motivoBloqueado || motivoActual === "Faltante"}
-                                    >
-                                        {opcionesMotivo.map((op) => {
-                                            const isBlocked =
-                                                (op.value === "Stock Depo" && (proveedorActual !== "deposito" || stockDepo <= 0)) |
-                                                (op.value === "Faltante" && tieneAlgunoConPrecio);
-                                            return (
-                                                <option key={op.value} value={op.value} disabled={op.value === "" || isBlocked}>
-                                                    {op.label}
-                                                </option>
-                                            );
-                                        })}
-
-                                    </select>
-
-                                </td>
-                                <td>
-                                    <button
-                                        className="carrito_icon_btn"
-                                        title="Eliminar del carrito"
-                                        onClick={() => eliminarDelCarrito(item.ean)}
-                                    >
-                                        <FaTrash />
-                                    </button>
-                                </td>
+            {carrito.length === 0 ? (
+                <div style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    minHeight: "60vh" // ajusta según quieras que baje más o menos
+                }}>
+                    <div className="sin-productos">
+                        No hay productos en el carrito.
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <table className="revisar_tabla">
+                        <thead>
+                            <tr>
+                                <th>EAN</th>
+                                <th>Descripción</th>
+                                <th>Unidades pedidas</th>
+                                <th>Stock Sucu</th>
+                                <th>Stock Depo</th>
+                                <th>Monroe</th>
+                                <th>Suizo</th>
+                                <th>Cofarsur</th>
+                                <th>Motivo</th>
+                                <th>Eliminar</th>
                             </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            {carrito.map((item) => {
+                                const motivoActual = seleccion[item.ean]?.motivo;
+                                const proveedorActual = seleccion[item.ean]?.proveedor;
+                                const stockDepo = getStock(item.ean, stockDeposito);
+                                const proveedorIdeal = mejorProveedor(item.ean);
 
+                                const motivoBloqueado =
+                                    (motivoActual === "Stock Depo" && proveedorActual === "deposito" && stockDepo > 0);
+
+                                const tieneAlgunoConPrecio = !![
+                                    preciosMonroe.find(p => p.ean === item.ean && p.stock > 0 && precioValido(p)),
+                                    preciosSuizo.find(p => p.ean === item.ean && p.stock > 0 && precioValido(p)),
+                                    preciosCofarsur.find(p => p.ean === item.ean && p.stock > 0 && precioValido(p)),
+                                ].filter(Boolean).length || getStock(item.ean, stockDeposito) > 0;
+
+
+                                return (
+                                    <tr key={item.ean}>
+                                        <td>{item.ean}</td>
+                                        <td>{item.descripcion}</td>
+                                        <td>{item.unidades}</td>
+                                        <td>{item.stockSucursal}</td>
+                                        <td className={seleccion[item.ean]?.proveedor === "deposito" ? "celda_activa" : ""}>
+                                            <div
+                                                className="precio_celda"
+                                                onClick={() => {
+                                                    const stock = getStock(item.ean, stockDeposito);
+                                                    if (typeof stock === "number" && stock > 0) {
+                                                        handleElegirProveedor(item.ean, "deposito");
+                                                    }
+                                                }}
+                                                style={{ fontWeight: "bold", cursor: "pointer" }}
+                                            >
+                                                {getStock(item.ean, stockDeposito)}
+                                                <span
+                                                    style={{
+                                                        color: "#00bcd4",
+                                                        marginLeft: "5px",
+                                                        visibility: seleccion[item.ean]?.proveedor === "deposito" ? "visible" : "hidden",
+                                                    }}
+                                                >
+                                                    ✔
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className={seleccion[item.ean]?.proveedor === "monroe" ? "celda_activa" : ""}>
+                                            <PreciosMonroe
+                                                ean={item.ean}
+                                                precios={preciosMonroe}
+                                                seleccionado={seleccion[item.ean]?.proveedor === "monroe"}
+                                                onSelect={handleElegirProveedor}
+                                            />
+                                        </td>
+                                        <td className={seleccion[item.ean]?.proveedor === "suizo" ? "celda_activa" : ""}>
+                                            <PreciosSuizo
+                                                ean={item.ean}
+                                                precios={preciosSuizo}
+                                                seleccionado={seleccion[item.ean]?.proveedor === "suizo"}
+                                                onSelect={handleElegirProveedor}
+                                            />
+                                        </td>
+                                        <td className={seleccion[item.ean]?.proveedor === "cofarsur" ? "celda_activa" : ""}>
+                                            <PreciosCofarsur
+                                                ean={item.ean}
+                                                precios={preciosCofarsur}
+                                                seleccionado={seleccion[item.ean]?.proveedor === "cofarsur"}
+                                                onSelect={handleElegirProveedor}
+                                            />
+                                        </td>
+                                        <td>
+                                            <select
+                                                value={motivoActual || ""}
+                                                onChange={(e) => handleMotivo(item.ean, e.target.value)}
+                                                disabled={motivoBloqueado || motivoActual === "Faltante"}
+                                            >
+                                                {opcionesMotivo.map((op) => {
+                                                    const isBlocked =
+                                                        (op.value === "Stock Depo" && (proveedorActual !== "deposito" || stockDepo <= 0)) |
+                                                        (op.value === "Faltante" && tieneAlgunoConPrecio);
+                                                    return (
+                                                        <option key={op.value} value={op.value} disabled={op.value === "" || isBlocked}>
+                                                            {op.label}
+                                                        </option>
+                                                    );
+                                                })}
+
+                                            </select>
+
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="carrito_icon_btn"
+                                                title="Eliminar del carrito"
+                                                onClick={() => eliminarDelCarrito(item.ean)}
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+
+                </>
+            )}
             {carrito.length > 0 && (
                 <div className="revisar_footer">
                     <button className="revisar_btn_confirmar" onClick={handleConfirmar}>

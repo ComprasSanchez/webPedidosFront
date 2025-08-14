@@ -255,39 +255,54 @@ const BuscadorProductos = () => {
                 </div>
             )}
 
-            <h3>Carrito</h3>
-            <table className="buscador_tabla">
-                <thead>
-                    <tr>
-                        <th>EAN</th>
-                        <th>Descripción</th>
-                        <th>Stock sucursal</th>
-                        <th>Unidades</th>
-                        <th><FaTrash /></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {carrito.map((item, i) => (
-                        <tr key={i}>
-                            <td>{item.ean}</td>
-                            <td>{item.descripcion}</td>
-                            <td>{item.stockSucursal}</td>
-                            <td>{item.unidades}</td>
-                            <td>
-                                <button
-                                    className="carrito_icon_btn"
-                                    onClick={() => eliminarDelCarrito(item.ean)}
-                                    aria-label={`Eliminar ${item.descripcion}`}
-                                    title="Eliminar"
-                                >
-                                    <FaTrash />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
 
+            {carrito.length === 0 ? (
+                <div style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    minHeight: "60vh" // ajusta según quieras que baje más o menos
+                }}>
+                    <div className="sin-productos">
+                        No hay productos en el carrito.
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <h3>Carrito</h3>
+                    <table className="buscador_tabla">
+                        <thead>
+                            <tr>
+                                <th>EAN</th>
+                                <th>Descripción</th>
+                                <th>Stock sucursal</th>
+                                <th>Unidades</th>
+                                <th><FaTrash /></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {carrito.map((item, i) => (
+                                <tr key={i}>
+                                    <td>{item.ean}</td>
+                                    <td>{item.descripcion}</td>
+                                    <td>{item.stockSucursal}</td>
+                                    <td>{item.unidades}</td>
+                                    <td>
+                                        <button
+                                            className="carrito_icon_btn"
+                                            onClick={() => eliminarDelCarrito(item.ean)}
+                                            aria-label={`Eliminar ${item.descripcion}`}
+                                            title="Eliminar"
+                                        >
+                                            <FaTrash />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </>
+            )}
             {carrito.length > 0 && (
                 <div style={{ marginTop: "2rem", textAlign: "right" }}>
                     <button className="buscador_btn_revisar" onClick={() => navigate("/revisar")}>
