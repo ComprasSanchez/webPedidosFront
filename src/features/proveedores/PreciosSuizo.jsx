@@ -36,11 +36,11 @@ const PreciosSuizo = ({ ean, precios, seleccionado, onSelect }) => {
                             </span>
                         </div>
                     ) : (
-                        <div>Sin precio</div>
+                        <div>SIN PRECIO</div>
                     )}
                 </div>
             ) : (
-                <div>Sin precio</div>
+                <div>SIN PRECIO</div>
             )}
             {p.offers?.length > 0 && (
                 <div style={{ marginTop: "4px", fontSize: "11px", color: "#333" }}>

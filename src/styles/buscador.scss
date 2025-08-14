@@ -183,9 +183,15 @@
 
 /* Tabla: 100% ancho */
 .buscador_tabla {
+
     width: 100%;
     border-collapse: collapse;
-    margin-top: 2rem;
+    margin-bottom: 2rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 .buscador_tabla th,

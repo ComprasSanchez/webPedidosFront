@@ -15,7 +15,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaTrash } from "react-icons/fa";
 import logo from "../../assets/logo.png";
-
+import { Tooltip } from 'react-tooltip';
 
 const RevisarPedido = () => {
     const { carrito, limpiarCarritoPostPedido, eliminarDelCarrito, actualizarUnidades } = useCarrito();
@@ -393,7 +393,7 @@ const RevisarPedido = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    minHeight: "60vh" // ajusta según quieras que baje más o menos
+                    minHeight: "60vh"
                 }}>
                     <div className="sin-productos">
                         No hay productos en el carrito.
@@ -404,7 +404,6 @@ const RevisarPedido = () => {
                     <table className="revisar_tabla">
                         <thead>
                             <tr>
-                                <th>EAN</th>
                                 <th>Descripción</th>
                                 <th>Unidades pedidas</th>
                                 <th>Stock Sucu</th>
@@ -435,8 +434,32 @@ const RevisarPedido = () => {
 
                                 return (
                                     <tr key={item.ean}>
-                                        <td>{item.ean}</td>
-                                        <td>{item.descripcion}</td>
+                                        <td
+                                            data-tooltip-id={`lab-${item.ean}`}
+                                            data-tooltip-content={item.laboratorio ? `Laboratorio: ${item.laboratorio}` : ""}
+                                            style={{ cursor: item.laboratorio ? 'help' : 'default' }}
+                                        >
+                                            {item.descripcion}{" "}
+                                            <span style={{ fontWeight: "bold", color: "#000000ff" }}>
+                                                ({item.ean})
+                                            </span>
+
+                                            {item.laboratorio && (
+                                                <Tooltip
+                                                    id={`lab-${item.ean}`}
+                                                    place="bottom"
+                                                    style={{
+                                                        backgroundColor: '#333',
+                                                        color: '#fff',
+                                                        borderRadius: '4px',
+                                                        padding: '6px 10px',
+                                                        fontSize: '0.85rem'
+                                                    }}
+                                                />
+                                            )}
+                                        </td>
+
+
                                         <td>
                                             <div className="qty">
                                                 <button

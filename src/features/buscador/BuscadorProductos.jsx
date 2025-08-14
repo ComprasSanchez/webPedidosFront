@@ -46,6 +46,7 @@ const BuscadorProductos = () => {
                     stockSucursal: data.stockSucursal,
                     precios: { deposito: 0 },
                     idQuantio: data.idQuantio ?? data.codPlex ?? null,
+                    laboratorio: data.laboratorio || "Desconocido"
                 });
             } else {
                 // No está en nuestra base → igual se puede pedir por EAN si lo escribieron
@@ -55,6 +56,7 @@ const BuscadorProductos = () => {
                     stockSucursal: 0,
                     precios: { deposito: 0 },
                     idQuantio: null,
+                    laboratorio: "Desconocido"
                 });
             }
             setResultadosNombre([]);
@@ -66,6 +68,7 @@ const BuscadorProductos = () => {
                 stockSucursal: 0,
                 precios: { deposito: 0 },
                 idQuantio: null,
+                laboratorio: "Desconocido"
             });
         } finally {
             setLoadingCode(false); // ⬅️ termina carga
@@ -132,9 +135,10 @@ const BuscadorProductos = () => {
         setProductoSeleccionado({
             ean: p.ean || null,
             descripcion: p.descripcion,
-            stockSucursal: p.stockSucursal || 0,   // 👈 ahora viene del backend
+            stockSucursal: p.stockSucursal || 0,
             precios: { deposito: 0 },
             idQuantio: p.idQuantio ?? null,
+            laboratorio: p.laboratorio || "Desconocido"
         });
         setResultadosNombre([]);
         setQueryName("");
@@ -259,7 +263,7 @@ const BuscadorProductos = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    minHeight: "60vh" // ajusta según quieras que baje más o menos
+                    minHeight: "60vh"
                 }}>
                     <div className="sin-productos">
                         No hay productos en el carrito.
@@ -273,6 +277,7 @@ const BuscadorProductos = () => {
                             <tr>
                                 <th>EAN</th>
                                 <th>Descripción</th>
+                                <th>Laboratorio</th>
                                 <th>Stock sucursal</th>
                                 <th>Unidades</th>
                                 <th><FaTrash /></th>
@@ -283,6 +288,7 @@ const BuscadorProductos = () => {
                                 <tr key={i}>
                                     <td>{item.ean}</td>
                                     <td>{item.descripcion}</td>
+                                    <td>{item.laboratorio}</td>
                                     <td>{item.stockSucursal}</td>
                                     <td>
                                         <div className="qty">

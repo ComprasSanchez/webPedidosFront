@@ -7,8 +7,8 @@ const PreciosCofarsur = ({ ean, precios, seleccionado, onSelect }) => {
 
     const precio = p.offerPrice ?? p.priceList;
 
-    // Mostrar "Sin precio" si no hay valor numérico o es 0
-    if (!precio || precio === 0) return <div className={clase}>Sin precio</div>;
+    // Mostrar "SIN PRECIO" si no hay valor numérico o es 0
+    if (!precio || precio === 0) return <div className={clase}>SIN PRECIO</div>;
 
 
     const handleClick = () => {
