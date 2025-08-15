@@ -67,7 +67,7 @@ const PreciosKellerof = ({ ean, seleccionado, onSelect }) => {
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div style={{ marginBottom: 8 }}>Desea abrir la página de Kellerof?</div>
+                    <div style={{ marginBottom: 8 }}>Desea abrir la página de Kellerhoff?</div>
                     <button
                         onClick={handleConfirm}
                         style={{

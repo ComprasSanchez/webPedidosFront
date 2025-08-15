@@ -471,7 +471,7 @@ const RevisarPedido = () => {
                                 <th>Monroe</th>
                                 <th>Suizo</th>
                                 <th>Cofarsur</th>
-                                <th>Kellerof</th>
+                                <th>Kellerhoff</th>
                                 <th>Motivo</th>
                                 <th>Eliminar</th>
                             </tr>
