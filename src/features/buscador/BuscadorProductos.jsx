@@ -40,13 +40,16 @@ const BuscadorProductos = () => {
             const data = await res.json();
 
             if (data.encontrado) {
+                console.log("Producto encontrado:", data);
+
                 setProductoSeleccionado({
                     ean: data.ean,
                     descripcion: data.descripcion,
                     stockSucursal: data.stockSucursal,
                     precios: { deposito: 0 },
                     idQuantio: data.idQuantio ?? data.codPlex ?? null,
-                    laboratorio: data.laboratorio || "Desconocido"
+                    laboratorio: data.laboratorio || "Desconocido",
+                    CodLab: data.CodLab || "Desconocido"
                 });
             } else {
                 // No está en nuestra base → igual se puede pedir por EAN si lo escribieron
@@ -56,7 +59,8 @@ const BuscadorProductos = () => {
                     stockSucursal: 0,
                     precios: { deposito: 0 },
                     idQuantio: null,
-                    laboratorio: "Desconocido"
+                    laboratorio: "Desconocido",
+                    CodLab: "Desconocido"
                 });
             }
             setResultadosNombre([]);
@@ -68,7 +72,8 @@ const BuscadorProductos = () => {
                 stockSucursal: 0,
                 precios: { deposito: 0 },
                 idQuantio: null,
-                laboratorio: "Desconocido"
+                laboratorio: "Desconocido",
+                CodLab: "Desconocido"
             });
         } finally {
             setLoadingCode(false); // ⬅️ termina carga
@@ -120,6 +125,7 @@ const BuscadorProductos = () => {
             const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
+            console.log("Resultados de búsqueda en Quantio:", data);
 
             setResultadosNombre(Array.isArray(data.resultados) ? data.resultados : []);
             setProductoSeleccionado(null);
@@ -132,13 +138,16 @@ const BuscadorProductos = () => {
     };
 
     const handleElegirResultado = (p) => {
+        console.log(p);
+
         setProductoSeleccionado({
             ean: p.ean || null,
             descripcion: p.descripcion,
             stockSucursal: p.stockSucursal || 0,
             precios: { deposito: 0 },
             idQuantio: p.idQuantio ?? null,
-            laboratorio: p.laboratorio || "Desconocido"
+            laboratorio: p.laboratorio || "Desconocido",
+            CodLab: p.CodLab || "Desconocido"
         });
         setResultadosNombre([]);
         setQueryName("");

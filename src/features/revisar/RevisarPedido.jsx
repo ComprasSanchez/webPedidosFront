@@ -16,6 +16,9 @@ import { useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaTrash } from "react-icons/fa";
 import logo from "../../assets/logo.png";
 import { Tooltip } from 'react-tooltip';
+import PreciosKellerof from "../proveedores/PreciosKellerof";
+import { fetchConvenios, matchConvenio } from "../../services/convenios";
+
 
 const RevisarPedido = () => {
     const { carrito, limpiarCarritoPostPedido, eliminarDelCarrito, actualizarUnidades } = useCarrito();
@@ -33,6 +36,8 @@ const RevisarPedido = () => {
     const navigate = useNavigate();
     const [eanList, setEanList] = useState([]);
     const eanListRef = useRef([]);
+    const [reglasConvenios, setReglasConvenios] = useState(null);
+
 
     const opcionesMotivo = [
         { value: "", label: "Seleccionar motivo" },
@@ -51,6 +56,10 @@ const RevisarPedido = () => {
 
 
     useEffect(() => {
+        console.log("📦 Carrito actualizado en RevisarPedido:", carrito);
+    }, [carrito]);
+
+    useEffect(() => {
         // EANs actuales en el carrito
         const carritoEans = carrito.map(i => i.ean).sort();
         const prevEans = eanListRef.current.sort();
@@ -58,7 +67,7 @@ const RevisarPedido = () => {
         // Si hay algún EAN nuevo, recargar precios
         const hayNuevo = carritoEans.some(ean => !prevEans.includes(ean));
 
-        if (carrito.length > 0 && usuario?.sucursal_codigo && hayNuevo) {
+        if (carrito.length > 0 && usuario?.sucursal_codigo && hayNuevo && reglasConvenios) {
             const fetchData = async () => {
                 setLoading(true);
                 const [monroe, suizo, cofarsur, stock] = await Promise.all([
@@ -73,57 +82,50 @@ const RevisarPedido = () => {
                 setPreciosCofarsur(cofarsur);
                 setStockDeposito(stock);
 
+                const ctx = { stockDeposito: stock, preciosMonroe: monroe, preciosSuizo: suizo, preciosCofarsur: cofarsur };
+
                 const seleccionInicial = {};
-
                 carrito.forEach((item) => {
-                    const stockDepo = stock.find((s) => s.ean === item.ean)?.stock ?? 0;
+                    console.groupCollapsed(`🧮 Selección inicial para ${item.ean}`);
+                    const match = matchConvenio(item, reglasConvenios);
+                    console.debug("matchConvenio:", match);
 
+                    if (match.aplica) {
+                        // prioridad estricta (puede incluir "deposito" y "kellerof")
+                        const elegido = pickPorPrioridad(item, match.prioridad, ctx);
+                        console.debug("resultado convenio:", elegido);
+                        if (elegido) {
+                            seleccionInicial[item.ean] = { proveedor: elegido, motivo: "Condición / Acuerdo" };
+                            return;
+                        }
+                        // ninguna opción viable y el primero no es externo → faltante
+                        seleccionInicial[item.ean] = { proveedor: "faltante", motivo: "Faltante" };
+                        return;
+                    }
+
+                    // SIN convenio → tu fallback de siempre
+                    const stockDepo = stock.find(s => s.ean === item.ean)?.stock ?? 0;
                     if (stockDepo > 0) {
                         seleccionInicial[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
+                        return;
+                    }
+
+                    const candidatos = [
+                        { proveedor: "monroe", ...monroe.find(p => p.ean === item.ean && p.stock > 0 && (p.offerPrice ?? p.priceList) > 0) },
+                        { proveedor: "suizo", ...suizo.find(p => p.ean === item.ean && p.stock > 0 && (p.offerPrice ?? p.priceList) > 0) },
+                        { proveedor: "cofarsur", ...cofarsur.find(p => p.ean === item.ean && p.stock > 0 && (p.offerPrice ?? p.priceList) > 0) },
+                    ].filter(p => p.ean);
+
+                    if (candidatos.length) {
+                        const mejor = candidatos.reduce((a, b) => (a.offerPrice ?? a.priceList) < (b.offerPrice ?? b.priceList) ? a : b);
+                        seleccionInicial[item.ean] = { proveedor: mejor.proveedor, motivo: "Mejor precio" };
                     } else {
-                        const candidatos = [
-                            {
-                                proveedor: "monroe", ...monroe.find(p =>
-                                    p.ean === item.ean &&
-                                    p.stock > 0 &&
-                                    (p.offerPrice ?? p.priceList) != null &&
-                                    (p.offerPrice ?? p.priceList) > 0
-                                )
-                            },
-                            {
-                                proveedor: "suizo", ...suizo.find(p =>
-                                    p.ean === item.ean &&
-                                    p.stock > 0 &&
-                                    (p.offerPrice ?? p.priceList) != null &&
-                                    (p.offerPrice ?? p.priceList) > 0
-                                )
-                            },
-                            {
-                                proveedor: "cofarsur", ...cofarsur.find(p =>
-                                    p.ean === item.ean &&
-                                    p.stock > 0 &&
-                                    (p.offerPrice ?? p.priceList) != null &&
-                                    (p.offerPrice ?? p.priceList) > 0
-                                )
-                            },
-                        ].filter(p => p.ean);
-
-                        if (candidatos.length > 0) {
-                            const mejor = candidatos.reduce((a, b) =>
-                                (a.offerPrice ?? a.priceList) < (b.offerPrice ?? b.priceList) ? a : b
-                            );
-
-                            seleccionInicial[item.ean] = {
-                                proveedor: mejor.proveedor,
-                                motivo: "Mejor precio"
-                            };
-
-                        } else {
-                            seleccionInicial[item.ean] = { proveedor: "faltante", motivo: "Faltante" };
-                        }
+                        seleccionInicial[item.ean] = { proveedor: "faltante", motivo: "Faltante" };
                     }
                 });
+
                 setSeleccion(seleccionInicial);
+
                 setLoading(false);
                 setEanList(carritoEans);
                 eanListRef.current = carritoEans;
@@ -141,7 +143,107 @@ const RevisarPedido = () => {
             setEanList([]);
             eanListRef.current = [];
         }
-    }, [carrito, usuario?.sucursal_codigo]);
+    }, [carrito, usuario?.sucursal_codigo, reglasConvenios]);
+
+    useEffect(() => {
+        const nueva = { ...seleccion };
+        let cambios = false;
+
+        carrito.forEach((item) => {
+            const sel = nueva[item.ean] || {};
+            const prov = sel.proveedor;
+            const motivo = sel.motivo;
+
+            const stockDepo = getStock(item.ean, stockDeposito);
+            const ideal = mejorProveedor(item.ean);
+
+            // si depósito tiene stock -> motivo fijo
+            if (prov === "deposito" && stockDepo > 0 && motivo !== "Stock Depo") {
+                nueva[item.ean].motivo = "Stock Depo";
+                cambios = true;
+            }
+
+            // si está en mejor proveedor -> motivo fijo
+            if (prov === ideal && prov !== "deposito" && motivo !== "Mejor precio") {
+                nueva[item.ean].motivo = "Mejor precio";
+                cambios = true;
+            }
+
+            // 👇 si estaba como Faltante y ahora hay una opción válida, auto-switch a mejor
+            if (motivo === "Faltante" && (stockDepo > 0 || ideal)) {
+                if (stockDepo > 0) {
+                    nueva[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
+                } else if (ideal) {
+                    nueva[item.ean] = { proveedor: ideal, motivo: "Mejor precio" };
+                }
+                cambios = true;
+            }
+        });
+
+        if (cambios) setSeleccion(nueva);
+    }, [carrito, stockDeposito, preciosMonroe, preciosSuizo, preciosCofarsur]);
+
+
+    // ADD: traer reglas de convenios (una vez por sucursal)
+    useEffect(() => {
+        if (!usuario?.sucursal_codigo) return;
+        (async () => {
+            try {
+                const reglas = await fetchConvenios(usuario.sucursal_codigo);
+                console.log("🧩 Convenios cargados:", reglas);
+                setReglasConvenios(reglas);
+            } catch (e) {
+                console.error("❌ Error cargando convenios:", e);
+                setReglasConvenios({ byEAN: {}, byLAB: {} });
+            }
+        })();
+    }, [usuario?.sucursal_codigo]);
+
+
+
+    function proveedorViable(slug, ean, ctx) {
+        if (slug === "deposito") {
+            const s = ctx.stockDeposito.find(x => x.ean === ean)?.stock ?? 0;
+            console.debug("🔎 viable? deposito", { ean, stock: s, ok: s > 0 });
+            return s > 0;
+        }
+        if (slug === "kellerof") {
+            console.debug("🔎 viable? kellerof", { ean, ok: true });
+            return true;
+        }
+        const fuente =
+            slug === "monroe" ? ctx.preciosMonroe :
+                slug === "suizo" ? ctx.preciosSuizo :
+                    slug === "cofarsur" ? ctx.preciosCofarsur : [];
+        const p = fuente.find(x => x.ean === ean);
+        const val = p?.offerPrice ?? p?.priceList;
+        const ok = p?.stock > 0 && typeof val === "number" && val > 0;
+        console.debug("🔎 viable?", { ean, slug, stock: p?.stock, precio: val, ok });
+        return ok;
+    }
+
+
+    // ADD: dado un item y una prioridad estricta, elegí el 1° viable
+    function pickPorPrioridad(item, prioridad, ctx) {
+        console.groupCollapsed(`⚖️ Prioridad para ${item.ean} [${prioridad.join(" > ")}]`);
+        for (const slug of prioridad) {
+            const ok = proveedorViable(slug, item.ean, ctx);
+            console.debug(`➡️ probar ${slug}: ${ok ? "✅" : "❌"}`);
+            if (ok) {
+                console.groupEnd();
+                return slug;
+            }
+        }
+        if (prioridad[0] === "kellerof") {
+            console.debug("ninguno viable; devolvemos kellerof igual para que prueben en web");
+            console.groupEnd();
+            return "kellerof";
+        }
+        console.debug("❌ ninguno viable → Faltante");
+        console.groupEnd();
+        return null;
+    }
+
 
 
     const handleMotivo = (ean, motivo) => {
@@ -152,31 +254,32 @@ const RevisarPedido = () => {
     };
 
     const handleElegirProveedor = (ean, nuevoProveedor) => {
-        // 🔒 Si está en Faltante, nada de cambios
-        if (seleccion[ean]?.motivo === "Faltante") return;
-
+        const item = carrito.find(x => x.ean === ean);
         const stockDepo = getStock(ean, stockDeposito);
+        const match = matchConvenio(item, reglasConvenios);
+
+        // tu mejorProveedor(ean) actual sirve como “mejor precio” si NO hay convenio
         const proveedorIdeal = mejorProveedor(ean);
 
-        setSeleccion((prev) => {
+        setSeleccion(prev => {
             const actual = prev[ean] ?? {};
-            const motivoActual = actual.motivo;
-            let nuevoMotivo = motivoActual;
+            let nuevoMotivo = actual.motivo;
 
             if (nuevoProveedor === "deposito" && stockDepo > 0) {
                 nuevoMotivo = "Stock Depo";
-            } else if (nuevoProveedor === proveedorIdeal) {
+            } else if (match.aplica && match.prioridad.includes(nuevoProveedor)) {
+                nuevoMotivo = "Condición / Acuerdo";
+            } else if (!match.aplica && nuevoProveedor === proveedorIdeal) {
                 nuevoMotivo = "Mejor precio";
-            } else if (motivoActual === "Mejor precio" || motivoActual === "Stock Depo" || motivoActual === "Faltante") {
+            } else if (["Mejor precio", "Stock Depo", "Faltante", "Condición / Acuerdo"].includes(actual.motivo)) {
+                // si elige algo fuera de esas condiciones, limpiamos motivo para forzar que lo justifique
                 nuevoMotivo = "";
             }
 
-            return {
-                ...prev,
-                [ean]: { ...actual, proveedor: nuevoProveedor, motivo: nuevoMotivo },
-            };
+            return { ...prev, [ean]: { ...actual, proveedor: nuevoProveedor, motivo: nuevoMotivo } };
         });
     };
+
 
 
 
@@ -195,11 +298,9 @@ const RevisarPedido = () => {
         // Evitar confirmar si algún item seleccionado (no depósito) no tiene precio válido (> 0)
         const haySinPrecioValido = carrito.some((item) => {
             const motivo = seleccion[item.ean]?.motivo;
-            if (motivo === "Faltante") return false;   // ✅ Permitido
-
+            if (motivo === "Faltante") return false;
             const prov = seleccion[item.ean]?.proveedor;
-            if (!prov || prov === "deposito") return false;
-
+            if (!prov || prov === "deposito" || prov === "kellerof") return false; // Kellerof permitido sin precio
             const fuente =
                 prov === "monroe" ? preciosMonroe :
                     prov === "suizo" ? preciosSuizo :
@@ -254,11 +355,6 @@ const RevisarPedido = () => {
     };
 
 
-
-    useEffect(() => {
-        console.log("📦 Carrito actualizado en RevisarPedido:", carrito);
-    }, [carrito]);
-
     const handleEnviarPedido = async () => {
         if (isSending) return;
         setIsSending(true);
@@ -284,6 +380,9 @@ const RevisarPedido = () => {
             } else if (proveedor === "cofarsur") {
                 const p = preciosCofarsur.find(p => p.ean === item.ean);
                 precio = p?.offerPrice ?? p?.priceList ?? 0;
+            } else if (proveedor === "kellerof") {
+                precio = 0; // externo sin API
+                console.debug("Kellerof seleccionado, precio fijado en 0");
             }
 
             return {
@@ -324,45 +423,6 @@ const RevisarPedido = () => {
             setIsSending(false);
         }
     };
-
-
-    useEffect(() => {
-        const nueva = { ...seleccion };
-        let cambios = false;
-
-        carrito.forEach((item) => {
-            const sel = nueva[item.ean] || {};
-            const prov = sel.proveedor;
-            const motivo = sel.motivo;
-
-            const stockDepo = getStock(item.ean, stockDeposito);
-            const ideal = mejorProveedor(item.ean);
-
-            // si depósito tiene stock -> motivo fijo
-            if (prov === "deposito" && stockDepo > 0 && motivo !== "Stock Depo") {
-                nueva[item.ean].motivo = "Stock Depo";
-                cambios = true;
-            }
-
-            // si está en mejor proveedor -> motivo fijo
-            if (prov === ideal && prov !== "deposito" && motivo !== "Mejor precio") {
-                nueva[item.ean].motivo = "Mejor precio";
-                cambios = true;
-            }
-
-            // 👇 si estaba como Faltante y ahora hay una opción válida, auto-switch a mejor
-            if (motivo === "Faltante" && (stockDepo > 0 || ideal)) {
-                if (stockDepo > 0) {
-                    nueva[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
-                } else if (ideal) {
-                    nueva[item.ean] = { proveedor: ideal, motivo: "Mejor precio" };
-                }
-                cambios = true;
-            }
-        });
-
-        if (cambios) setSeleccion(nueva);
-    }, [carrito, stockDeposito, preciosMonroe, preciosSuizo, preciosCofarsur]);
 
     if (loading) {
         return (
@@ -411,6 +471,7 @@ const RevisarPedido = () => {
                                 <th>Monroe</th>
                                 <th>Suizo</th>
                                 <th>Cofarsur</th>
+                                <th>Kellerof</th>
                                 <th>Motivo</th>
                                 <th>Eliminar</th>
                             </tr>
@@ -532,6 +593,14 @@ const RevisarPedido = () => {
                                                 onSelect={handleElegirProveedor}
                                             />
                                         </td>
+                                        <td className={"celda_kellerof" + (seleccion[item.ean]?.proveedor === "kellerof" ? " celda_activa" : "")}>
+                                            <PreciosKellerof
+                                                ean={item.ean}
+                                                seleccionado={seleccion[item.ean]?.proveedor === "kellerof"}
+                                                onSelect={handleElegirProveedor}
+                                            />
+                                        </td>
+
                                         <td>
                                             <select
                                                 value={motivoActual || ""}
@@ -540,7 +609,7 @@ const RevisarPedido = () => {
                                             >
                                                 {opcionesMotivo.map((op) => {
                                                     const isBlocked =
-                                                        (op.value === "Stock Depo" && (proveedorActual !== "deposito" || stockDepo <= 0)) |
+                                                        (op.value === "Stock Depo" && (proveedorActual !== "deposito" || stockDepo <= 0)) ||
                                                         (op.value === "Faltante" && tieneAlgunoConPrecio);
                                                     return (
                                                         <option key={op.value} value={op.value} disabled={op.value === "" || isBlocked}>
