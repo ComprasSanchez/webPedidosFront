@@ -55,7 +55,7 @@ const BuscadorProductos = () => {
                 // No está en nuestra base → igual se puede pedir por EAN si lo escribieron
                 setProductoSeleccionado({
                     ean: q,
-                    descripcion: `Producto no registrado (${q})`,
+                    descripcion: `Producto no registrado`,
                     stockSucursal: 0,
                     precios: { deposito: 0 },
                     idQuantio: null,
@@ -76,7 +76,7 @@ const BuscadorProductos = () => {
                 CodLab: "Desconocido"
             });
         } finally {
-            setLoadingCode(false); // ⬅️ termina carga
+            setLoadingCode(false);
         }
     };
 

@@ -13,7 +13,7 @@ import ResumenPedidoModal from "../../components/ui/ResumenPedidoModal";
 import { API_URL } from "../../config/api";
 import { Toaster, toast } from 'react-hot-toast';
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaTrash } from "react-icons/fa";
+import { FaArrowLeft, FaCheckSquare, FaSquare, FaTrash } from "react-icons/fa";
 import logo from "../../assets/logo.png";
 import { Tooltip } from 'react-tooltip';
 import PreciosKellerof from "../proveedores/PreciosKellerof";
@@ -21,7 +21,7 @@ import { fetchConvenios, matchConvenio } from "../../services/convenios";
 
 
 const RevisarPedido = () => {
-    const { carrito, limpiarCarritoPostPedido, eliminarDelCarrito, actualizarUnidades } = useCarrito();
+    const { carrito, limpiarCarritoPostPedido, eliminarDelCarrito, actualizarUnidades, replaceCarrito } = useCarrito();
     const [preciosMonroe, setPreciosMonroe] = useState([]);
     const [preciosSuizo, setPreciosSuizo] = useState([]);
     const [preciosCofarsur, setPreciosCofarsur] = useState([]);
@@ -31,13 +31,13 @@ const RevisarPedido = () => {
     const [loading, setLoading] = useState(false);
     const [modalAbierto, setModalAbierto] = useState(false);
     const [resumenFinal, setResumenFinal] = useState({});
+    const [noPedirMap, setNoPedirMap] = useState({}); // { [ean]: true }
     const [mostrarResumen, setMostrarResumen] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const navigate = useNavigate();
     const [eanList, setEanList] = useState([]);
     const eanListRef = useRef([]);
     const [reglasConvenios, setReglasConvenios] = useState(null);
-
 
     const opcionesMotivo = [
         { value: "", label: "Seleccionar motivo" },
@@ -57,7 +57,51 @@ const RevisarPedido = () => {
 
     useEffect(() => {
         console.log("📦 Carrito actualizado en RevisarPedido:", carrito);
+        // hidratar mapa desde el carrito (si ya viene con noPedir en Redis)
+        const initial = {};
+        carrito.forEach(it => { if (it?.noPedir) initial[it.ean] = true; });
+        setNoPedirMap(initial);
     }, [carrito]);
+
+
+    const toggleNoPedir = async (ean, checked) => {
+        setNoPedirMap(prev => {
+            const next = { ...prev };
+            if (checked) next[ean] = true; else delete next[ean];
+            persistirCarritoConNoPedir(next);
+            return next;
+        });
+    };
+
+    async function persistirCarrito(items) {
+        try {
+            await fetch(`${API_URL}/api/cart`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-user-id": usuario?.id ?? "",
+                    "x-sucursal": usuario?.sucursal_codigo ?? ""
+                },
+                body: JSON.stringify({ items })
+            });
+        } catch (e) {
+            console.warn("No se pudo persistir el carrito:", e?.message || e);
+        }
+    }
+
+    async function persistirCarritoConNoPedir(nextMap) {
+        try {
+            const items = carrito.map(it => ({
+                ...it,
+                noPedir: !!nextMap[it.ean],
+            }));
+            await persistirCarrito(items);
+        } catch (e) {
+            console.warn("No se pudo persistir carrito con noPedir:", e?.message || e);
+        }
+    }
+
 
     useEffect(() => {
         // EANs actuales en el carrito
@@ -284,42 +328,48 @@ const RevisarPedido = () => {
 
 
     const handleConfirmar = () => {
-        const hayFaltantesDeMotivo = carrito.some((item) => {
-            const motivo = seleccion[item.ean]?.motivo;
-            return !motivo || motivo.trim() === "";
-        });
+        const hayFaltantesDeMotivo = carrito
+            .filter(item => !noPedirMap[item.ean])
+            .some((item) => {
+                const motivo = seleccion[item.ean]?.motivo;
+                return !motivo || motivo.trim() === "";
+            });
 
         if (hayFaltantesDeMotivo) {
             toast.error("Tenés productos sin motivo seleccionado. Completalos antes de confirmar el pedido.");
             return;
         }
 
+        const haySinPrecioValido = carrito
+            .filter(item => !noPedirMap[item.ean])
+            .some((item) => {
+                const motivo = seleccion[item.ean]?.motivo;
+                if (motivo === "Faltante") return false;
+                const prov = seleccion[item.ean]?.proveedor;
+                if (!prov || prov === "deposito" || prov === "kellerof") return false;
+                const fuente =
+                    prov === "monroe" ? preciosMonroe :
+                        prov === "suizo" ? preciosSuizo :
+                            prov === "cofarsur" ? preciosCofarsur : [];
 
-        // Evitar confirmar si algún item seleccionado (no depósito) no tiene precio válido (> 0)
-        const haySinPrecioValido = carrito.some((item) => {
-            const motivo = seleccion[item.ean]?.motivo;
-            if (motivo === "Faltante") return false;
-            const prov = seleccion[item.ean]?.proveedor;
-            if (!prov || prov === "deposito" || prov === "kellerof") return false; // Kellerof permitido sin precio
-            const fuente =
-                prov === "monroe" ? preciosMonroe :
-                    prov === "suizo" ? preciosSuizo :
-                        prov === "cofarsur" ? preciosCofarsur : [];
+                const p = fuente.find(x => x.ean === item.ean);
+                const precio = p?.offerPrice ?? p?.priceList;
 
-            const p = fuente.find(x => x.ean === item.ean);
-            const precio = p?.offerPrice ?? p?.priceList;
-
-            return !(typeof precio === "number" && precio > 0);
-        });
-
+                return !(typeof precio === "number" && precio > 0);
+            });
 
         if (haySinPrecioValido) {
             alert("⚠️ Tenés productos seleccionados sin precio válido. Elegí otro proveedor o quitá esos ítems antes de confirmar.");
             return;
         }
 
+        const carritoFiltrado = carrito.filter(it => !noPedirMap[it.ean]);
+        if (carritoFiltrado.length === 0) {
+            toast("No hay líneas para enviar (todas marcadas como “No pedir”).");
+            return;
+        }
 
-        const carritoConPrecios = carrito.map((item) => {
+        const carritoConPrecios = carritoFiltrado.map((item) => {
             const precios = {
                 deposito: 0,
                 monroe: preciosMonroe.find((p) => p.ean === item.ean)?.offerPrice ?? preciosMonroe.find((p) => p.ean === item.ean)?.priceList ?? 0,
@@ -336,6 +386,7 @@ const RevisarPedido = () => {
                 idQuantio,
             };
         });
+
 
         const resumenFinal = construirResumenPedido(carritoConPrecios, seleccion);
         setResumenFinal(resumenFinal);
@@ -361,40 +412,42 @@ const RevisarPedido = () => {
 
         const toastId = toast.loading("Enviando pedido...");
 
-        const itemsParaEnviar = carrito.map(item => {
-            const provSel = seleccion[item.ean]?.proveedor;
-            const motivo = seleccion[item.ean]?.motivo;
+        const itemsParaEnviar = carrito
+            .filter(item => !noPedirMap[item.ean])
+            .map(item => {
+                const provSel = seleccion[item.ean]?.proveedor;
+                const motivo = seleccion[item.ean]?.motivo;
 
-            let proveedor = provSel;
-            let precio = 0;
+                let proveedor = provSel;
+                let precio = 0;
 
-            if (motivo === "Faltante") {
-                proveedor = "faltante";
-                precio = 0;
-            } else if (proveedor === "monroe") {
-                const p = preciosMonroe.find(p => p.ean === item.ean);
-                precio = p?.offerPrice ?? p?.priceList ?? 0;
-            } else if (proveedor === "suizo") {
-                const p = preciosSuizo.find(p => p.ean === item.ean);
-                precio = p?.offerPrice ?? p?.priceList ?? 0;
-            } else if (proveedor === "cofarsur") {
-                const p = preciosCofarsur.find(p => p.ean === item.ean);
-                precio = p?.offerPrice ?? p?.priceList ?? 0;
-            } else if (proveedor === "kellerof") {
-                precio = 0; // externo sin API
-                console.debug("Kellerof seleccionado, precio fijado en 0");
-            }
+                if (motivo === "Faltante") {
+                    proveedor = "faltante";
+                    precio = 0;
+                } else if (proveedor === "monroe") {
+                    const p = preciosMonroe.find(p => p.ean === item.ean);
+                    precio = p?.offerPrice ?? p?.priceList ?? 0;
+                } else if (proveedor === "suizo") {
+                    const p = preciosSuizo.find(p => p.ean === item.ean);
+                    precio = p?.offerPrice ?? p?.priceList ?? 0;
+                } else if (proveedor === "cofarsur") {
+                    const p = preciosCofarsur.find(p => p.ean === item.ean);
+                    precio = p?.offerPrice ?? p?.priceList ?? 0;
+                } else if (proveedor === "kellerof") {
+                    precio = 0;
+                }
 
-            return {
-                idProducto: item.idQuantio ?? null,
-                codebar: item.ean,
-                cantidad: item.unidades,
-                precio,
-                proveedor,
-                motivo,
-                nroPedidoDrogueria: "",
-            };
-        });
+                return {
+                    idProducto: item.idQuantio ?? null,
+                    codebar: item.ean,
+                    cantidad: item.unidades,
+                    precio,
+                    proveedor,
+                    motivo,
+                    nroPedidoDrogueria: "",
+                };
+            });
+
 
 
         try {
@@ -412,7 +465,13 @@ const RevisarPedido = () => {
             if (data.success) {
                 toast.success("Pedido enviado correctamente", { id: toastId });
                 setMostrarResumen(false);
-                await limpiarCarritoPostPedido();
+                const enviados = new Set(itemsParaEnviar.map(i => i.codebar));
+                const restantes = carrito
+                    .filter(it => !enviados.has(it.ean))
+                    .map(it => ({ ...it, noPedir: !!noPedirMap[it.ean] }));
+
+                await persistirCarrito(restantes);
+                replaceCarrito(restantes);
             } else {
                 toast.error(`Error al enviar pedido${data?.error ? `: ${data.error}` : ""}`, { id: toastId });
             }
@@ -474,6 +533,7 @@ const RevisarPedido = () => {
                                 <th>Kellerhoff</th>
                                 <th>Motivo</th>
                                 <th>Eliminar</th>
+                                <th>Pedir</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -493,8 +553,11 @@ const RevisarPedido = () => {
                                 ].filter(Boolean).length || getStock(item.ean, stockDeposito) > 0;
 
 
+                                const estaPedir = !noPedirMap[item.ean];
+                                const estaNoPedir = !estaPedir;
+
                                 return (
-                                    <tr key={item.ean}>
+                                    <tr key={item.ean} className={estaNoPedir ? "fila_omitida" : ""}>
                                         <td
                                             data-tooltip-id={`lab-${item.ean}`}
                                             data-tooltip-content={item.laboratorio ? `Laboratorio: ${item.laboratorio}` : ""}
@@ -524,6 +587,7 @@ const RevisarPedido = () => {
                                         <td>
                                             <div className="qty">
                                                 <button
+                                                    disabled={estaNoPedir}
                                                     className="qty__btn"
                                                     onClick={() =>
                                                         actualizarUnidades(item.ean, Math.max(1, (item.unidades || 1) - 1))
@@ -535,6 +599,7 @@ const RevisarPedido = () => {
                                                 <span className="qty__num">{item.unidades || 1}</span>
 
                                                 <button
+                                                    disabled={estaNoPedir}
                                                     className="qty__btn"
                                                     onClick={() =>
                                                         actualizarUnidades(item.ean, (item.unidades || 1) + 1)
@@ -549,13 +614,12 @@ const RevisarPedido = () => {
                                         <td className={seleccion[item.ean]?.proveedor === "deposito" ? "celda_activa" : ""}>
                                             <div
                                                 className="precio_celda"
-                                                onClick={() => {
-                                                    const stock = getStock(item.ean, stockDeposito);
-                                                    if (typeof stock === "number" && stock > 0) {
-                                                        handleElegirProveedor(item.ean, "deposito");
-                                                    }
+                                                onClick={() => { if (!estaNoPedir) { handleElegirProveedor(item.ean, "deposito"); } }}
+                                                style={{
+                                                    fontWeight: "bold",
+                                                    cursor: estaNoPedir ? "not-allowed" : "pointer",
+                                                    opacity: estaNoPedir ? 0.5 : 1
                                                 }}
-                                                style={{ fontWeight: "bold", cursor: "pointer" }}
                                             >
                                                 {getStock(item.ean, stockDeposito)}
                                                 <span
@@ -605,7 +669,7 @@ const RevisarPedido = () => {
                                             <select
                                                 value={motivoActual || ""}
                                                 onChange={(e) => handleMotivo(item.ean, e.target.value)}
-                                                disabled={motivoBloqueado || motivoActual === "Faltante"}
+                                                disabled={estaNoPedir || motivoBloqueado || motivoActual === "Faltante"}
                                             >
                                                 {opcionesMotivo.map((op) => {
                                                     const isBlocked =
@@ -621,6 +685,7 @@ const RevisarPedido = () => {
                                             </select>
 
                                         </td>
+
                                         <td>
                                             <button
                                                 className="carrito_icon_btn"
@@ -630,6 +695,21 @@ const RevisarPedido = () => {
                                                 <FaTrash />
                                             </button>
                                         </td>
+                                        <td
+                                            onClick={() => {
+                                                const noPedirChecked = estaPedir; // si está en pedir => destildo (no pedir)
+                                                toggleNoPedir(item.ean, noPedirChecked);
+                                            }}
+                                            style={{
+                                                textAlign: "center",
+                                                cursor: "pointer",
+                                                fontSize: "1.3rem",     // tamaño del icono
+                                                color: estaPedir ? "#00bcd4" : "#888", // color activo/inactivo
+                                            }}
+                                        >
+                                            {estaPedir ? <FaCheckSquare /> : <FaSquare />}
+                                        </td>
+
                                     </tr>
                                 );
                             })}
@@ -654,6 +734,7 @@ const RevisarPedido = () => {
                     isSending={isSending}
                 />
             )}
+
         </div>
 
     );

@@ -85,6 +85,10 @@ export const CarritoProvider = ({ children }) => {
         setCarrito(prev => prev.map(p => p.ean === ean ? { ...p, unidades: Number(nuevaCantidad || 0) } : p));
     };
 
+    function replaceCarrito(items) {
+        setCarrito(items);
+    }
+
     const eliminarDelCarrito = (ean) => {
         setCarrito(prev => prev.filter(p => p.ean !== ean));
     };
@@ -139,7 +143,8 @@ export const CarritoProvider = ({ children }) => {
                 eliminarDelCarrito,
                 vaciarCarrito,
                 limpiarCarritoPostPedido,
-                actualizarUnidades
+                actualizarUnidades,
+                replaceCarrito,
             }}
         >
             {children}

@@ -16,6 +16,14 @@ td {
     /* bordes internos */
 }
 
+.fila_omitida {
+    opacity: 0.55;
+}
+
+.fila_omitida .qty__btn {
+    cursor: not-allowed;
+}
+
 
 .revisar_tabla {
     width: 100%;
