@@ -9,6 +9,13 @@ const PreciosMonroe = ({ ean, precios, seleccionado, onSelect }) => {
     };
 
     if (!p) return <div className={clase}>No disponible</div>;
+
+    // ⚠️ Mostrar error si hubo fallo HTTP
+    if (p._status >= 500) {
+        return <div className={clase}>⚠️ Error {p._status}</div>;
+    }
+
+    // 📦 Mostrar sin stock si vino explícito
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
     const precio = p.offerPrice ?? p.priceList;
@@ -21,7 +28,7 @@ const PreciosMonroe = ({ ean, precios, seleccionado, onSelect }) => {
                 </div>
             )}
             <div style={{ fontWeight: "bold" }}>
-                ${precio.toFixed(2)}
+                ${precio?.toFixed(2)}
                 <span
                     style={{
                         color: "#00bcd4",

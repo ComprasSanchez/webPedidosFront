@@ -27,7 +27,7 @@ const RevisarPedido = () => {
     const [preciosCofarsur, setPreciosCofarsur] = useState([]);
     const [stockDeposito, setStockDeposito] = useState([]);
     const [seleccion, setSeleccion] = useState({});
-    const { usuario } = useAuth();
+    const { authFetch, authHeaders, usuario } = useAuth();
     const [loading, setLoading] = useState(false);
     const [modalAbierto, setModalAbierto] = useState(false);
     const [resumenFinal, setResumenFinal] = useState({});
@@ -115,9 +115,9 @@ const RevisarPedido = () => {
             const fetchData = async () => {
                 setLoading(true);
                 const [monroe, suizo, cofarsur, stock] = await Promise.all([
-                    getPreciosMonroe(carrito, usuario?.sucursal_codigo),
-                    getPreciosSuizo(carrito, usuario?.sucursal_codigo),
-                    getPreciosCofarsur(carrito, usuario?.sucursal_codigo),
+                    getPreciosMonroe(carrito, usuario?.sucursal_codigo, { fetch: authFetch, headers: authHeaders }),
+                    getPreciosSuizo(carrito, usuario?.sucursal_codigo, { fetch: authFetch, headers: authHeaders }),
+                    getPreciosCofarsur(carrito, usuario?.sucursal_codigo, { fetch: authFetch, headers: authHeaders }),
                     getStockDeposito(carrito, usuario?.sucursal_codigo),
                 ]);
 

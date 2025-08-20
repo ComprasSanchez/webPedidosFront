@@ -16,7 +16,7 @@ const Login = () => {
         if (success) {
             navigate(usuario?.rol === "admin" ? "/admin" : "/buscador");
         } else {
-            setError("Usuario o contraseña incorrectos.");
+            setError("Credenciales incorrectas.");
         }
     };
 
