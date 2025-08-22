@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import { FaSearch, FaMinus, FaPlus, FaTrash } from "react-icons/fa";
 import { API_URL } from "../../config/api";
 import logo from "../../assets/logo.png";
+import UltimosPedidos from "../pedidos/UltimosPedidos";
 
 
 const BuscadorProductos = () => {
@@ -21,6 +22,7 @@ const BuscadorProductos = () => {
     const navigate = useNavigate();
     const nombreBoxRef = useRef(null);
     const [loadingCode, setLoadingCode] = useState(false);
+    const [eanRecienAgregado, setEanRecienAgregado] = useState(null);
 
 
     const handleBuscarCodigo = async () => {
@@ -156,6 +158,8 @@ const BuscadorProductos = () => {
 
 
     const handleAgregar = () => {
+        setEanRecienAgregado(productoSeleccionado.ean);
+        setTimeout(() => setEanRecienAgregado(null), 400);
         if (!productoSeleccionado?.ean) {
             alert("Para agregar, el producto debe tener código de barras. Si no existe en la base, ingresá el EAN.");
             return;
@@ -297,7 +301,11 @@ const BuscadorProductos = () => {
                         </thead>
                         <tbody>
                             {carrito.map((item, i) => (
-                                <tr key={i}>
+                                <tr
+                                    key={i}
+                                    className={`carrito_row ${eanRecienAgregado === item.ean ? "is-new" : ""}`}
+                                    title={`Precio: — | Motivo: —`} // si querés, podés usar acá tu hover de precio/motivo
+                                >
                                     <td>{item.ean}</td>
                                     <td>{item.descripcion}</td>
                                     <td>{item.laboratorio}</td>
@@ -350,6 +358,7 @@ const BuscadorProductos = () => {
                     </button>
                 </div>
             )}
+            <UltimosPedidos />
         </div>
     );
 };

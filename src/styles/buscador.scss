@@ -362,3 +362,45 @@
     text-align: center;
     color: #007c96;
 }
+
+/* Animación tipo “pop” para filas recién agregadas */
+@keyframes carrito-row-pop {
+    0% {
+        opacity: 0;
+        transform: translateY(16px) scale(0.99);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Solo la fila recién agregada se anima */
+.buscador_tabla .carrito_row.is-new {
+    animation: carrito-row-pop .28s ease forwards;
+}
+
+/* (Opcional) un brillo muy sutil durante la animación para llamar la atención */
+.buscador_tabla .carrito_row.is-new td {
+    position: relative;
+}
+
+.buscador_tabla .carrito_row.is-new td::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(255, 255, 0, 0.06), rgba(255, 255, 255, 0));
+    pointer-events: none;
+    animation: carrito-row-highlight 1.6s ease both;
+}
+
+@keyframes carrito-row-highlight {
+    0% {
+        opacity: .8;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
