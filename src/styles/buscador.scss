@@ -209,7 +209,7 @@
 .buscador_btn_revisar {
     padding: 0.75rem 1.5rem;
     background-color: #e3b505;
-    color: #000;
+    color: rgb(42, 42, 42);
     font-weight: bold;
     border: none;
     border-radius: 8px;
@@ -219,6 +219,7 @@
 
 .buscador_btn_revisar:hover {
     background-color: #cba204;
+    color: white;
 }
 
 /* Responsive: apilar buscadores en pantallas chicas */

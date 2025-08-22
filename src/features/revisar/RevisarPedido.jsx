@@ -18,6 +18,7 @@ import logo from "../../assets/logo.png";
 import { Tooltip } from 'react-tooltip';
 import PreciosKellerof from "../proveedores/PreciosKellerof";
 import { fetchConvenios, matchConvenio } from "../../services/convenios";
+import UltimosPedidos from "../pedidos/UltimosPedidos";
 
 
 const RevisarPedido = () => {
@@ -734,6 +735,8 @@ const RevisarPedido = () => {
                     isSending={isSending}
                 />
             )}
+
+            <UltimosPedidos />
 
         </div>
 

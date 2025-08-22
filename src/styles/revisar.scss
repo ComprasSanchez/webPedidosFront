@@ -26,7 +26,7 @@ td {
 
 
 .revisar_tabla {
-    width: 100%;
+    width: 97%;
     border-collapse: collapse;
     margin-bottom: 2rem;
     border-collapse: separate;
@@ -58,6 +58,7 @@ td {
 .revisar_footer {
     display: flex;
     justify-content: flex-end;
+    width: 97%;
 }
 
 td.celda_activa {
@@ -69,16 +70,16 @@ td.celda_activa {
 
 .revisar_btn_confirmar {
     padding: 0.75rem 1.5rem;
-    background-color: #007f96;
-    color: white;
+    background-color: #e3b505;
+    color: rgb(42, 42, 42);
     border: none;
     border-radius: 8px;
-    font-weight: bold;
     cursor: pointer;
     transition: background-color 0.3s ease;
 
     &:hover {
-        background-color: #005c6d;
+        background-color: #cba204;
+        color: white;
     }
 }
 
