@@ -187,9 +187,16 @@
         line-height: 22px;
         padding: 2px 8px;
         border-radius: 6px;
-        border: 1px solid #ddd;
-        background: #fafafa;
+        border: 1px solid #651111;
+        background: #eee;
         cursor: pointer;
+        color: #651111;
+
+        &:hover {
+            background: #f2c7c7;
+            border-color: #f2c7c7;
+            color: #555;
+        }
     }
 }
 

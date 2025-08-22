@@ -30,11 +30,16 @@ const RevisarPedido = () => {
     const [stockDeposito, setStockDeposito] = useState([]);
     const [seleccion, setSeleccion] = useState({});
     const { authFetch, authHeaders, usuario } = useAuth();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [modalAbierto, setModalAbierto] = useState(false);
     const [resumenFinal, setResumenFinal] = useState({});
     const [noPedirMap, setNoPedirMap] = useState({}); // { [ean]: true }
     const [mostrarResumen, setMostrarResumen] = useState(false);
+    const [datosListos, setDatosListos] = useState({
+        precios: false,
+        stock: false,
+        reglas: false
+    });
     const [isSending, setIsSending] = useState(false);
     const navigate = useNavigate();
     const [eanList, setEanList] = useState([]);
@@ -421,6 +426,15 @@ const RevisarPedido = () => {
     };
 
 
+    // Verificar que todos los datos necesarios estén cargados
+    const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDeposito?.length);
+
+    useEffect(() => {
+        if (loading && datosCompletos) {
+            setLoading(false);
+        }
+    }, [preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito]);
+
     const handleEnviarPedido = async () => {
         if (isSending) return;
         setIsSending(true);
@@ -498,7 +512,7 @@ const RevisarPedido = () => {
         }
     };
 
-    if (loading) {
+    if (loading || !preciosMonroe || !preciosSuizo || !preciosCofarsur || !stockDeposito) {
         return (
             <div className="revisar_loader">
                 <div className="spinner"></div>
