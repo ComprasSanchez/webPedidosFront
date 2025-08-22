@@ -8,6 +8,7 @@ import { FaSearch, FaMinus, FaPlus, FaTrash } from "react-icons/fa";
 import { API_URL } from "../../config/api";
 import logo from "../../assets/logo.png";
 import UltimosPedidos from "../pedidos/UltimosPedidos";
+import HelpButton from "../../components/ui/HelpButton";
 
 
 const BuscadorProductos = () => {
@@ -359,6 +360,7 @@ const BuscadorProductos = () => {
                 </div>
             )}
             <UltimosPedidos />
+            <HelpButton />
         </div>
     );
 };

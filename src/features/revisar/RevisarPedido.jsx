@@ -750,6 +750,7 @@ const RevisarPedido = () => {
             )}
 
             <UltimosPedidos />
+            <HelpButton />
 
         </div>
 
