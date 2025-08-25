@@ -1,7 +1,7 @@
 // Panel deslizable de "Últimos pedidos"
 :root {
     /* mismo ancho que el panel */
-    --ultped-panel-w: min(880px, 92vw);
+    --ultped-panel-w: min(980px, 92vw);
     /* tu “separación” desde el borde derecho cuando está cerrado */
     --ultped-tab-offset: 1.2vw;
 }
@@ -384,6 +384,9 @@
     }
 
     tbody tr:hover {
-        background: #f5faff;
+        background: #81818131;
+        scale: 1.01;
+        border: 1px solid rgb(96, 96, 96);
+        border-radius: 15px;
     }
 }
