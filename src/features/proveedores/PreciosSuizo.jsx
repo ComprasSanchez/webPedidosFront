@@ -25,9 +25,12 @@ const PreciosSuizo = ({ ean, precios, seleccionado, onSelect }) => {
         }
     };
 
+    const isDescuentoPVP = p.offers?.some(o => o.descripcion.includes('sobre PVP'));
+
     return (
         <div className={clase} onClick={handleClick}>
-            {p.offerPrice != null && p.priceList != null && p.offerPrice < p.priceList && (
+            {/* Solo mostrar precio tachado si no es descuento sobre PVP */}
+            {!isDescuentoPVP && p.offerPrice != null && p.priceList != null && p.offerPrice < p.priceList && (
                 <div style={{ fontSize: "12px", color: "#555" }}>
                     <s>${p.priceList.toFixed(2)}</s>
                 </div>
@@ -44,7 +47,8 @@ const PreciosSuizo = ({ ean, precios, seleccionado, onSelect }) => {
                     ✔
                 </span>
             </div>
-            {p.offers?.length > 0 && (
+            {/* Solo mostrar ofertas si no son descuentos sobre PVP */}
+            {p.offers?.length > 0 && !isDescuentoPVP && (
                 <div style={{ marginTop: "4px", fontSize: "11px", color: "#333" }}>
                     {p.offers.map((o, idx) => (
                         <div key={idx}>{o.descripcion}</div>
