@@ -492,7 +492,6 @@ const RevisarPedido = () => {
             const data = await response.json();
 
             if (data.success) {
-                toast.success("Pedido enviado correctamente", { id: toastId });
                 setMostrarResumen(false);
                 const enviados = new Set(itemsParaEnviar.map(i => i.codebar));
                 const restantes = carrito
@@ -501,12 +500,83 @@ const RevisarPedido = () => {
 
                 await persistirCarrito(restantes);
                 replaceCarrito(restantes);
+
+                if (data.parcial) {
+                    // Algunos pedidos funcionaron y otros no
+                    toast(
+                        <div>
+                            <strong>Pedido parcialmente completado</strong>
+                            <br />
+                            <div style={{ marginTop: '8px' }}>
+                                <strong>✅ Exitosos:</strong>
+                                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                    {data.resultados.exitos.map(r => (
+                                        <li key={r.proveedor}>
+                                            {r.proveedor}: #{r.nroPedido} ({r.items} productos)
+                                        </li>
+                                    ))}
+                                </ul>
+                                <strong>❌ Con errores:</strong>
+                                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                    {data.resultados.errores.map(r => (
+                                        <li key={r.proveedor}>
+                                            {r.proveedor}: {r.error} ({r.items} productos)
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>,
+                        {
+                            id: toastId,
+                            duration: 15000,
+                            style: { maxWidth: '500px' }
+                        }
+                    );
+                } else {
+                    toast.success("Pedido enviado correctamente", { id: toastId });
+                }
+            } else if (data.resultados?.errores.length > 0) {
+                // Solo hubo errores
+                toast.error(
+                    <div>
+                        <strong>Error al enviar pedido</strong>
+                        <br />
+                        <div style={{ marginTop: '8px' }}>
+                            {data.resultados.errores.map(r => (
+                                <div key={r.proveedor} style={{ marginBottom: '8px' }}>
+                                    <strong>{r.proveedor}:</strong> {r.error}
+                                    {r.detalle && <div style={{ fontSize: '0.9em' }}>{r.detalle}</div>}
+                                    {r.debug && (
+                                        <details style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                            <summary>Más detalles</summary>
+                                            <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.9em' }}>
+                                                {JSON.stringify(r.debug, null, 2)}
+                                            </pre>
+                                        </details>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>,
+                    {
+                        id: toastId,
+                        duration: 15000,
+                        style: { maxWidth: '500px' }
+                    }
+                );
             } else {
                 toast.error(`Error al enviar pedido${data?.error ? `: ${data.error}` : ""}`, { id: toastId });
             }
         } catch (err) {
             console.error("Error enviando pedido:", err);
-            toast.error("Error inesperado al enviar pedido", { id: toastId });
+            toast.error(
+                <div>
+                    Error inesperado al enviar pedido
+                    <br />
+                    <small>{err.message}</small>
+                </div>,
+                { id: toastId }
+            );
         } finally {
             setIsSending(false);
         }

@@ -116,8 +116,8 @@ export default function UltimosPedidos() {
             p.items.map(it => ({
                 ...it,
                 fecha: new Date(p.fecha),
-                nro_pedido: p.nro_pedido_drogueria,
-                drogueria: p.drogueria_comprada
+                nro_pedido: it.nro_pedido_drogueria,
+                drogueria: it.drogueria_comprada
             }))
         ).sort((a, b) => b.fecha - a.fecha);
 
