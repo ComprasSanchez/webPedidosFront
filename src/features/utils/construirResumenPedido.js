@@ -1,27 +1,29 @@
 // src/utils/construirResumenPedido.js
-
 export const construirResumenPedido = (carrito, seleccion) => {
     const resumen = {};
 
-    carrito.forEach((item) => {
-
+    for (const item of carrito) {
         const sel = seleccion[item.ean];
-        if (!sel || !sel.proveedor) return;
+        if (!sel || !sel.proveedor) continue;
 
-        const proveedor = sel.proveedor;
+        const prov = sel.proveedor; // "deposito" | "monroe" | "suizo" | "cofarsur" | "kellerhoff" | "Falta"
         const precios = item.precios || {};
-        const precio = precios[proveedor] ?? 0;
 
-        if (!resumen[proveedor]) resumen[proveedor] = [];
+        const unidades = Number(item.unidades ?? 0) || 0;
+        // depósito / kellerhoff / Falta => 0
+        const precioUnit =
+            prov === "deposito" || prov === "kellerhoff" || prov === "Falta"
+                ? 0
+                : Number(precios[prov] ?? 0) || 0;
 
-        resumen[proveedor].push({
+        (resumen[prov] ||= []).push({
             ean: item.ean,
             descripcion: item.descripcion,
-            unidades: item.unidades,
-            precio: precio,
+            unidades,
+            precio: precioUnit,
             motivo: sel.motivo,
         });
-    });
+    }
 
-    return resumen;
+    return resumen; // mismo contrato que tenías
 };

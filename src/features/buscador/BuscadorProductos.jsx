@@ -119,7 +119,6 @@ const BuscadorProductos = () => {
             setProductoSeleccionado(null);
             setResultadosNombre([]);
             const url = new URL(`${API_URL}/api/stock/productos/quantio`);
-            console.log("Buscando productos en Quantio con la siguiente URL:", url.toString());
 
             url.searchParams.set("busqueda", queryFormateada);
             url.searchParams.set("sucursal", usuario.sucursal_codigo);
@@ -128,7 +127,6 @@ const BuscadorProductos = () => {
             const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            console.log("Resultados de búsqueda en Quantio:", data);
 
             setResultadosNombre(Array.isArray(data.resultados) ? data.resultados : []);
             setProductoSeleccionado(null);
@@ -141,7 +139,6 @@ const BuscadorProductos = () => {
     };
 
     const handleElegirResultado = (p) => {
-        console.log(p);
 
         setProductoSeleccionado({
             ean: p.ean || null,

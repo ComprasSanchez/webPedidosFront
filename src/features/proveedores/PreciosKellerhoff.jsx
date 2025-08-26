@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
-const PreciosKellerof = ({ ean, seleccionado, onSelect }) => {
+const PreciosKellerhoff = ({ ean, seleccionado, onSelect }) => {
     const [showModal, setShowModal] = useState(false);
     const modalRef = useRef(null);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
@@ -11,7 +11,7 @@ const PreciosKellerof = ({ ean, seleccionado, onSelect }) => {
     };
 
     const handleConfirm = () => {
-        onSelect(ean, "kellerof");
+        onSelect(ean, "kellerhoff");
         window.open("https://www.kellerhoff.com.ar/", "_blank", "noopener");
         setShowModal(false);
     };
@@ -19,7 +19,7 @@ const PreciosKellerof = ({ ean, seleccionado, onSelect }) => {
     const handleCancel = (e) => {
         e.stopPropagation();
         setShowModal(false);
-        onSelect(ean, "kellerof"); // Selecciona aunque no abra la web
+        onSelect(ean, "kellerhoff"); // Selecciona aunque no abra la web
     };
 
     // Cerrar modal al hacer click fuera
@@ -28,7 +28,7 @@ const PreciosKellerof = ({ ean, seleccionado, onSelect }) => {
         const handleClickOutside = (event) => {
             if (modalRef.current && !modalRef.current.contains(event.target)) {
                 setShowModal(false);
-                onSelect(ean, "kellerof");
+                onSelect(ean, "kellerhoff");
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -101,4 +101,4 @@ const PreciosKellerof = ({ ean, seleccionado, onSelect }) => {
     );
 };
 
-export default PreciosKellerof;
+export default PreciosKellerhoff;

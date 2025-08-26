@@ -2,7 +2,7 @@ import { API_URL } from "../config/api";
 
 // Hardcode de portales externos (sin API)
 export const EXTERNOS = {
-    kellerof: { nombre: "Kellerof", url: "https://kellerof.com/compras" },
+    kellerhoff: { nombre: "Kellerof", url: "https://kellerhoff.com/compras" },
     // si sumás otros externos, agregalos acá
 };
 
@@ -10,7 +10,7 @@ export const EXTERNOS = {
 export async function fetchConvenios(sucursal_codigo) {
     const res = await fetch(`${API_URL}/api/convenios?sucursal=${encodeURIComponent(sucursal_codigo)}`);
     if (!res.ok) throw new Error("No se pudieron cargar los convenios");
-    // Esperamos { byEAN: { [ean]: ["deposito","kellerof","suizo"] }, byLAB: { [CodLab]: [...] } }
+    // Esperamos { byEAN: { [ean]: ["deposito","kellerhoff","suizo"] }, byLAB: { [CodLab]: [...] } }
     return res.json();
 }
 

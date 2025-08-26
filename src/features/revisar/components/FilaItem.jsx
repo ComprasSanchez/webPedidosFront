@@ -1,0 +1,177 @@
+import React from "react";
+import { Tooltip } from "react-tooltip";
+import { FaTrash, FaCheckSquare, FaSquare } from "react-icons/fa";
+
+// Ajustá estos imports a donde los tengas actualmente
+
+import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
+import PreciosMonroe from "../../proveedores/PreciosMonroe";
+import PreciosSuizo from "../../proveedores/PreciosSuizo";
+import PreciosCofarsur from "../../proveedores/PreciosCofarsur";
+import PreciosKellerof from "../../proveedores/PreciosKellerhoff";
+import QtyControl from "./QtyControl";
+import MotivoSelect from "./MotivoSelect";
+import NoPedirToggle from "./NoPedirToggle";
+import CeldaProveedor from "./CeldaProveedor";
+import {
+    hayStockDeposito,
+    hayDrogConPrecioValido,
+    esMotivoStockDepoBloqueado,
+} from "../logic/validaciones";
+import PreciosKellerhoff from "../../proveedores/PreciosKellerhoff";
+
+
+export default function FilaItem({
+    item,
+    seleccion = {},
+    preciosMonroe,
+    preciosSuizo,
+    preciosCofarsur,
+    stockDeposito,
+    onElegirProveedor,
+    onMotivo,
+    onEliminar,
+    onChangeQty,
+    pedir,
+    togglePedir,
+    getStock,
+    opcionesMotivo,
+}) {
+    const motivoActual = seleccion?.motivo;
+    const proveedorActual = seleccion?.proveedor;
+
+
+    const hayDepo = hayStockDeposito(item.ean, stockDeposito);
+    const stockDepo = getStock(item.ean, stockDeposito); // seguimos mostrando el número
+    const hayAlgunaDrogConPrecio = hayDrogConPrecioValido(
+        item.ean,
+        { preciosMonroe, preciosSuizo, preciosCofarsur },
+        precioValido
+    );
+    const hayAlgoPedible = hayDepo || hayAlgunaDrogConPrecio;
+    const motivoBloqueado = esMotivoStockDepoBloqueado({ motivoActual, proveedorActual, hayDepo });
+
+    const estaPedir = !!pedir;
+    const estaNoPedir = !estaPedir;
+
+    return (
+        <tr className={estaNoPedir ? "fila_omitida" : ""}>
+            {/* Descripción + tooltip laboratorio */}
+            <td
+                data-tooltip-id={`lab-${item.ean}`}
+                data-tooltip-content={
+                    item.laboratorio ? `Laboratorio: ${item.laboratorio}` : ""
+                }
+                style={{ cursor: item.laboratorio ? "help" : "default" }}
+            >
+                {item.descripcion}{" "}
+                <span style={{ fontWeight: "bold", color: "#000000ff" }}>
+                    ({item.ean})
+                </span>
+
+                {item.laboratorio && (
+                    <Tooltip
+                        id={`lab-${item.ean}`}
+                        place="bottom"
+                        style={{
+                            backgroundColor: "#333",
+                            color: "#fff",
+                            borderRadius: "4px",
+                            padding: "6px 10px",
+                            fontSize: "0.85rem",
+                        }}
+                    />
+                )}
+            </td>
+
+            {/* Unidades pedidas */}
+            <td>
+                <QtyControl
+                    value={item.unidades || 1}
+                    disabled={!pedir}
+                    onChange={(v) => onChangeQty?.(item.ean, v)}
+                />
+            </td>
+
+            {/* Stock sucursal */}
+            <td>{item.stockSucursal}</td>
+
+            {/* Stock Depósito */}
+            <CeldaProveedor
+                activo={proveedorActual === "deposito"}
+                disabled={!pedir}
+                valorMostrado={stockDepo}
+                onSelect={() => onElegirProveedor(item.ean, "deposito")}
+            />
+
+            {/* Monroe */}
+            <td className={proveedorActual === "monroe" ? "celda_activa" : ""}>
+                <PreciosMonroe
+                    ean={item.ean}
+                    precios={preciosMonroe}
+                    seleccionado={proveedorActual === "monroe"}
+                    onSelect={onElegirProveedor}
+                />
+            </td>
+
+            {/* Suizo */}
+            <td className={proveedorActual === "suizo" ? "celda_activa" : ""}>
+                <PreciosSuizo
+                    ean={item.ean}
+                    precios={preciosSuizo}
+                    seleccionado={proveedorActual === "suizo"}
+                    onSelect={onElegirProveedor}
+                />
+            </td>
+
+            {/* Cofarsur */}
+            <td className={proveedorActual === "cofarsur" ? "celda_activa" : ""}>
+                <PreciosCofarsur
+                    ean={item.ean}
+                    precios={preciosCofarsur}
+                    seleccionado={proveedorActual === "cofarsur"}
+                    onSelect={onElegirProveedor}
+                />
+            </td>
+
+            {/* Kellerhoff (kellerhoff en slug si así lo usás en back/estado) */}
+            <td className={"celda_kellerhoff" + (proveedorActual === "kellerhoff" ? " celda_activa" : "")}>
+                <PreciosKellerhoff
+                    ean={item.ean}
+                    seleccionado={proveedorActual === "kellerhoff"}
+                    onSelect={onElegirProveedor}
+                />
+            </td>
+
+            {/* Motivo */}
+            <td>
+                <MotivoSelect
+                    value={motivoActual}
+                    disabled={!estaPedir || motivoBloqueado || motivoActual === "Falta"}
+                    proveedorActual={proveedorActual}
+                    stockDepo={stockDepo}
+                    hayAlgoPedible={hayAlgoPedible}
+                    onChange={(v) => onMotivo(item.ean, v)}
+                    opciones={opcionesMotivo}
+                />
+
+            </td>
+
+            {/* Eliminar */}
+            <td>
+                <button
+                    className="carrito_icon_btn"
+                    title="Eliminar del carrito"
+                    onClick={onEliminar}
+                >
+                    <FaTrash />
+                </button>
+            </td>
+
+            {/* Pedir / No pedir */}
+            <td>
+                <NoPedirToggle pedir={pedir} onToggle={togglePedir} />
+            </td>
+        </tr>
+    );
+}
