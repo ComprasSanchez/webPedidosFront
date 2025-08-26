@@ -7,14 +7,19 @@ import PanelAdmin from "../features/admin/PanelAdmin";
 import PanelCredenciales from "../features/admin/PanelCredenciales";
 
 const ProtectedRoute = ({ children }) => {
-    const { usuario } = useAuth();
-    return usuario ? children : <Navigate to="/login" />;
+    const { usuario, initializing } = useAuth();
+    if (initializing) return null; // o un loader/spinner
+    return usuario ? children : <Navigate to="/login" replace />;
 };
 
 const AdminRoute = ({ children }) => {
-    const { usuario } = useAuth();
-    return usuario?.rol === "admin" ? children : <Navigate to="/login" />;
+    const { usuario, initializing } = useAuth();
+    if (initializing) return null;
+    if (!usuario) return <Navigate to="/login" replace />;
+    if (usuario.rol !== "admin") return <Navigate to="/buscador" replace />;
+    return children;
 };
+
 
 const AppRouter = () => {
     return (

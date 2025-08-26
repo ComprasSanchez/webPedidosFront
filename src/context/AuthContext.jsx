@@ -12,12 +12,18 @@ const nativeFetch =
 
 export const AuthProvider = ({ children }) => {
     const [session, setSession] = useState(null);
+    const [initializing, setInitializing] = useState(true);
 
     useEffect(() => {
         const fromSession = localStorage.getItem("session");
         if (fromSession) {
-            try { setSession(JSON.parse(fromSession)); return; } catch { }
+            try {
+                setSession(JSON.parse(fromSession));
+                setInitializing(false); // ✅
+                return;
+            } catch { }
         }
+
         const legacy = localStorage.getItem("usuario");
         if (legacy) {
             try {
@@ -28,7 +34,10 @@ export const AuthProvider = ({ children }) => {
                 localStorage.removeItem("usuario");
             } catch { }
         }
+
+        setInitializing(false); // ✅ en cualquier caso
     }, []);
+
 
     const login = async (usuario, contrasena) => {
         try {
@@ -83,6 +92,7 @@ export const AuthProvider = ({ children }) => {
                 session,
                 authHeaders,
                 authFetch,
+                initializing
             }}
         >
             {children}

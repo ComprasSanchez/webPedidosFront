@@ -4,17 +4,24 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 
 const Login = () => {
-    const { login, usuario } = useAuth(); // 👈 ahora tomamos `usuario` del context
+    const { login } = useAuth();
     const navigate = useNavigate();
     const [usuarioInput, setUsuarioInput] = useState("");
     const [contrasena, setContrasena] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setError("");
+
         const success = await login(usuarioInput, contrasena);
+        setLoading(false);
+
         if (success) {
-            navigate(usuario?.rol === "admin" ? "/admin" : "/buscador");
+            const { user } = JSON.parse(localStorage.getItem("session"));
+            navigate(user.rol === "admin" ? "/admin" : "/buscador", { replace: true });
         } else {
             setError("Credenciales incorrectas.");
         }
@@ -30,6 +37,7 @@ const Login = () => {
                     value={usuarioInput}
                     onChange={(e) => setUsuarioInput(e.target.value)}
                     className="login_input"
+                    disabled={loading}
                 />
                 <input
                     type="password"
@@ -37,8 +45,11 @@ const Login = () => {
                     value={contrasena}
                     onChange={(e) => setContrasena(e.target.value)}
                     className="login_input"
+                    disabled={loading}
                 />
-                <button type="submit" className="login_button">Ingresar</button>
+                <button type="submit" className="login_button" disabled={loading}>
+                    {loading ? "Iniciando sesión..." : "Ingresar"}
+                </button>
                 {error && <p className="login_error">{error}</p>}
             </form>
         </div>
