@@ -79,6 +79,7 @@ const CrearUsuarioForm = ({ onUsuarioCreado }) => {
             <select name="rol" value={form.rol} onChange={handleChange}>
                 <option value="sucursal">Sucursal</option>
                 <option value="admin">Admin</option>
+                <option value="compras">Compras</option>
             </select>
             {form.rol === "sucursal" && (
                 <input
