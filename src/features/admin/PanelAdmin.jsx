@@ -78,6 +78,19 @@ const PanelAdmin = () => {
                 <button onClick={() => setModalCrear(true)} className="boton_editar">Crear usuario</button>
             </div>
 
+            {/* Modal Crear Usuario */}
+            {modalCrear && (
+                <Modal onClose={() => setModalCrear(false)}>
+                    <h3 className="admin_subtitulo">Crear nuevo usuario</h3>
+                    <CrearUsuarioForm
+                        onUsuarioCreado={() => {
+                            cargarUsuarios();
+                            setModalCrear(false);
+                        }}
+                    />
+                </Modal>
+            )}
+
             <table className="admin_tabla">
                 <thead>
                     <tr>
@@ -109,18 +122,6 @@ const PanelAdmin = () => {
                 </tbody>
             </table>
 
-            {/* Modal Crear Usuario */}
-            {modalCrear && (
-                <Modal onClose={() => setModalCrear(false)}>
-                    <h3 className="admin_subtitulo">Crear nuevo usuario</h3>
-                    <CrearUsuarioForm
-                        onUsuarioCreado={() => {
-                            cargarUsuarios();
-                            setModalCrear(false);
-                        }}
-                    />
-                </Modal>
-            )}
 
             {/* Modal Editar Usuario */}
             {modalEditar && usuarioEditando && (
