@@ -85,6 +85,10 @@ const BuscadorProductos = () => {
 
     // cerrar dropdown al click afuera o Escape
     useEffect(() => {
+        // Focus automático en el input de buscar por nombre al montar
+        const input = nombreBoxRef.current?.querySelector('input');
+        if (input) input.focus();
+
         const handleClickOutside = (e) => {
             if (nombreBoxRef.current && !nombreBoxRef.current.contains(e.target)) {
                 setResultadosNombre([]);
