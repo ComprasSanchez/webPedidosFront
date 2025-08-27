@@ -1,6 +1,6 @@
 /* Layout principal */
 .buscador_wrapper {
-    padding: 2rem;
+    padding: 0.7rem 2rem;
     max-width: 1200px;
     margin: 0 auto;
 }
@@ -312,7 +312,7 @@
     width: 14px;
     height: 14px;
     border: 2px solid #cfe8ee;
-    border-top-color: #007f96;
+    border-top-color: #e3b505;
     border-radius: 50%;
     display: inline-block;
     animation: spin .7s linear infinite;
@@ -352,12 +352,6 @@
     right: 10px;
 }
 
-.buscador_usuario {
-    font-size: 1.5rem;
-    font-weight: bold;
-    text-align: center;
-    color: #666768;
-}
 
 /* Animación tipo “pop” para filas recién agregadas */
 @keyframes carrito-row-pop {

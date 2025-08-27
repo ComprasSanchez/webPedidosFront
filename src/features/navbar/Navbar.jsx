@@ -56,12 +56,17 @@ export default function Navbar() {
                     </ul>
 
                 </nav>
-                <div className="navbar_brand">
+                <NavLink
+                    to="/buscador"
+                    className="navbar_brand"
+                    title="Ir al buscador"
+                    aria-label="Ir al buscador"
+                >
                     <img src={logo} alt="Logo" className="navbar_logo" />
-                </div>
+                </NavLink>
 
                 <div className="navbar_user">
-                    <span className="buscador_usuario">
+                    <span className="navbar_usuario">
                         {usuario?.sucursal_codigo ?? usuario?.usuario ?? "Usuario"}
                     </span>
                     {usuario ? (

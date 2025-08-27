@@ -301,16 +301,8 @@ export default function RevisarPedido() {
         <div className="revisar_wrapper">
             <img src={logo} alt="Logo" className="buscador_logo" />
 
-            <button className="boton-volver" onClick={() => navigate("/buscador")}>
-                <span className="icono">
-                    <FaArrowLeft size={12} />
-                </span>
-                Volver
-            </button>
-
-
             <Toaster position="top-center" />
-            <h2 className="revisar_titulo">Revisar pedido</h2>
+            <h2 className="buscador_titulo">REVISAR PEDIDO</h2>
 
             {carrito.length === 0 ? <SinProductos /> : (
                 <TablaRevisar

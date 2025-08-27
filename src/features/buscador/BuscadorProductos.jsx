@@ -200,7 +200,7 @@ const BuscadorProductos = () => {
                         <input
                             type="text"
                             className="buscador_input"
-                            placeholder="Buscar por nombre (Quantio)"
+                            placeholder="Buscar por nombre (PLEX)"
                             value={queryName}
                             disabled={loadingName}                            // 🔹 bloquea escritura
                             onChange={(e) => setQueryName(e.target.value)}

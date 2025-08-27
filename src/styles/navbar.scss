@@ -81,6 +81,12 @@
     }
 }
 
+.navbar_usuario {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    color: #333333;
+}
 
 /* Icon-only para Inicio/Carrito */
 .navbar_icon_link {
@@ -96,7 +102,7 @@
 }
 
 .navbar_icon {
-    font-size: 1.15rem;
+    font-size: 1.30rem;
     line-height: 1;
     color: currentColor;
     /* hereda el color del link */
