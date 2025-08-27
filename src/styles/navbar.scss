@@ -1,0 +1,225 @@
+/* Paleta y estilo basados en tus archivos:
+   Teal principal: #007f96
+   Hover/darken:   #00657a
+   Celeste suave:  #e0f7fa
+   Grises:         #333, #444, #666
+*/
+
+/* Header fijo, fondo claro como el resto de vistas */
+.navbar_header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #ffffff;
+    border-bottom: 1px solid #e6e6e6;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 23%);
+    border-radius: 0 0 10px 10px;
+}
+
+/* Wrapper igual que tus vistas (max-width + padding) */
+.navbar_wrapper {
+    padding: 0.75rem 1rem 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.navbar_brand {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.navbar_logo {
+    height: 50px;
+    width: auto;
+}
+
+
+.navbar_logo_text {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #007f96;
+    /* acento igual a tus botones confirmar */
+}
+
+
+/* Nav: fondo claro y dropdown móvil con borde como en tus tarjetas/tablas */
+.navbar_nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+
+
+}
+
+.navbar_links {
+    list-style: none;
+    display: flex;
+    gap: 1.25rem;
+    padding: 0;
+    margin: 0;
+
+
+}
+
+/* Link base (ya lo tenías) */
+.navbar_link {
+    display: inline-block;
+    text-decoration: none;
+    color: #333;
+    font-weight: 600;
+    padding: .35rem .4rem;
+    border-radius: .35rem;
+    transition: background .12s ease, color .12s ease;
+
+    &:hover {
+        background: #e0f7fa;
+        color: #00657a;
+    }
+}
+
+
+/* Icon-only para Inicio/Carrito */
+.navbar_icon_link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    /* cuadrado prolijo */
+    border-radius: .45rem;
+    /* mismo radio que tus botones */
+}
+
+.navbar_icon {
+    font-size: 1.15rem;
+    line-height: 1;
+    color: currentColor;
+    /* hereda el color del link */
+}
+
+/* Botón rojo (logout) e icon-only */
+.btn_peligro {
+    background-color: #9a1b1b;
+    color: #fff;
+    border: 1px solid #8a1c1c;
+    padding: .42rem .8rem;
+    border-radius: .45rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .12s ease, border-color .12s ease, transform .02s ease;
+
+    &:hover {
+        background-color: #8a1c1c;
+        border-color: #651111;
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+
+    &:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+}
+
+.navbar_btn_icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+}
+
+.navbar_btn_icon svg {
+    font-size: 1.15rem;
+}
+
+/* Bloque de usuario */
+.navbar_user {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+
+}
+
+.navbar_user_name {
+    font-size: .95rem;
+    color: #444;
+    opacity: .95;
+}
+
+/* Botón primario replicando tu patrón (revisar_btn_confirmar / qty__btn) */
+.btn_primario {
+    background-color: #007f96;
+    color: #fff;
+    border: 1px solid #007f96;
+    padding: .42rem .8rem;
+    border-radius: .45rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .12s ease, border-color .12s ease, transform .02s ease;
+
+    &:hover {
+        background-color: #00657a;
+        border-color: #00657a;
+    }
+
+    &:active {
+        transform: scale(0.98);
+        /* mismo feedback que usás en botones */
+    }
+
+    &:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+}
+
+/* Botón rojo para acciones peligrosas (logout) */
+.btn_peligro {
+    background-color: #9a1b1b;
+    color: #fff;
+    border: 1px solid #8a1c1c;
+    padding: .42rem .8rem;
+    border-radius: .45rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .12s ease, border-color .12s ease, transform .02s ease;
+
+    &:hover {
+        background-color: #8a1c1c;
+        border-color: #651111;
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+
+    &:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+}
+
+/* Versión icon-only del botón en el header */
+.navbar_btn_icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    /* ya definimos width/height */
+}
+
+.navbar_btn_icon svg {
+    font-size: 1.15rem;
+    /* tamaño del ícono */
+}

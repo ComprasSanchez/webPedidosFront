@@ -172,9 +172,6 @@ const BuscadorProductos = () => {
     return (
         <div className="buscador_wrapper">
             <img src={logo} alt="Logo" className="buscador_logo" />
-            <div className="buscador_usuario">
-                {usuario.sucursal_codigo}
-            </div>
 
             <div className="buscadores">
                 <h2 className="buscador_titulo">BUSCADOR DE PRODUCTOS</h2>
@@ -301,7 +298,6 @@ const BuscadorProductos = () => {
                                 <tr
                                     key={i}
                                     className={`carrito_row ${eanRecienAgregado === item.ean ? "is-new" : ""}`}
-                                    title={`Precio: — | Motivo: —`} // si querés, podés usar acá tu hover de precio/motivo
                                 >
                                     <td>{item.ean}</td>
                                     <td>{item.descripcion}</td>
