@@ -21,6 +21,7 @@ import UltimosPedidos from "../pedidos/UltimosPedidos";
 import { requiereJustificacion } from "./logic/validaciones";
 import SinProductos from "./components/SinProductos";
 
+
 export default function RevisarPedido() {
     const [mostrarResumen, setMostrarResumen] = useState(false);
     const [resumenFinal, setResumenFinal] = useState(null);
@@ -51,6 +52,7 @@ export default function RevisarPedido() {
         const match = matchConvenio(item, reglas);
         const proveedorIdeal = mejorProveedor(ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
+
         setSeleccion(prev => {
             const actual = prev[ean] ?? {};
             let nuevoMotivo = actual.motivo;
@@ -72,6 +74,7 @@ export default function RevisarPedido() {
 
 
     const handleConfirmar = () => {
+
         const hayFaltasDeMotivo = carrito
             .filter(item => !noPedirMap[item.ean])
             .some((item) => requiereJustificacion(seleccion[item.ean]?.motivo));

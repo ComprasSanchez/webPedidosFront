@@ -10,8 +10,10 @@ export const EXTERNOS = {
 export async function fetchConvenios(sucursal_codigo) {
     const res = await fetch(`${API_URL}/api/convenios?sucursal=${encodeURIComponent(sucursal_codigo)}`);
     if (!res.ok) throw new Error("No se pudieron cargar los convenios");
+    const data = await res.json();
+
     // Esperamos { byEAN: { [ean]: ["deposito","kellerhoff","suizo"] }, byLAB: { [CodLab]: [...] } }
-    return res.json();
+    return data;
 }
 
 // Matchea si el item tiene convenio por EAN o LAB (CodLab/laboratorio)

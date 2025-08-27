@@ -113,21 +113,12 @@ export async function getPreciosSuizo(
             }
 
             const data = await res.json();
-            console.log(`🔍 Suizo respuesta para ${item.ean}:`, JSON.stringify(data, null, 2));
 
             const stock = data?.stock === true;
             const priceList = typeof data?.priceList === 'number' ? data.priceList : null;
             const offerPrice = typeof data?.offerPrice === 'number' ? data.offerPrice : null;
             const offers = Array.isArray(data?.offers) ? data.offers : [];
             const error = typeof data?.error === 'string' ? data.error : null;
-
-            console.log(`📊 Suizo datos procesados para ${item.ean}:`, {
-                stock,
-                priceList,
-                offerPrice,
-                offers,
-                error
-            });
 
             return { ean: item.ean, stock, priceList, offerPrice, offers, error, _status: res.status };
 

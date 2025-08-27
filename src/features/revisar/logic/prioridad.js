@@ -5,6 +5,7 @@ export function proveedorViable(slug, ean, ctx) {
         return s > 0;
     }
     if (slug === "kellerhoff") return true; // como antes
+
     const fuente = slug === "monroe" ? ctx.preciosMonroe
         : slug === "suizo" ? ctx.preciosSuizo
             : slug === "cofarsur" ? ctx.preciosCofarsur : [];

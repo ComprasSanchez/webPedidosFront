@@ -2,11 +2,14 @@
 import React from "react";
 
 const DEFAULT_OPCIONES = [
-    { value: "", label: "— Seleccionar motivo —" },
-    { value: "Stock Depo", label: "Stock Depósito" },
-    { value: "Mejor precio", label: "Mejor precio" },
-    { value: "Condición / Acuerdo", label: "Condición / Acuerdo" },
+    { value: "", label: "Seleccionar motivo" },
     { value: "Falta", label: "Falta" },
+    { value: "Stock Depo", label: "Stock Depo" },
+    { value: "Mejor precio", label: "Mejor precio" },
+    { value: "Llega más rápido", label: "Llega más rápido" },
+    { value: "Condición / Acuerdo", label: "Condición / Acuerdo" },
+    { value: "Sin troquel", label: "Sin troquel" },
+    { value: "Sin stock drog principal", label: "Sin stock drog principal" },
 ];
 
 export default function MotivoSelect({

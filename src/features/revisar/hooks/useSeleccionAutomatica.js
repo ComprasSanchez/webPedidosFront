@@ -1,7 +1,8 @@
 // hooks/useSeleccionAutomatica.js
 import { useEffect, useState } from "react";
 import { pickPorPrioridad } from "../logic/prioridad";
-import { mejorProveedor } from "../logic/mejorProveedor";
+import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
+
 
 export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito, matchConvenio, getStock }) {
     const [seleccion, setSeleccion] = useState({});
@@ -52,13 +53,16 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
             if (stockDepo > 0 && prov !== "deposito") {
                 nueva[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
-                cambios = true; return;
+                cambios = true;
+                return;
             }
             if (prov === "deposito" && stockDepo > 0 && motivo !== "Stock Depo") {
-                nueva[item.ean].motivo = "Stock Depo"; cambios = true;
+                nueva[item.ean].motivo = "Stock Depo";
+                cambios = true;
             }
             if (prov === ideal && prov !== "deposito" && motivo !== "Mejor precio") {
-                nueva[item.ean].motivo = "Mejor precio"; cambios = true;
+                nueva[item.ean].motivo = "Mejor precio";
+                cambios = true;
             }
             if (motivo === "Falta" && (stockDepo > 0 || ideal)) {
                 nueva[item.ean] = stockDepo > 0
@@ -66,6 +70,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                     : { proveedor: ideal, motivo: "Mejor precio" };
                 cambios = true;
             }
+
         });
 
         if (cambios) setSeleccion(nueva);

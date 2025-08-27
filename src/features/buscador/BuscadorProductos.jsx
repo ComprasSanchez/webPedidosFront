@@ -43,7 +43,6 @@ const BuscadorProductos = () => {
             const data = await res.json();
 
             if (data.encontrado) {
-                console.log("Producto encontrado:", data);
 
                 setProductoSeleccionado({
                     ean: data.ean,

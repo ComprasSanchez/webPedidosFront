@@ -95,8 +95,6 @@ export const CarritoProvider = ({ children }) => {
 
     const vaciarCarrito = async () => {
         setCarrito([]);
-        console.log("x-user-id:", usuario?.id ?? "",
-            "x-sucursal:", usuario?.sucursal_codigo ?? "");
         try {
 
             await fetch(`${API_URL}/api/cart`, {
