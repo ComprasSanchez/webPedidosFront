@@ -171,7 +171,6 @@ const BuscadorProductos = () => {
 
     return (
         <div className="buscador_wrapper">
-            <img src={logo} alt="Logo" className="buscador_logo" />
 
             <div className="buscadores">
                 <h2 className="buscador_titulo">BUSCADOR DE PRODUCTOS</h2>

@@ -58,30 +58,34 @@ export default function FilaItem({
         <tr className={estaNoPedir ? "fila_omitida" : ""}>
             {/* Descripción + tooltip laboratorio */}
             <td
+                className="celda_descripcion"
                 data-tooltip-id={`lab-${item.ean}`}
                 data-tooltip-content={
-                    item.laboratorio ? `Laboratorio: ${item.laboratorio}` : ""
+                    (item.descripcion || "") +
+                    (item.laboratorio ? `\n Laboratorio: ${item.laboratorio}` : "")
                 }
-                style={{ cursor: item.laboratorio ? "help" : "default" }}
+                style={{ cursor: "pointer" }}
             >
-                {item.descripcion}{" "}
-                <span style={{ fontWeight: "bold", color: "#000000ff" }}>
-                    ({item.ean})
+                <span className="desc_texto">
+                    {item.descripcion}
+                </span>{" "}
+                <span className="celda_ean">
+                    {item.ean}
                 </span>
 
-                {item.laboratorio && (
-                    <Tooltip
-                        id={`lab-${item.ean}`}
-                        place="bottom"
-                        style={{
-                            backgroundColor: "#333",
-                            color: "#fff",
-                            borderRadius: "4px",
-                            padding: "6px 10px",
-                            fontSize: "0.85rem",
-                        }}
-                    />
-                )}
+                <Tooltip
+                    id={`lab-${item.ean}`}
+                    place="bottom"
+                    strategy="fixed"
+                    fallbackPlacements={[]}
+                    style={{
+                        backgroundColor: "#333",
+                        color: "#fff",
+                        borderRadius: "4px",
+                        padding: "6px 10px",
+                        fontSize: "0.85rem",
+                    }}
+                />
             </td>
 
             {/* Unidades pedidas */}

@@ -31,47 +31,49 @@ export default function TablaRevisar({
     opcionesMotivo = DEFAULT_OPCIONES_MOTIVO,
 }) {
     return (
-        <table className="revisar_tabla">
-            <thead>
-                <tr>
-                    <th>Descripción</th>
-                    <th>Unidades pedidas</th>
-                    <th>Stock Sucu</th>
-                    <th>Stock Depo</th>
-                    <th>Monroe</th>
-                    <th>Suizo</th>
-                    <th>Cofarsur</th>
-                    <th>Kellerhoff</th>
-                    <th>Motivo</th>
-                    <th>Eliminar</th>
-                    <th>Pedir</th>
-                </tr>
-            </thead>
+        <div className="tabla_scroll">
+            <table className="revisar_tabla">
+                <thead>
+                    <tr>
+                        <th>Descripción</th>
+                        <th>Unidades pedidas</th>
+                        <th>Stock Sucu</th>
+                        <th>Stock Depo</th>
+                        <th>Monroe</th>
+                        <th>Suizo</th>
+                        <th>Cofarsur</th>
+                        <th>Kellerhoff</th>
+                        <th>Motivo</th>
+                        <th>Eliminar</th>
+                        <th>Pedir</th>
+                    </tr>
+                </thead>
 
-            <tbody>
-                {carrito.map((item) => (
-                    <FilaItem
-                        key={item.ean}
-                        item={item}
-                        seleccion={seleccion[item.ean]}
-                        preciosMonroe={preciosMonroe}
-                        preciosSuizo={preciosSuizo}
-                        preciosCofarsur={preciosCofarsur}
-                        stockDeposito={stockDeposito}
-                        onElegirProveedor={onElegirProveedor}
-                        onMotivo={onMotivo}
-                        onEliminar={() => onEliminar(item.ean)}
-                        onChangeQty={onChangeQty}                // puede venir null y no pasa nada
-                        pedir={!noPedirMap[item.ean]}
-                        togglePedir={() =>
-                            onToggleNoPedir(item.ean, /* noPedirChecked */ !!(!noPedirMap[item.ean]))
-                        }
-                        getStock={getStock}
-                        precioValido={precioValido}
-                        opcionesMotivo={opcionesMotivo}
-                    />
-                ))}
-            </tbody>
-        </table>
+                <tbody>
+                    {carrito.map((item) => (
+                        <FilaItem
+                            key={item.ean}
+                            item={item}
+                            seleccion={seleccion[item.ean]}
+                            preciosMonroe={preciosMonroe}
+                            preciosSuizo={preciosSuizo}
+                            preciosCofarsur={preciosCofarsur}
+                            stockDeposito={stockDeposito}
+                            onElegirProveedor={onElegirProveedor}
+                            onMotivo={onMotivo}
+                            onEliminar={() => onEliminar(item.ean)}
+                            onChangeQty={onChangeQty}                // puede venir null y no pasa nada
+                            pedir={!noPedirMap[item.ean]}
+                            togglePedir={() =>
+                                onToggleNoPedir(item.ean, /* noPedirChecked */ !!(!noPedirMap[item.ean]))
+                            }
+                            getStock={getStock}
+                            precioValido={precioValido}
+                            opcionesMotivo={opcionesMotivo}
+                        />
+                    ))}
+                </tbody>
+            </table>
+        </div>
     );
 }

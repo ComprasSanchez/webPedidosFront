@@ -299,7 +299,6 @@ export default function RevisarPedido() {
 
     return (
         <div className="revisar_wrapper">
-            <img src={logo} alt="Logo" className="buscador_logo" />
 
             <Toaster position="top-center" />
             <h2 className="buscador_titulo">REVISAR PEDIDO</h2>

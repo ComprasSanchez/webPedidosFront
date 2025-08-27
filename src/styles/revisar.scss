@@ -13,7 +13,6 @@ th,
 td {
     padding: 8px 12px;
     border: 1px solid #ccc;
-    /* bordes internos */
 }
 
 .fila_omitida {
@@ -24,21 +23,68 @@ td {
     cursor: not-allowed;
 }
 
+.tabla_scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+    width: 97%;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    background: #fff;
+    margin-bottom: 2rem;
+}
+
+.celda_descripcion {
+    min-width: 180px;
+    position: relative;
+    padding-bottom: 1.2em !important;
+}
+
+.desc_texto {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    height: 3.3em;
+}
+
+.celda_ean {
+    position: absolute;
+    right: 8px;
+    bottom: 2px;
+    font-size: 0.85rem;
+    color: #095568;
+    opacity: 0.85;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    background: #fff;
+    padding: 0 2px;
+}
 
 .revisar_tabla {
-    width: 97%;
-    border-collapse: collapse;
-    margin-bottom: 2rem;
+    width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    border: 1px solid #ccc;
-    border-radius: 10px;
+    margin: 0;
     overflow: visible;
+
+    thead th {
+        position: sticky;
+        top: 0px;
+        z-index: 2;
+        background: #f0f0f0;
+    }
+
+    tbody tr {
+        background: white;
+        min-height: 48px;
+    }
 
     th,
     td {
         border: 1px solid #ccc;
-        padding: 0.75rem;
+        padding: 0.45rem;
         text-align: center;
     }
 
