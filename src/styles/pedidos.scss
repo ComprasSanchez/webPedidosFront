@@ -1,7 +1,7 @@
 // Panel deslizable de "Últimos pedidos"
 :root {
     /* mismo ancho que el panel */
-    --ultped-panel-w: min(980px, 92vw);
+    --ultped-panel-w: min(1080px, 92vw);
     /* tu “separación” desde el borde derecho cuando está cerrado */
     --ultped-tab-offset: 1.2vw;
 }

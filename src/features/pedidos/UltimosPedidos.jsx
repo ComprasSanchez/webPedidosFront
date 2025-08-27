@@ -215,7 +215,7 @@ export default function UltimosPedidos() {
                                 <tbody>
                                     {allItems.map((it, idx) => (
                                         <tr key={`${it.id}-${idx}`}>
-                                            <td>{it.fecha.toLocaleDateString()}</td>
+                                            <td>{it.fecha.toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</td>
                                             <td>{it.nro_pedido ?? "—"}</td>
                                             <td>{it.codebar}</td>
                                             <td
