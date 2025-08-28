@@ -19,10 +19,9 @@ const PreciosKellerhoff = ({ ean, seleccionado, onSelect }) => {
     const handleCancel = (e) => {
         e.stopPropagation();
         setShowModal(false);
-        onSelect(ean, "kellerhoff"); // Selecciona aunque no abra la web
+        onSelect(ean, "kellerhoff");
     };
 
-    // Cerrar modal al hacer click fuera
     useEffect(() => {
         if (!showModal) return;
         const handleClickOutside = (event) => {
@@ -37,61 +36,28 @@ const PreciosKellerhoff = ({ ean, seleccionado, onSelect }) => {
 
     return (
         <div className={clase} onClick={handleSelect} style={{ cursor: "pointer", position: "relative" }}>
-            <div style={{ fontWeight: "bold", minWidth: "100px" }}>
+            <div className="kellerhoff-label">
                 Ir a la web
-                <span
-                    style={{
-                        color: "#00bcd4",
-                        marginLeft: "5px",
-                        visibility: seleccionado ? "visible" : "hidden",
-                    }}
-                >
+                <span className={`kellerhoff-check ${seleccionado ? "visible" : ""}`}>
                     ✔
                 </span>
             </div>
             {showModal && (
                 <div
                     ref={modalRef}
-                    style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        zIndex: 10,
-                        background: "#fff",
-                        border: "1px solid #ccc",
-                        borderRadius: 4,
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                        padding: "10px 16px",
-                        marginTop: 4,
-                        minWidth: 180,
-                    }}
+                    className="kellerhoff-modal"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div style={{ marginBottom: 8 }}>Desea abrir la página de Kellerhoff?</div>
+                    <div className="kellerhoff-modal-text">Desea abrir la página de Kellerhoff?</div>
                     <button
+                        className="kellerhoff-btn kellerhoff-btn-si"
                         onClick={handleConfirm}
-                        style={{
-                            marginRight: 8,
-                            background: "#00bcd4",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 3,
-                            padding: "4px 10px",
-                            cursor: "pointer",
-                        }}
                     >
                         Sí
                     </button>
                     <button
+                        className="kellerhoff-btn kellerhoff-btn-no"
                         onClick={handleCancel}
-                        style={{
-                            background: "#eee",
-                            color: "#333",
-                            border: "none",
-                            borderRadius: 3,
-                            padding: "4px 10px",
-                            cursor: "pointer",
-                        }}
                     >
                         No
                     </button>

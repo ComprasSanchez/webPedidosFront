@@ -1,5 +1,11 @@
 // front/src/features/pedidos/UltimosPedidos.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { API_URL } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 import { FaChevronRight } from "react-icons/fa";
@@ -115,7 +121,7 @@ export default function UltimosPedidos() {
         .flatMap(p =>
             p.items.map(it => ({
                 ...it,
-                fecha: new Date(p.fecha),
+                fecha: dayjs(p.fecha, "YYYY-MM-DD HH:mm:ss").toDate(),
                 nro_pedido: it.nro_pedido_drogueria,
                 drogueria: it.drogueria_comprada
             }))

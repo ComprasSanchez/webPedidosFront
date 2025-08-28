@@ -1,5 +1,4 @@
 import React from "react";
-import { Tooltip } from "react-tooltip";
 import { FaTrash, FaCheckSquare, FaSquare } from "react-icons/fa";
 
 // Ajustá estos imports a donde los tengas actualmente
@@ -8,7 +7,8 @@ import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 import PreciosMonroe from "../../proveedores/PreciosMonroe";
 import PreciosSuizo from "../../proveedores/PreciosSuizo";
 import PreciosCofarsur from "../../proveedores/PreciosCofarsur";
-import PreciosKellerof from "../../proveedores/PreciosKellerhoff";
+import PreciosKellerhoff from "../../proveedores/PreciosKellerhoff";
+
 import QtyControl from "./QtyControl";
 import MotivoSelect from "./MotivoSelect";
 import NoPedirToggle from "./NoPedirToggle";
@@ -18,7 +18,6 @@ import {
     hayDrogConPrecioValido,
     esMotivoStockDepoBloqueado,
 } from "../logic/validaciones";
-import PreciosKellerhoff from "../../proveedores/PreciosKellerhoff";
 
 
 export default function FilaItem({
@@ -57,35 +56,21 @@ export default function FilaItem({
     return (
         <tr className={estaNoPedir ? "fila_omitida" : ""}>
             {/* Descripción + tooltip laboratorio */}
-            <td
-                className="celda_descripcion"
-                data-tooltip-id={`lab-${item.ean}`}
-                data-tooltip-content={
-                    (item.descripcion || "") +
-                    (item.laboratorio ? `\n Laboratorio: ${item.laboratorio}` : "")
-                }
-                style={{ cursor: "pointer" }}
-            >
+            <td className="celda_descripcion_hover" style={{ position: "relative", cursor: "pointer" }}>
                 <span className="desc_texto">
                     {item.descripcion}
-                </span>{" "}
-                <span className="celda_ean">
-                    {item.ean}
                 </span>
-
-                <Tooltip
-                    id={`lab-${item.ean}`}
-                    place="bottom"
-                    strategy="fixed"
-                    fallbackPlacements={[]}
-                    style={{
-                        backgroundColor: "#333",
-                        color: "#fff",
-                        borderRadius: "4px",
-                        padding: "6px 10px",
-                        fontSize: "0.85rem",
-                    }}
-                />
+                <span className="celda_ean">{item.ean}</span>
+                <div className="globo_hover">
+                    <div className="globo_contenido">
+                        {/* <div style={{ fontWeight: "bold", marginBottom: 4 }}>{item.descripcion}</div> */}
+                        {item.laboratorio && (
+                            <div style={{ fontSize: "0.95em", color: "#00bcd4" }}>
+                                {item.laboratorio}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </td>
 
             {/* Unidades pedidas */}

@@ -1,0 +1,56 @@
+.precio_celda {
+    cursor: pointer;
+    position: relative;
+}
+
+.precio_celda .kellerhoff-label {
+    font-weight: bold;
+    min-width: 100px;
+}
+
+.kellerhoff-check {
+    color: #00bcd4;
+    margin-left: 5px;
+    visibility: hidden;
+}
+
+.kellerhoff-check.visible {
+    visibility: visible;
+}
+
+.kellerhoff-modal {
+    position: absolute;
+    left: 0;
+    bottom: 50%;
+    z-index: 10;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 10px 16px;
+    min-width: 180px;
+    margin-bottom: 6px;
+}
+
+.kellerhoff-modal-text {
+    margin-bottom: 8px;
+}
+
+.kellerhoff-btn {
+    border: none;
+    border-radius: 3px;
+    padding: 4px 10px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.kellerhoff-btn-si {
+    background: #00bcd4;
+    color: #fff;
+}
+
+.kellerhoff-btn-no {
+    background: #eee;
+    color: #333;
+    margin-right: 0;
+}
