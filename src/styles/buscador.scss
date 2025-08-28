@@ -169,16 +169,27 @@
 }
 
 .buscador_agregar {
-    padding: 0.5rem 1rem;
-    background-color: #444;
-    color: #fff;
-    border: none;
+    background-color: #419e31db;
+    color: #ffffff;
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
     border-radius: 6px;
+    border: none;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease-in-out;
 }
 
 .buscador_agregar:hover {
-    background-color: #333;
+    background-color: rgba(69, 184, 49, 0.4705882353);
+    color: #0a0a0a;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 49%);
+}
+
+.buscador_agregar:active {
+    transform: scale(0.97);
 }
 
 /* Tabla: 100% ancho */
