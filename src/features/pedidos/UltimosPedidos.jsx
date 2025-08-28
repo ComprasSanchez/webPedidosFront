@@ -121,7 +121,7 @@ export default function UltimosPedidos() {
         .flatMap(p =>
             p.items.map(it => ({
                 ...it,
-                fecha: dayjs(p.fecha, "YYYY-MM-DD HH:mm:ss").toDate(),
+                fecha: dayjs.tz(p.fecha, "YYYY-MM-DD HH:mm:ss", "America/Argentina/Buenos_Aires"),
                 nro_pedido: it.nro_pedido_drogueria,
                 drogueria: it.drogueria_comprada
             }))
@@ -221,7 +221,7 @@ export default function UltimosPedidos() {
                                 <tbody>
                                     {allItems.map((it, idx) => (
                                         <tr key={`${it.id}-${idx}`}>
-                                            <td>{it.fecha.toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</td>
+                                            <td>{it.fecha.format("DD/MM/YYYY HH:mm")}</td>
                                             <td>{it.nro_pedido ?? "—"}</td>
                                             <td>{it.codebar}</td>
                                             <td
