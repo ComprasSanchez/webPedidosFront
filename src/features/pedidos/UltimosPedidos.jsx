@@ -148,7 +148,7 @@ export default function UltimosPedidos() {
             setResult({
                 ...json,
                 pedidos: pedidosFiltrados,
-                total: pedidosFiltrados.length,
+                total: idsFiltro?.length ? pedidosFiltrados.length : json.total, // Solo cambiar total cuando hay filtro
                 page: 1,
             });
         } catch (err) {
