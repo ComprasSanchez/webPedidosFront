@@ -314,7 +314,7 @@ export default function RevisarPedido() {
                     onElegirProveedor={handleElegirProveedor}
                     onMotivo={handleMotivo}
                     onEliminar={(ean) => eliminarDelCarrito(ean)}
-                    onChangeQty={(ean, unidades) => actualizarUnidades(ean, unidades)} // <- si corresponde
+                    onChangeQty={(ean, unidades) => actualizarUnidades(ean, unidades)}
                     noPedirMap={noPedirMap}
                     onToggleNoPedir={toggleNoPedir}
                     getStock={getStock}
