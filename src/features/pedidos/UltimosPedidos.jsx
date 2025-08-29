@@ -22,6 +22,8 @@ export default function UltimosPedidos() {
     const [start, setStart] = useState("");
     const [end, setEnd] = useState("");
 
+    const [idsFiltrados, setIdsFiltrados] = useState(null);
+
     // data
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -48,6 +50,23 @@ export default function UltimosPedidos() {
         };
     }
 
+    const handleAbrir = (e) => {
+        const { start, end, ids } = e.detail || {};
+        if (start) setStart(start);
+        if (end) setEnd(end);
+        setIdsFiltrados(ids?.length ? ids : null);
+        setOpen(true);
+
+        // fetch con filtros directamente
+        const { start: s, end: e_ } = getDefaultRange();
+        const desde = start || s;
+        const hasta = end || e_;
+
+        queueMicrotask(() => {
+            fetchPedidos(1, ids?.length ? ids : null, desde, hasta);
+        });
+    };
+
 
     // cierra con ESC
     useEffect(() => {
@@ -57,29 +76,39 @@ export default function UltimosPedidos() {
     }, []);
 
     useEffect(() => {
+        window.addEventListener("ultped:open", handleAbrir);
+        return () => window.removeEventListener("ultped:open", handleAbrir);
+    }, []);
+
+
+    useEffect(() => {
         // cuando se abre: setear ayer→hoy si están vacíos y buscar
         if (open) {
             const hasDates = Boolean(start && end);
-            const { start: defStart, end: defEnd } = getDefaultRange();
+            const hasIds = Array.isArray(idsFiltrados) && idsFiltrados.length > 0;
 
-            // si no hay fechas cargadas, setear por defecto
+            const { start: defStart, end: defEnd } = getDefaultRange();
             if (!hasDates) {
                 setStart(defStart);
                 setEnd(defEnd);
-                // fetch después de setState: microtask para asegurar que el input ya tiene valores
-                queueMicrotask(() => fetchPedidos(1));
-            } else {
-                // si ya hay fechas, buscar igual al abrir
-                fetchPedidos(1);
+                queueMicrotask(() => {
+                    if (hasIds) {
+                        fetchPedidos(1, idsFiltrados, defStart, defEnd);
+                    }
+                });
+            } else if (hasIds) {
+                fetchPedidos(1, idsFiltrados, start, end);
             }
+
         }
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
 
-    const fetchPedidos = async (targetPage = 1) => {
+    const fetchPedidos = async (targetPage = 1, idsFiltro = idsFiltrados, startParam = start, endParam = end) => {
         if (!usuario?.sucursal_codigo) return;
-        if (!canSearch) return;
+        if (!startParam || !endParam) return;
 
         try {
             setLoading(true);
@@ -87,22 +116,41 @@ export default function UltimosPedidos() {
             setPage(targetPage);
 
             const qs = new URLSearchParams({
-                start,
-                end,
+                start: startParam,
+                end: endParam,
                 page: String(targetPage),
-                pageSize: String(PAGE_SIZE),
+                pageSize: idsFiltro?.length ? "1000" : String(PAGE_SIZE), // Más resultados cuando hay filtro
             });
             if (ean.trim()) qs.set("q", ean.trim());
             if (nombre.trim()) qs.set("q", nombre.trim());
 
-            // usamos header X-Sucursal para que matchee con el patch del endpoint
             const res = await fetch(`${API_URL}/api/ver-pedidos?${qs.toString()}`, {
                 headers: { "X-Sucursal": usuario.sucursal_codigo },
                 credentials: "include",
             });
             const json = await res.json();
+
             if (!json.ok) throw new Error(json.error || "Error desconocido");
-            setResult(json);
+
+            let pedidosFiltrados = json.pedidos;
+
+            if (idsFiltro?.length) {
+                const idsSet = new Set(idsFiltro.map(id => String(id)));
+
+                pedidosFiltrados = pedidosFiltrados.filter(p => {
+                    return p.items?.some(i => {
+                        const idProductoStr = String(i.id_producto);
+                        return idsSet.has(idProductoStr);
+                    });
+                });
+            }
+
+            setResult({
+                ...json,
+                pedidos: pedidosFiltrados,
+                total: pedidosFiltrados.length,
+                page: 1,
+            });
         } catch (err) {
             setError(err.message || "Error cargando pedidos");
             setResult({ pedidos: [], total: 0, page: 1, pageSize: PAGE_SIZE });
@@ -111,12 +159,14 @@ export default function UltimosPedidos() {
         }
     };
 
+
+
     const totalPages = useMemo(
         () => Math.max(1, Math.ceil((result.total || 0) / (result.pageSize || PAGE_SIZE))),
         [result.total, result.pageSize]
     );
 
-    // aplanamos pedidos -> items
+    // aplanamos pedidos -> items y ordenamos por fecha (más reciente primero)
     const allItems = result.pedidos
         .flatMap(p =>
             p.items.map(it => ({
@@ -125,9 +175,8 @@ export default function UltimosPedidos() {
                 nro_pedido: it.nro_pedido_drogueria,
                 drogueria: it.drogueria_comprada
             }))
-        ).sort((a, b) => b.fecha - a.fecha);
-
-
+        )
+        .sort((a, b) => b.fecha.valueOf() - a.fecha.valueOf()); // Ordenar por fecha desc
 
     return (
         <>
@@ -222,7 +271,7 @@ export default function UltimosPedidos() {
                                     {allItems.map((it, idx) => (
                                         <tr key={`${it.id}-${idx}`}>
                                             <td>{it.fecha.format("DD/MM/YYYY HH:mm")}</td>
-                                            <td>{it.nro_pedido ?? "—"}</td>
+                                            <td>{it.nro_pedido ?? "NO ENVIADO"}</td>
                                             <td>{it.codebar}</td>
                                             <td
                                                 title={`Precio: $${Number(it.precio_comprado || 0).toFixed(2)} | Motivo: ${it.motivo ?? "—"}`}

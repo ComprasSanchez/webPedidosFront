@@ -9,6 +9,7 @@ import { API_URL } from "../../config/api";
 import logo from "../../assets/logo.png";
 import UltimosPedidos from "../pedidos/UltimosPedidos";
 import HelpButton from "../../components/ui/HelpButton";
+import PedidosAlertBanner from "../pedidos/PedidosAlertBanner";
 
 
 const BuscadorProductos = () => {
@@ -175,7 +176,7 @@ const BuscadorProductos = () => {
 
     return (
         <div className="buscador_wrapper">
-
+            <PedidosAlertBanner />
             <div className="buscadores">
                 <h2 className="buscador_titulo">BUSCADOR DE PRODUCTOS</h2>
                 <div className="buscador_busquedas">
