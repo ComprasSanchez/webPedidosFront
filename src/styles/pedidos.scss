@@ -181,7 +181,51 @@
         margin: 0;
         font-size: 1.1rem;
     }
+}
 
+// Indicador de filtro activo
+.ultpedidos_filter_indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #fff4e6, #fff9f0);
+    border-bottom: 1px solid #e3b505;
+    border-top: 1px solid #e3b505;
+    font-size: 0.9rem;
+
+    .filter_text {
+        color: #8b4513;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter_clear_btn {
+        background: #e3b505;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(255, 107, 53, 0.2);
+
+        &:hover {
+            background: #eedd9a;
+            transform: translateY(-1px);
+            color: #232323;
+            box-shadow: 0 4px 8px rgba(255, 107, 53, 0.3);
+        }
+
+        &:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(255, 107, 53, 0.2);
+        }
+    }
 }
 
 .ultpedidos_close {

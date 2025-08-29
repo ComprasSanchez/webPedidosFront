@@ -162,8 +162,8 @@ export default function UltimosPedidos() {
 
 
     const totalPages = useMemo(
-        () => Math.max(1, Math.ceil((result.total || 0) / (result.pageSize || PAGE_SIZE))),
-        [result.total, result.pageSize]
+        () => Math.max(1, Math.ceil((result.total || 0) / PAGE_SIZE)),
+        [result.total]
     );
 
     // aplanamos pedidos -> items y ordenamos por fecha (más reciente primero)
@@ -205,6 +205,7 @@ export default function UltimosPedidos() {
                     <button className="ultpedidos_close" onClick={() => setOpen(false)} aria-label="Cerrar">×</button>
                 </div>
 
+                {/* Indicador de filtro activo */}
                 {/* Filtros */}
                 <form
                     className="ultpedidos_filters"
@@ -246,6 +247,27 @@ export default function UltimosPedidos() {
                     </div>
                 </form>
 
+                {/* Indicador de filtro activo */}
+                {idsFiltrados && (
+                    <div className="ultpedidos_filter_indicator">
+                        <span className="filter_text">
+                            📋 Mostrando {idsFiltrados.length} producto{idsFiltrados.length > 1 ? 's' : ''} que no{idsFiltrados.length > 1 ? ' fueron' : ' fue'} pedido con éxito
+                        </span>
+                        <button
+                            className="filter_clear_btn"
+                            onClick={() => {
+                                setIdsFiltrados(null);
+                                if (start && end) {
+                                    fetchPedidos(1, null, start, end);
+                                }
+                            }}
+                            title="Limpiar filtro y mostrar todos los pedidos"
+                        >
+                            Mostrar todos
+                        </button>
+                    </div>
+                )}
+
                 {/* Estado */}
                 {error && <div className="ultpedidos_error">{error}</div>}
                 {loading && <div className="ultpedidos_loading">CARGANDO…</div>}
@@ -271,7 +293,7 @@ export default function UltimosPedidos() {
                                     {allItems.map((it, idx) => (
                                         <tr key={`${it.id}-${idx}`}>
                                             <td>{it.fecha.format("DD/MM/YYYY HH:mm")}</td>
-                                            <td>{it.nro_pedido ?? "NO ENVIADO"}</td>
+                                            <td>{it.nro_pedido ?? "-"}</td>
                                             <td>{it.codebar}</td>
                                             <td
                                                 title={`Precio: $${Number(it.precio_comprado || 0).toFixed(2)} | Motivo: ${it.motivo ?? "—"}`}
@@ -291,8 +313,8 @@ export default function UltimosPedidos() {
                 )}
 
 
-                {/* Paginación */}
-                {!loading && result.total > result.pageSize && (
+                {/* Paginación - solo mostrar cuando NO hay filtro y hay más resultados */}
+                {!loading && !idsFiltrados && result.total > PAGE_SIZE && (
                     <div className="ultpedidos_pager">
                         <button
                             onClick={() => fetchPedidos(Math.max(1, page - 1))}
