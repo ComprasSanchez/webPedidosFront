@@ -11,7 +11,7 @@ import { startVersionWatcher } from './utils/versionWatcher';
 if (!import.meta.env.DEV) {
   if (!window.__VW_STARTED) {
     window.__VW_STARTED = true; // evita duplicado por StrictMode
-    startVersionWatcher({ intervalMs: 15000 }); // 15s; podés subir/bajar
+    startVersionWatcher({ intervalMs: 10000 }); // 10s - Balance perfecto entre responsividad y performance
   }
 }
 
