@@ -20,6 +20,7 @@ import HelpButton from "../../components/ui/HelpButton";
 import UltimosPedidos from "../pedidos/UltimosPedidos";
 import { getPreciosItem, getPrecioFinal } from "./utils/precioUtils";
 import SinProductos from "./components/SinProductos";
+import { requiereJustificacion } from "./logic/validaciones";
 
 
 export default function RevisarPedido() {
