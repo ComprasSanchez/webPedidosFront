@@ -5,6 +5,16 @@ import { AuthProvider } from './context/AuthContext';
 import './styles/main.scss';
 import { CarritoProvider } from './context/CarritoContext';
 
+import { startVersionWatcher } from './utils/versionWatcher';
+
+// Iniciá el watcher solo en PROD
+if (!import.meta.env.DEV) {
+  if (!window.__VW_STARTED) {
+    window.__VW_STARTED = true; // evita duplicado por StrictMode
+    startVersionWatcher({ intervalMs: 15000 }); // 15s; podés subir/bajar
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
