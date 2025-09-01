@@ -9,6 +9,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     const prevEansRef = useRef([]);
     const prevEansAutoAjustesRef = useRef([]);
     const reglasLoadedRef = useRef(false);
+    const preciosLoadedRef = useRef(false);
 
     // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
@@ -16,6 +17,13 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
         if (!carrito.length || !reglas) {
             console.log("⏭️ [INICIAL] Saltando - sin carrito o reglas");
+            return;
+        }
+
+        // Verificar que tengamos al menos algunos precios disponibles
+        const hayPrecios = preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDeposito?.length;
+        if (!hayPrecios) {
+            console.log("⏭️ [INICIAL] Saltando - sin precios disponibles");
             return;
         }
 
@@ -27,6 +35,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         const nuevosEans = currentEans.filter(ean => !prevEans.includes(ean));
         const esInicialCarga = prevEans.length === 0;
         const reglasRecienCargadas = reglas && !reglasLoadedRef.current;
+        const preciosRecienCargados = hayPrecios && !preciosLoadedRef.current;
 
         console.log("📊 [INICIAL] Análisis:", {
             currentEans,
@@ -34,6 +43,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             nuevosEans,
             esInicialCarga,
             reglasRecienCargadas,
+            preciosRecienCargados,
             preciosDisponibles: {
                 monroe: !!preciosMonroe?.length,
                 suizo: !!preciosSuizo?.length,
@@ -42,16 +52,17 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             }
         });
 
-        // Ejecutar si: es carga inicial, hay productos nuevos, o recién llegaron las reglas
-        if (!esInicialCarga && nuevosEans.length === 0 && !reglasRecienCargadas) {
-            console.log("⏭️ [INICIAL] Saltando - no es inicial, ni hay nuevos, ni reglas nuevas");
+        // Ejecutar si: es carga inicial, hay productos nuevos, recién llegaron las reglas, o recién llegaron los precios
+        if (!esInicialCarga && nuevosEans.length === 0 && !reglasRecienCargadas && !preciosRecienCargados) {
+            console.log("⏭️ [INICIAL] Saltando - no es inicial, ni hay nuevos, ni reglas nuevas, ni precios nuevos");
             return;
         }
 
         console.log("✅ [INICIAL] EJECUTANDO selección inicial");
 
-        // Marcar que las reglas ya se cargaron
+        // Marcar que las reglas y precios ya se cargaron
         reglasLoadedRef.current = true;
+        preciosLoadedRef.current = true;
 
         const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito };
         const productosParaProcesar = esInicialCarga ? carrito : carrito.filter(item => nuevosEans.includes(item.ean));
