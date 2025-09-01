@@ -39,9 +39,6 @@ export default function FilaItem({
     const motivoActual = seleccion?.motivo;
     const proveedorActual = seleccion?.proveedor;
 
-    // DEBUG: Agregar logs temporales
-    console.log(`🔍 [FilaItem ${item.ean}] seleccion:`, seleccion, "motivo:", motivoActual, "proveedor:", proveedorActual);
-
 
     const hayDepo = hayStockDeposito(item.ean, stockDeposito);
     const stockDepo = getStock(item.ean, stockDeposito); // seguimos mostrando el número

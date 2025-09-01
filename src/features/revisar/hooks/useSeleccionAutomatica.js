@@ -13,7 +13,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
     // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
-        console.log("🚀 [INICIAL nuevo] Ejecutando - carrito:", carrito.length, "reglas:", !!reglas, "selección:", Object.keys(seleccion).length);
+        console.log("🚀 [INICIAL] Ejecutando - carrito:", carrito.length, "reglas:", !!reglas, "selección:", Object.keys(seleccion).length);
 
         if (!carrito.length || !reglas) {
             console.log("⏭️ [INICIAL] Saltando - sin carrito o reglas");
@@ -92,9 +92,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         });
 
         console.log("🎯 [INICIAL] Selección generada:", nuevaSeleccion);
-        console.log("🔄 [INICIAL] Aplicando setSeleccion...");
         setSeleccion(nuevaSeleccion);
-        console.log("✅ [INICIAL] setSeleccion aplicado");
 
         // Actualizar la referencia de EANs
         prevEansRef.current = currentEans;
