@@ -51,7 +51,9 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         console.log("✅ [INICIAL] EJECUTANDO selección inicial");
 
         // Marcar que las reglas ya se cargaron
-        reglasLoadedRef.current = true; const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito };
+        reglasLoadedRef.current = true;
+
+        const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito };
         const productosParaProcesar = esInicialCarga ? carrito : carrito.filter(item => nuevosEans.includes(item.ean));
 
         // Solo modificar selección para productos nuevos o carga inicial
@@ -79,7 +81,9 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         });
 
         console.log("🎯 [INICIAL] Selección generada:", nuevaSeleccion);
+        console.log("🔄 [INICIAL] Aplicando setSeleccion...");
         setSeleccion(nuevaSeleccion);
+        console.log("✅ [INICIAL] setSeleccion aplicado");
 
         // Actualizar la referencia de EANs
         prevEansRef.current = currentEans;
@@ -88,7 +92,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     // auto-ajustes (depósito gana, motivo coherente, salir de "Falta" si aparece opción)
     // NOTA: Solo se ejecuta cuando cambian los EANs del carrito o precios/stock, NO cuando cambian las unidades
     useEffect(() => {
-        console.log("🔄 [AUTO-AJUSTES] Ejecutando");
+        console.log("🔄 [AUTO-AJUSTES] Ejecutando - seleccion actual:", Object.keys(seleccion).length, seleccion);
 
         // Verificar si realmente cambiaron los EANs
         const currentEans = carrito.map(item => item.ean).sort();
