@@ -18,7 +18,7 @@ import { construirResumenPedido } from "../utils/construirResumenPedido";
 import ResumenPedidoModal from "../../components/ui/ResumenPedidoModal";
 import HelpButton from "../../components/ui/HelpButton";
 import UltimosPedidos from "../pedidos/UltimosPedidos";
-import { requiereJustificacion } from "./logic/validaciones";
+import { getPreciosItem, getPrecioFinal } from "./utils/precioUtils";
 import SinProductos from "./components/SinProductos";
 
 
@@ -97,7 +97,7 @@ export default function RevisarPedido() {
                             prov === "cofarsur" ? preciosCofarsur : [];
 
                 const p = fuente.find(x => x.ean === item.ean);
-                const precio = p?.offerPrice ?? p?.priceList;
+                const precio = getPrecioFinal(p, prov);
 
                 return !(typeof precio === "number" && precio > 0);
             });
@@ -114,12 +114,7 @@ export default function RevisarPedido() {
         }
 
         const carritoConPrecios = carritoFiltrado.map((item) => {
-            const precios = {
-                deposito: 0,
-                monroe: preciosMonroe.find((p) => p.ean === item.ean)?.offerPrice ?? preciosMonroe.find((p) => p.ean === item.ean)?.priceList ?? 0,
-                suizo: preciosSuizo.find((p) => p.ean === item.ean)?.offerPrice ?? preciosSuizo.find((p) => p.ean === item.ean)?.priceList ?? 0,
-                cofarsur: preciosCofarsur.find((p) => p.ean === item.ean)?.offerPrice ?? preciosCofarsur.find((p) => p.ean === item.ean)?.priceList ?? 0,
-            };
+            const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
             const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...stockDeposito].find(p => p.ean === item.ean);
             const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.id ?? null;
@@ -157,13 +152,13 @@ export default function RevisarPedido() {
                     precio = 0;
                 } else if (proveedor === "monroe") {
                     const p = preciosMonroe.find(p => p.ean === item.ean);
-                    precio = p?.offerPrice ?? p?.priceList ?? 0;
+                    precio = getPrecioFinal(p, "monroe");
                 } else if (proveedor === "suizo") {
                     const p = preciosSuizo.find(p => p.ean === item.ean);
-                    precio = p?.offerPrice ?? p?.priceList ?? 0;
+                    precio = getPrecioFinal(p, "suizo");
                 } else if (proveedor === "cofarsur") {
                     const p = preciosCofarsur.find(p => p.ean === item.ean);
-                    precio = p?.offerPrice ?? p?.priceList ?? 0;
+                    precio = getPrecioFinal(p, "cofarsur");
                 } else if (proveedor === "kellerhoff") {
                     precio = 0;
                 }

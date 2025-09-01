@@ -2,41 +2,43 @@ const PreciosSuizo = ({ ean, precios, seleccionado, onSelect }) => {
     const p = precios.find((s) => s.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
-    if (!p) return <div className={clase}>No disponible</div>;
-
-    // Si hubo un error (de credenciales, HTTP, etc.), mostrarlo
-    if (p.error) return <div className={clase}>⚠️ {p.error}</div>;
-
-    // Si el estado HTTP indica un error del servidor, mostrarlo
-    if (p._status >= 500) return <div className={clase}>⚠️ Error {p._status}</div>;
-
-    // Si el stock es null, significa que hubo un error de conexión, no de stock
-    if (p.stock === null) return <div className={clase}>⚠️ Error en conexión</div>;
-
-    // Si el stock es false, es que no hay stock del producto
-    if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
-
-    const precioFinal = p.offerPrice ?? p.priceList;
-    if (!precioFinal || precioFinal === 0) return <div className={clase}>SIN PRECIO</div>;
-
     const handleClick = () => {
-        if (precioFinal && precioFinal > 0) {
-            onSelect(ean, "suizo");
-        }
+        if (p && p.priceList != null) onSelect(ean, "suizo");
     };
 
-    const isDescuentoPVP = p.offers?.some(o => o.descripcion.includes('sobre PVP'));
+    if (!p) return <div className={clase}>No disponible</div>;
+    if (p._status >= 500) return <div className={clase}>⚠️ Error {p._status}</div>;
+    if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
+
+    const precio = (typeof p.finalPrice === "number") ? p.finalPrice : (p.offerPrice ?? p.priceList);
+    if (precio == null || precio === 0) return <div className={clase}>SIN PRECIO</div>;
+
+    const showTachado = (typeof p.priceList === "number") && (precio < p.priceList);
+
+    // % real (solo si hay tachado)
+    const effPct = showTachado
+        ? (typeof p.effectiveDiscountPct === "number"
+            ? p.effectiveDiscountPct
+            : Number(((1 - (precio / p.priceList)) * 100).toFixed(2)))
+        : null;
+
+    // Filtrar leyendas que duplican el % (sobre FAR/PVP)
+    const offersToShow = Array.isArray(p.offers)
+        ? p.offers.filter(o => !/sobre\s*(far|pvp)/i.test(String(o.descripcion || "")))
+        : [];
+
+    const minUnits = Number.isFinite(p.minimo_unids) ? p.minimo_unids : null;
 
     return (
         <div className={clase} onClick={handleClick}>
-            {/* Solo mostrar precio tachado si no es descuento sobre PVP */}
-            {!isDescuentoPVP && p.offerPrice != null && p.priceList != null && p.offerPrice < p.priceList && (
+            {showTachado && (
                 <div style={{ fontSize: "12px", color: "#555" }}>
                     <s>${p.priceList.toFixed(2)}</s>
                 </div>
             )}
+
             <div style={{ fontWeight: "bold" }}>
-                ${precioFinal.toFixed(2)}
+                ${precio.toFixed(2)}
                 <span
                     style={{
                         color: "#00bcd4",
@@ -47,17 +49,21 @@ const PreciosSuizo = ({ ean, precios, seleccionado, onSelect }) => {
                     ✔
                 </span>
             </div>
-            {/* Solo mostrar ofertas si no son descuentos sobre PVP */}
-            {p.offers?.length > 0 && !isDescuentoPVP && (
-                <div style={{ marginTop: "4px", fontSize: "11px", color: "#333" }}>
-                    {p.offers.map((o, idx) => (
+
+            {effPct != null && effPct > 0 && (
+                <div style={{ marginTop: "2px", fontSize: "11px", color: "#333", display: "flex", flexDirection: "row", gap: "2px", textAlign: "center", justifyContent: 'center' }}>
+                    -{effPct.toFixed(0)}%
+                    {/* Mostrar solo condiciones útiles; agregamos "Min.: N" si aplica */}
+                    {minUnits > 1 && <div>Min.: {minUnits}</div>}
+                    {offersToShow.map((o, idx) => (
                         <div key={idx}>{o.descripcion}</div>
                     ))}
+
                 </div>
             )}
+
         </div>
     );
 };
-
 
 export default PreciosSuizo;

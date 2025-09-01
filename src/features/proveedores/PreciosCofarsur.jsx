@@ -7,7 +7,7 @@ const PreciosCofarsur = ({ ean, precios, seleccionado, onSelect }) => {
     if (p._status >= 500) return <div className={clase}>⚠️ Error {p._status}</div>;
 
     // 🟡 Mostrar error explícito desde backend
-    if (p.error) return <div className={clase}>❌ {p.error}</div>;
+    if (p.error) return <div className={clase}>{p.error}</div>;
 
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
