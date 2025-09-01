@@ -32,7 +32,7 @@ const PreciosSuizo = ({ ean, precios, seleccionado, onSelect }) => {
     return (
         <div className={clase} onClick={handleClick}>
             {showTachado && (
-                <div style={{ fontSize: "12px", color: "#555" }}>
+                <div style={{ fontSize: "13px", color: "#a60202ff" }}>
                     <s>${p.priceList.toFixed(2)}</s>
                 </div>
             )}
