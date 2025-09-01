@@ -11,7 +11,10 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
     // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
+        console.log("🚀 [INICIAL] Ejecutando - carrito:", carrito.length, "reglas:", !!reglas, "selección:", Object.keys(seleccion).length);
+
         if (!carrito.length || !reglas) {
+            console.log("⏭️ [INICIAL] Saltando - sin carrito o reglas");
             return;
         }
 
@@ -23,9 +26,25 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         const nuevosEans = currentEans.filter(ean => !prevEans.includes(ean));
         const esInicialCarga = prevEans.length === 0;
 
+        console.log("📊 [INICIAL] Análisis:", {
+            currentEans,
+            prevEans,
+            nuevosEans,
+            esInicialCarga,
+            preciosDisponibles: {
+                monroe: !!preciosMonroe?.length,
+                suizo: !!preciosSuizo?.length,
+                cofarsur: !!preciosCofarsur?.length,
+                stockDeposito: !!stockDeposito?.length
+            }
+        });
+
         if (!esInicialCarga && nuevosEans.length === 0) {
+            console.log("⏭️ [INICIAL] Saltando - no es inicial ni hay nuevos");
             return;
         }
+
+        console.log("✅ [INICIAL] EJECUTANDO selección inicial");
 
         const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito };
         const productosParaProcesar = esInicialCarga ? carrito : carrito.filter(item => nuevosEans.includes(item.ean));
@@ -54,6 +73,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 : { proveedor: "Falta", motivo: "Falta" };
         });
 
+        console.log("🎯 [INICIAL] Selección generada:", nuevaSeleccion);
         setSeleccion(nuevaSeleccion);
 
         // Actualizar la referencia de EANs
@@ -63,6 +83,8 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     // auto-ajustes (depósito gana, motivo coherente, salir de "Falta" si aparece opción)
     // NOTA: Solo se ejecuta cuando cambian los EANs del carrito o precios/stock, NO cuando cambian las unidades
     useEffect(() => {
+        console.log("🔄 [AUTO-AJUSTES] Ejecutando");
+
         // Verificar si realmente cambiaron los EANs
         const currentEans = carrito.map(item => item.ean).sort();
         const prevEans = prevEansAutoAjustesRef.current;
@@ -70,13 +92,18 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         const eansChanged = currentEans.length !== prevEans.length ||
             currentEans.some((ean, index) => ean !== prevEans[index]);
 
+        console.log("📊 [AUTO-AJUSTES] currentEans:", currentEans, "prevEans:", prevEans, "eansChanged:", eansChanged);
+
         // Actualizar la referencia para auto-ajustes
         prevEansAutoAjustesRef.current = currentEans;
 
         // Solo ejecutar si cambiaron los EANs o los precios/stock
         if (!eansChanged && carrito.length > 0) {
+            console.log("⏭️ [AUTO-AJUSTES] Saltando - solo cambiaron unidades");
             return; // No hacer nada si solo cambiaron las unidades
         }
+
+        console.log("✅ [AUTO-AJUSTES] EJECUTANDO auto-ajustes");
 
         // Limpiar selecciones de productos eliminados
         let nueva = { ...seleccion };
@@ -131,7 +158,10 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         const huboCambiosEnLimpieza = Object.keys(seleccion).length !== Object.keys(nueva).length;
 
         if (cambios || huboCambiosEnLimpieza) {
+            console.log("🔄 [AUTO-AJUSTES] Aplicando cambios:", nueva);
             setSeleccion(nueva);
+        } else {
+            console.log("❌ [AUTO-AJUSTES] No hay cambios para aplicar");
         }
     }, [carrito, stockDeposito, preciosMonroe, preciosSuizo, preciosCofarsur]); // eslint-disable-line
 
