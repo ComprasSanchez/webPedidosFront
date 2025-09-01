@@ -8,6 +8,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     const [seleccion, setSeleccion] = useState({});
     const prevEansRef = useRef([]);
     const prevEansAutoAjustesRef = useRef([]);
+    const reglasLoadedRef = useRef(false);
 
     // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
@@ -25,12 +26,14 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         // Identificar si hay productos nuevos (que no estaban antes)
         const nuevosEans = currentEans.filter(ean => !prevEans.includes(ean));
         const esInicialCarga = prevEans.length === 0;
+        const reglasRecienCargadas = reglas && !reglasLoadedRef.current;
 
         console.log("📊 [INICIAL] Análisis:", {
             currentEans,
             prevEans,
             nuevosEans,
             esInicialCarga,
+            reglasRecienCargadas,
             preciosDisponibles: {
                 monroe: !!preciosMonroe?.length,
                 suizo: !!preciosSuizo?.length,
@@ -39,14 +42,16 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             }
         });
 
-        if (!esInicialCarga && nuevosEans.length === 0) {
-            console.log("⏭️ [INICIAL] Saltando - no es inicial ni hay nuevos");
+        // Ejecutar si: es carga inicial, hay productos nuevos, o recién llegaron las reglas
+        if (!esInicialCarga && nuevosEans.length === 0 && !reglasRecienCargadas) {
+            console.log("⏭️ [INICIAL] Saltando - no es inicial, ni hay nuevos, ni reglas nuevas");
             return;
         }
 
         console.log("✅ [INICIAL] EJECUTANDO selección inicial");
 
-        const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito };
+        // Marcar que las reglas ya se cargaron
+        reglasLoadedRef.current = true; const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito };
         const productosParaProcesar = esInicialCarga ? carrito : carrito.filter(item => nuevosEans.includes(item.ean));
 
         // Solo modificar selección para productos nuevos o carga inicial
