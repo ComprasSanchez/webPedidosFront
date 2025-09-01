@@ -7,6 +7,7 @@ import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito, matchConvenio, getStock }) {
     const [seleccion, setSeleccion] = useState({});
     const prevEansRef = useRef([]);
+    const prevEansAutoAjustesRef = useRef([]);
 
     // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
@@ -64,10 +65,13 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     useEffect(() => {
         // Verificar si realmente cambiaron los EANs
         const currentEans = carrito.map(item => item.ean).sort();
-        const prevEans = prevEansRef.current;
+        const prevEans = prevEansAutoAjustesRef.current;
 
         const eansChanged = currentEans.length !== prevEans.length ||
             currentEans.some((ean, index) => ean !== prevEans[index]);
+
+        // Actualizar la referencia para auto-ajustes
+        prevEansAutoAjustesRef.current = currentEans;
 
         // Solo ejecutar si cambiaron los EANs o los precios/stock
         if (!eansChanged && carrito.length > 0) {
