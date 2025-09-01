@@ -12,7 +12,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
     // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
-        console.log("🚀 [INICIAL] Ejecutando - carrito:", carrito.length, "reglas:", !!reglas, "selección:", Object.keys(seleccion).length);
+        console.log("🚀 [INICIAL nuevo] Ejecutando - carrito:", carrito.length, "reglas:", !!reglas, "selección:", Object.keys(seleccion).length);
 
         if (!carrito.length || !reglas) {
             console.log("⏭️ [INICIAL] Saltando - sin carrito o reglas");
