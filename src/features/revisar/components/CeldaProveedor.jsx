@@ -7,6 +7,9 @@ export default function CeldaProveedor({
     valorMostrado,
     onSelect,
 }) {
+    const esStockInvalido = typeof valorMostrado === "number" && valorMostrado <= 0;
+    const esStockTexto = typeof valorMostrado === "string" || React.isValidElement(valorMostrado);
+
     return (
         <td className={activo ? "celda_activa" : ""}>
             <div
@@ -16,7 +19,9 @@ export default function CeldaProveedor({
                     fontWeight: "bold",
                     cursor: disabled ? "not-allowed" : "pointer",
                     opacity: disabled ? 0.5 : 1,
+                    color: esStockInvalido ? "#999" : (esStockTexto ? "#f80" : "inherit"),
                 }}
+                title={disabled && (esStockInvalido || esStockTexto) ? "Sin stock disponible" : ""}
             >
                 {valorMostrado}
                 <span

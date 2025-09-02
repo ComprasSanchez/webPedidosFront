@@ -53,6 +53,13 @@ export default function RevisarPedido() {
         const match = matchConvenio(item, reglas);
         const proveedorIdeal = mejorProveedor(ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
+        // Validar que no se pueda seleccionar depósito si el stock no es válido
+        if (nuevoProveedor === "deposito") {
+            if (typeof stockDepo !== "number" || stockDepo <= 0) {
+                toast.error("No se puede seleccionar depósito: stock no disponible");
+                return;
+            }
+        }
 
         setSeleccion(prev => {
             const actual = prev[ean] ?? {};

@@ -42,6 +42,7 @@ export default function FilaItem({
 
     const hayDepo = hayStockDeposito(item.ean, stockDeposito);
     const stockDepo = getStock(item.ean, stockDeposito); // seguimos mostrando el número
+    const stockDepoValido = typeof stockDepo === "number" && stockDepo > 0;
     const hayAlgunaDrogConPrecio = hayDrogConPrecioValido(
         item.ean,
         { preciosMonroe, preciosSuizo, preciosCofarsur },
@@ -88,7 +89,7 @@ export default function FilaItem({
             {/* Stock Depósito */}
             <CeldaProveedor
                 activo={proveedorActual === "deposito"}
-                disabled={!pedir}
+                disabled={!pedir || !stockDepoValido}
                 valorMostrado={stockDepo}
                 onSelect={() => onElegirProveedor(item.ean, "deposito")}
             />
