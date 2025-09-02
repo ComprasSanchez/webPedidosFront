@@ -112,7 +112,7 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
                     ctrl
                 );
                 if (!res.ok) {
-                    return { ean: item.ean, stock: null, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], error: `HTTP ${res.status}`, _status: res.status };
+                    return { ean: item.ean, stock: null, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], noDisponible: false, error: `HTTP ${res.status}`, _status: res.status };
                 }
                 const data = await res.json();
                 const stock = data?.stock === true;
@@ -124,10 +124,11 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
                     : null;
                 const offers = Array.isArray(data?.offers) ? data.offers : [];
                 const error = typeof data?.error === 'string' ? data.error : null;
+                const noDisponible = data?.noDisponible === true;
 
-                return { ean: item.ean, stock, priceList, offerPrice, finalPrice, effectiveDiscountPct, offers, error, _status: res.status };
+                return { ean: item.ean, stock, priceList, offerPrice, finalPrice, effectiveDiscountPct, offers, noDisponible, error, _status: res.status };
             } catch (e) {
-                return { ean: item.ean, stock: null, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], error: 'Error de conexión', _status: 0 };
+                return { ean: item.ean, stock: null, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], noDisponible: false, error: 'Error de conexión', _status: 0 };
             }
         });
         return Promise.all(calls);
@@ -165,8 +166,9 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
         return items.map(it => {
             const r = resultados[it.ean];
             if (!r) {
-                return { ean: it.ean, stock: false, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, minimo_unids: null, offers: [], error: null, _status: res.status };
+                return { ean: it.ean, stock: false, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, minimo_unids: null, offers: [], noDisponible: false, error: null, _status: res.status };
             }
+
             const stock = r.stock === true;
             const priceList = typeof r.priceList === 'number' ? r.priceList : null;
             const offerPrice = typeof r.offerPrice === 'number' ? r.offerPrice : null;
@@ -179,7 +181,22 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
             const minimo_unids = Number.isFinite(r.minimo_unids) ? r.minimo_unids : null;
             const offers = Array.isArray(r.offers) ? r.offers : [];
 
-            return { ean: it.ean, stock, priceList, offerPrice, finalPrice, effectiveDiscountPct, minimo_unids, offers, error: null, _status: res.status };
+            // Manejar flag noDisponible
+            const noDisponible = r.noDisponible === true;
+
+            return {
+                ean: it.ean,
+                stock,
+                priceList,
+                offerPrice,
+                finalPrice,
+                effectiveDiscountPct,
+                minimo_unids,
+                offers,
+                noDisponible,  // Nuevo campo
+                error: r.error || null,
+                _status: res.status
+            };
         });
 
 

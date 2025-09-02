@@ -8,6 +8,7 @@ const PreciosSuizo = ({ ean, precios, seleccionado, onSelect }) => {
 
     if (!p) return <div className={clase}>No disponible</div>;
     if (p._status >= 500) return <div className={clase}>⚠️ Error {p._status}</div>;
+    if (p.noDisponible === true) return <div className={clase}>NO DISPONIBLE</div>;
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
     const precio = (typeof p.finalPrice === "number") ? p.finalPrice : (p.offerPrice ?? p.priceList);
