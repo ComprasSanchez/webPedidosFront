@@ -263,7 +263,7 @@ export default function UltimosPedidos() {
                             }}
                             title="Limpiar filtro y mostrar todos los pedidos"
                         >
-                            Mostrar todos
+                            Borrar filtro
                         </button>
                     </div>
                 )}
