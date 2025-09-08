@@ -185,7 +185,7 @@ export default function RevisarPedido() {
 
 
         try {
-            const response = await fetch(`${API_URL}/api/pedidos`, {
+            const response = await authFetch(`${API_URL}/api/pedidos`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
