@@ -174,6 +174,30 @@ const BuscadorProductos = () => {
         setResultadosNombre([]);
     };
 
+    const handleRealizarPedido = async () => {
+        try {
+            await fetch('/api/pedidos/reservas/soft', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-sucursal': usuario.sucursal_codigo
+                },
+                body: JSON.stringify({
+                    items: carrito.map(item => ({
+                        idproducto: item.idQuantio,
+                        cantidad: item.unidades || 1
+                    }))
+                })
+            });
+        } catch (error) {
+            console.warn('Reserva SOFT fallida, se continúa sin frenar:', error.message);
+            // No se muestra nada al usuario
+        } finally {
+            navigate("/revisar");
+        }
+    };
+
+
     return (
         <div className="buscador_wrapper">
             <PedidosAlertBanner />
@@ -350,7 +374,7 @@ const BuscadorProductos = () => {
             )}
             {carrito.length > 0 && (
                 <div style={{ marginTop: "2rem", textAlign: "right" }}>
-                    <button className="buscador_btn_revisar" onClick={() => navigate("/revisar")}>
+                    <button className="buscador_btn_revisar" onClick={handleRealizarPedido}>
                         Realizar pedido
                     </button>
                 </div>
