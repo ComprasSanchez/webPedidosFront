@@ -17,7 +17,6 @@ export const getStockDeposito = async (carrito, sucursalCodigo) => {
     }
 
     const eanUnicos = [...new Set(carrito.map((item) => item.ean))];
-    console.log(carrito);
 
 
     try {
@@ -26,7 +25,6 @@ export const getStockDeposito = async (carrito, sucursalCodigo) => {
             headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
             body: JSON.stringify({ sucursal: sucursalCodigo, eans: eanUnicos }),
         });
-        console.log("Pregunta por: ", eanUnicos);
 
 
         if (!res.ok) {
