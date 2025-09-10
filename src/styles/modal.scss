@@ -14,13 +14,14 @@
 
 .modal_contenido {
     background-color: #fff;
-    padding: 2rem;
+    padding: 1rem 2rem;
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    max-width: 500px;
+    max-width: 600px;
     width: 90%;
     position: relative;
     animation: fadeInModal 0.25s ease-in-out;
+    text-align: center;
 
     // Accesibilidad (opcional)
     &[role="dialog"] {

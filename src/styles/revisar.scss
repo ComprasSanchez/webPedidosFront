@@ -230,3 +230,35 @@ td.celda_activa {
 .celda_kellerof {
     padding: 0;
 }
+
+// Botón de actualizar precios y stock en modal
+.btn_actualizar_precios {
+    background-color: #c8f7dc;
+    color: #000000;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 4px;
+    border: 1px solid green;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background-color: #218838;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        color: #fff;
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 1px 4px rgba(40, 167, 69, 0.3);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+        background-color: #6c757d;
+    }
+}

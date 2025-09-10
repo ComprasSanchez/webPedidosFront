@@ -176,6 +176,7 @@ const BuscadorProductos = () => {
 
     const handleRealizarPedido = async () => {
         try {
+            // � Crear reservas SOFT (el backend validará por stock automáticamente)
             await fetch('/api/pedidos/reservas/soft', {
                 method: 'POST',
                 headers: {
@@ -183,10 +184,12 @@ const BuscadorProductos = () => {
                     'x-sucursal': usuario.sucursal_codigo
                 },
                 body: JSON.stringify({
-                    items: carrito.map(item => ({
-                        idproducto: item.idQuantio,
-                        cantidad: item.unidades || 1
-                    }))
+                    items: carrito
+                        .filter(item => item.idQuantio) // Solo productos con ID válido
+                        .map(item => ({
+                            idproducto: item.idQuantio,
+                            cantidad: item.unidades || 1
+                        }))
                 })
             });
         } catch (error) {

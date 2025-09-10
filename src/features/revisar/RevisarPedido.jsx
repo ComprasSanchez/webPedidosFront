@@ -8,7 +8,7 @@ import { usePersistenciaCarrito } from "./hooks/usePersistenciaCarrito";
 import { mejorProveedor, precioValido } from "./logic/mejorProveedor";
 import { getStock } from "../utils/obtenerStock";
 import TablaRevisar from "./components/TablaRevisar";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import { FaArrowLeft } from "react-icons/fa";
@@ -21,6 +21,7 @@ import UltimosPedidos from "../pedidos/UltimosPedidos";
 import { getPreciosItem, getPrecioFinal } from "./utils/precioUtils";
 import SinProductos from "./components/SinProductos";
 import { requiereJustificacion } from "./logic/validaciones";
+import Modal from "../../components/ui/Modal";
 
 
 export default function RevisarPedido() {
@@ -30,6 +31,83 @@ export default function RevisarPedido() {
     const navigate = useNavigate();
     const { carrito, eliminarDelCarrito, actualizarUnidades, replaceCarrito } = useCarrito();
     const { authFetch, authHeaders, usuario } = useAuth();
+    const [showModal, setShowModal] = useState(false);
+    const [reservaVencida, setReservaVencida] = useState(false);
+    const [graciaActiva, setGraciaActiva] = useState(false);
+    const timeoutRef = useRef(null);
+    const graciaRef = useRef(null);
+
+    const cancelarReservaSoft = async () => {
+
+        try {
+            const response = await authFetch(`${API_URL}/api/pedidos/reservas/cancelar-soft`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-sucursal": usuario.sucursal_codigo
+                }
+            });
+
+
+            if (response.ok) {
+                const data = await response.json();
+            } else {
+                console.error("❌ Error en respuesta de cancelación:", response.status);
+            }
+        } catch (error) {
+            console.error("❌ Error al cancelar reserva SOFT:", error.message);
+            console.error("❌ Error completo:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (!carrito.length) {
+            setShowModal(false);
+            setReservaVencida(false);
+            setGraciaActiva(false);
+            return;
+        }
+
+        // Resetear estados cuando el carrito cambia
+        setShowModal(false);
+        setReservaVencida(false);
+        setGraciaActiva(false);
+
+        const calcularTimeout = () => {
+            const base = 180; // 3 minutos en producción
+            const extra = carrito.length * 45; // Tiempo extra basado en cantidad de productos
+            return Math.max(base, base + extra);
+        };
+
+        const tiempoTotal = calcularTimeout();
+
+        // Timer principal
+        timeoutRef.current = setTimeout(() => {
+            setShowModal(true);
+            setGraciaActiva(true);
+
+            // Timer de gracia (1 minuto)
+            graciaRef.current = setTimeout(() => {
+                setReservaVencida(true);
+                setGraciaActiva(false);
+                // Cancelar reserva soft
+                cancelarReservaSoft();
+            }, 60000); // 1 minuto
+        }, tiempoTotal * 1000);
+
+        return () => {
+            clearTimeout(timeoutRef.current);
+            clearTimeout(graciaRef.current);
+        };
+    }, [carrito]);
+
+    // Mostrar mensaje de éxito después de recargar la página
+    useEffect(() => {
+        if (sessionStorage.getItem('preciosActualizados') === 'true') {
+            sessionStorage.removeItem('preciosActualizados');
+            toast.success("Precios y stock actualizados correctamente");
+        }
+    }, []);
 
     const { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito, loading: loadingPS }
         = usePreciosYStock({ carrito, sucursal: usuario?.sucursal_codigo, authFetch, authHeaders });
@@ -241,8 +319,6 @@ export default function RevisarPedido() {
                     toast.success("Pedido enviado correctamente", { id: toastId });
                 }
             } else if (data.resultados?.errores.length > 0) {
-                console.log("Errores al enviar pedido:", data.resultados.errores);
-
                 // Solo hubo errores
                 toast.error(
                     <div>
@@ -272,11 +348,9 @@ export default function RevisarPedido() {
                     }
                 );
             } else {
-                console.log("Error al enviar pedido:", data);
                 toast.error(`Error al enviar pedido${data?.error ? `: ${data.error}` : ""}`, { id: toastId });
             }
         } catch (err) {
-            console.error("Error enviando pedido:", err);
             toast.error(
                 <div>
                     Error inesperado al enviar pedido
@@ -299,6 +373,53 @@ export default function RevisarPedido() {
         );
     }
 
+    const actualizarPreciosYStock = async () => {
+        if (graciaActiva) {
+            // Período de gracia: cerrar modal y REINICIAR todo el timer
+            clearTimeout(graciaRef.current); // cancelar timer de gracia
+            clearTimeout(timeoutRef.current); // cancelar timer principal
+            setGraciaActiva(false);
+            setShowModal(false);
+
+            // Reiniciar todo el timer desde el principio
+            const calcularTimeout = () => {
+                const base = 180; // 3 minutos en producción
+                const extra = carrito.length * 1; // Tiempo extra basado en cantidad de productos
+                return Math.max(base, base + extra);
+            };
+
+            const tiempoTotal = calcularTimeout();
+            console.log(`🔄 Timer REINICIADO: ${tiempoTotal} segundos total`);
+
+            // Nuevo timer principal
+            timeoutRef.current = setTimeout(() => {
+                console.log("🔔 Timer principal EXPIRÓ (después de reinicio) - Mostrando modal con período de gracia");
+                setShowModal(true);
+                setGraciaActiva(true);
+
+                // Nuevo timer de gracia (1 minuto)
+                graciaRef.current = setTimeout(() => {
+                    console.log("⏰ Período de gracia EXPIRÓ (después de reinicio) - Cancelando reserva soft");
+                    setReservaVencida(true);
+                    setGraciaActiva(false);
+                    // Cancelar reserva soft
+                    cancelarReservaSoft();
+                }, 60000); // 1 minuto
+            }, tiempoTotal * 1000);
+
+            return;
+        }
+
+        // Reserva vencida: necesitamos actualizar todo
+        setShowModal(false);
+
+        // Marcar que se está actualizando para mostrar el loading nativo
+        sessionStorage.setItem('actualizandoPrecios', 'true');
+        sessionStorage.setItem('preciosActualizados', 'true');
+
+        // Recargar inmediatamente para mostrar el loading y luego los datos frescos
+        window.location.reload();
+    };
 
     return (
         <div className="revisar_wrapper">
@@ -345,6 +466,26 @@ export default function RevisarPedido() {
 
             <UltimosPedidos />
             <HelpButton />
+
+            {showModal && (
+                <Modal onClose={null}>
+                    <h2>📈 Inactividad detectada</h2>
+                    <p>
+                        <span style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.9em', fontWeight: 'lighter' }}>
+                            {graciaActiva ? <strong>⚠️ Presiona CONTINUAR para mantener la sesion activa.</strong> : <strong>⚠️ Actualizá ahora para mantener los precios y el stock actualizado.</strong>}
+                        </span>
+
+                    </p>
+                    <div style={{ marginTop: "1rem", display: "flex", justifyContent: "center" }}>
+                        <button
+                            onClick={actualizarPreciosYStock}
+                            className="btn_actualizar_precios"
+                        >
+                            {graciaActiva ? "Continuar" : "Actualizar"}
+                        </button>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 }
