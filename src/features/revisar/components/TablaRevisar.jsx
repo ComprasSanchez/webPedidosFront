@@ -18,7 +18,7 @@ export default function TablaRevisar({
     preciosMonroe,
     preciosSuizo,
     preciosCofarsur,
-    stockDeposito,
+    stockDisponible,
     seleccion,
     onElegirProveedor,
     onMotivo,
@@ -58,7 +58,7 @@ export default function TablaRevisar({
                             preciosMonroe={preciosMonroe}
                             preciosSuizo={preciosSuizo}
                             preciosCofarsur={preciosCofarsur}
-                            stockDeposito={stockDeposito}
+                            stockDisponible={stockDisponible}
                             onElegirProveedor={onElegirProveedor}
                             onMotivo={onMotivo}
                             onEliminar={() => onEliminar(item.ean)}

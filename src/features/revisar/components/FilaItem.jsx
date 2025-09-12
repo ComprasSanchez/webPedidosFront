@@ -26,7 +26,7 @@ export default function FilaItem({
     preciosMonroe,
     preciosSuizo,
     preciosCofarsur,
-    stockDeposito,
+    stockDisponible,
     onElegirProveedor,
     onMotivo,
     onEliminar,
@@ -40,8 +40,8 @@ export default function FilaItem({
     const proveedorActual = seleccion?.proveedor;
 
 
-    const hayDepo = hayStockDeposito(item.ean, stockDeposito);
-    const stockDepo = getStock(item.ean, stockDeposito); // seguimos mostrando el número
+    const hayDepo = hayStockDeposito(item.ean, stockDisponible);
+    const stockDepo = getStock(item.ean, stockDisponible); // seguimos mostrando el número
     const stockDepoValido = typeof stockDepo === "number" && stockDepo > 0;
     const hayAlgunaDrogConPrecio = hayDrogConPrecioValido(
         item.ean,

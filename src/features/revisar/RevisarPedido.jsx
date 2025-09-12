@@ -11,9 +11,7 @@ import TablaRevisar from "./components/TablaRevisar";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
-import { FaArrowLeft } from "react-icons/fa";
-import { API_URL } from "../../config/api"; // ajustá ruta si difiere
-import logo from "../../assets/logo.png"; // ajustá ruta si difiere
+import { API_URL } from "../../config/api";
 import { construirResumenPedido } from "../utils/construirResumenPedido";
 import ResumenPedidoModal from "../../components/ui/ResumenPedidoModal";
 import HelpButton from "../../components/ui/HelpButton";
@@ -40,7 +38,7 @@ export default function RevisarPedido() {
     const cancelarReservaSoft = async () => {
 
         try {
-            const response = await authFetch(`${API_URL}/api/pedidos/reservas/cancelar-soft`, {
+            const response = await authFetch(`${API_URL}/api/pedidos/reservas-soft/cancelar-soft`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -57,6 +55,37 @@ export default function RevisarPedido() {
         } catch (error) {
             console.error("❌ Error al cancelar reserva SOFT:", error.message);
             console.error("❌ Error completo:", error);
+        }
+    };
+
+    const regenerarReservasSoft = async () => {
+        try {
+            console.log("🔄 Regenerando reservas SOFT después de actualización...");
+
+            const response = await authFetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-sucursal': usuario.sucursal_codigo
+                },
+                body: JSON.stringify({
+                    items: carrito
+                        .filter(item => item.idQuantio) // Solo productos con ID válido
+                        .map(item => ({
+                            idproducto: item.idQuantio,
+                            cantidad: item.unidades || 1
+                        }))
+                })
+            });
+
+            if (response.ok) {
+                console.log("✅ Reservas SOFT regeneradas exitosamente");
+            } else {
+                console.warn("⚠️ No se pudieron regenerar las reservas SOFT:", response.status);
+            }
+        } catch (error) {
+            console.warn("⚠️ Error al regenerar reservas SOFT:", error.message);
+            // No bloqueamos el flujo, solo logueamos
         }
     };
 
@@ -109,25 +138,29 @@ export default function RevisarPedido() {
         }
     }, []);
 
-    const { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito, loading: loadingPS }
+    const { preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, loading: loadingPS }
         = usePreciosYStock({ carrito, sucursal: usuario?.sucursal_codigo, authFetch, authHeaders });
+
 
     const { reglas, ready, matchConvenio } = useConvenios({ sucursal: usuario?.sucursal_codigo });
 
+    // Crear una versión de getStock que ya tenga la sucursal aplicada
+    const getStockConSucursal = (ean, stockData) => getStock(ean, stockData, usuario?.sucursal_codigo);
+
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
-        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito, matchConvenio, getStock
+        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: usuario?.sucursal_codigo
     });
 
     const { noPedirMap, toggleNoPedir, persistirCarrito } = usePersistenciaCarrito({ carrito, usuario, replaceCarrito });
 
-    const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDeposito?.length);
+    const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDisponible?.length);
     const loading = loadingPS || !ready;
 
     const handleMotivo = (ean, motivo) => setSeleccion(prev => ({ ...prev, [ean]: { ...prev[ean], motivo } }));
 
     const handleElegirProveedor = (ean, nuevoProveedor) => {
         const item = carrito.find(x => x.ean === ean);
-        const stockDepo = getStock(ean, stockDeposito);
+        const stockDepo = getStock(ean, stockDisponible, usuario?.sucursal_codigo);
         const match = matchConvenio(item, reglas);
         const proveedorIdeal = mejorProveedor(ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
@@ -202,7 +235,7 @@ export default function RevisarPedido() {
         const carritoConPrecios = carritoFiltrado.map((item) => {
             const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
-            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...stockDeposito].find(p => p.ean === item.ean);
+            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...stockDisponible].find(p => p.ean === item.ean);
             const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.id ?? null;
 
             return {
@@ -413,6 +446,9 @@ export default function RevisarPedido() {
         // Reserva vencida: necesitamos actualizar todo
         setShowModal(false);
 
+        // 🎯 MEJORA: Regenerar reservas SOFT antes de actualizar
+        await regenerarReservasSoft();
+
         // Marcar que se está actualizando para mostrar el loading nativo
         sessionStorage.setItem('actualizandoPrecios', 'true');
         sessionStorage.setItem('preciosActualizados', 'true');
@@ -433,7 +469,7 @@ export default function RevisarPedido() {
                     preciosMonroe={preciosMonroe}
                     preciosSuizo={preciosSuizo}
                     preciosCofarsur={preciosCofarsur}
-                    stockDeposito={stockDeposito}
+                    stockDisponible={stockDisponible}
                     seleccion={seleccion}
                     onElegirProveedor={handleElegirProveedor}
                     onMotivo={handleMotivo}
@@ -441,7 +477,7 @@ export default function RevisarPedido() {
                     onChangeQty={(ean, unidades) => actualizarUnidades(ean, unidades)}
                     noPedirMap={noPedirMap}
                     onToggleNoPedir={toggleNoPedir}
-                    getStock={getStock}
+                    getStock={getStockConSucursal}
                     precioValido={precioValido}
                 />
             )}

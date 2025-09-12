@@ -4,7 +4,7 @@ import { pickPorPrioridad } from "../logic/prioridad";
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 
 
-export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito, matchConvenio, getStock }) {
+export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock, sucursal }) {
     const [seleccion, setSeleccion] = useState({});
     const prevEansRef = useRef([]);
     const prevEansAutoAjustesRef = useRef([]);
@@ -18,7 +18,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         }
 
         // Verificar que tengamos al menos algunos precios disponibles
-        const hayPrecios = preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDeposito?.length;
+        const hayPrecios = preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDisponible?.length;
         if (!hayPrecios) {
             return;
         }
@@ -33,38 +33,25 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         const reglasRecienCargadas = reglas && !reglasLoadedRef.current;
         const preciosRecienCargados = hayPrecios && !preciosLoadedRef.current;
 
-        console.log("📊 [INICIAL] Análisis:", {
-            currentEans,
-            prevEans,
-            nuevosEans,
-            esInicialCarga,
-            reglasRecienCargadas,
-            preciosRecienCargados,
-            preciosDisponibles: {
-                monroe: !!preciosMonroe?.length,
-                suizo: !!preciosSuizo?.length,
-                cofarsur: !!preciosCofarsur?.length,
-                stockDeposito: !!stockDeposito?.length
-            }
-        });
-
         // Ejecutar si: es carga inicial, hay productos nuevos, recién llegaron las reglas, o recién llegaron los precios
         if (!esInicialCarga && nuevosEans.length === 0 && !reglasRecienCargadas && !preciosRecienCargados) {
             return;
         }
 
+        console.log("🚀 useSeleccionAutomatica ejecutándose:", { esInicialCarga, nuevosEans: nuevosEans.length, reglasRecienCargadas, preciosRecienCargados });
+
         // Marcar que las reglas y precios ya se cargaron
         reglasLoadedRef.current = true;
         preciosLoadedRef.current = true;
 
-        const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito };
+        const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito: stockDisponible };
         const productosParaProcesar = esInicialCarga ? carrito : carrito.filter(item => nuevosEans.includes(item.ean));
 
         // Solo modificar selección para productos nuevos o carga inicial
         const nuevaSeleccion = esInicialCarga ? {} : { ...seleccion };
 
         productosParaProcesar.forEach((item) => {
-            const stockDepoItem = getStock(item.ean, stockDeposito);
+            const stockDepoItem = getStock(item.ean, stockDisponible, sucursal);
             if (stockDepoItem > 0) {
                 nuevaSeleccion[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
                 return;
@@ -88,7 +75,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
         // Actualizar la referencia de EANs
         prevEansRef.current = currentEans;
-    }, [carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito, matchConvenio, getStock]);
+    }, [carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock]);
 
     // auto-ajustes (depósito gana, motivo coherente, salir de "Falta" si aparece opción)
     // NOTA: Solo se ejecuta cuando cambian los EANs del carrito o precios/stock, NO cuando cambian las unidades
@@ -134,7 +121,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             const sel = nueva[item.ean] || {};
             const prov = sel.proveedor;
             const motivo = sel.motivo;
-            const stockDepo = getStock(item.ean, stockDeposito);
+            const stockDepo = getStock(item.ean, stockDisponible, sucursal);
             const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
             if (stockDepo > 0 && prov !== "deposito") {
@@ -165,7 +152,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         if (cambios || huboCambiosEnLimpieza) {
             setSeleccion(nueva);
         }
-    }, [carrito, stockDeposito, preciosMonroe, preciosSuizo, preciosCofarsur]); // eslint-disable-line
+    }, [carrito, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur]); // eslint-disable-line
 
     return { seleccion, setSeleccion };
 }

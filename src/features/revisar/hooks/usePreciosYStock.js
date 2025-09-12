@@ -1,12 +1,12 @@
 // hooks/usePreciosYStock.js
 import { useEffect, useState, useRef } from "react";
-import { getPreciosMonroe, getPreciosSuizo, getPreciosCofarsur, getStockDeposito } from "../../../services/droguerias";
+import { getPreciosMonroe, getPreciosSuizo, getPreciosCofarsur, getStockDisponible } from "../../../services/droguerias";
 
 export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders }) {
     const [preciosMonroe, setPM] = useState([]);
     const [preciosSuizo, setPS] = useState([]);
     const [preciosCofarsur, setPC] = useState([]);
-    const [stockDeposito, setSD] = useState([]);
+    const [stockDisponible, setSD] = useState([]);
     const [loading, setLoading] = useState(false);
     const eanListRef = useRef([]);
 
@@ -23,7 +23,7 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders }) 
                 getPreciosMonroe(carrito, sucursal, { fetch: authFetch, headers: authHeaders }),
                 getPreciosSuizo(carrito, sucursal, { fetch: authFetch, headers: authHeaders }),
                 getPreciosCofarsur(carrito, sucursal, { fetch: authFetch, headers: authHeaders }),
-                getStockDeposito(carrito, sucursal),
+                getStockDisponible(carrito, sucursal, { fetch: authFetch, headers: authHeaders }),
             ]);
             setPM(m); setPS(s); setPC(c); setSD(d);
             eanListRef.current = eans;
@@ -31,5 +31,5 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders }) 
         })();
     }, [carrito, sucursal, authFetch, authHeaders]);
 
-    return { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito, loading };
+    return { preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, loading };
 }

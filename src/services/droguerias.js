@@ -46,6 +46,54 @@ export const getStockDeposito = async (carrito, sucursalCodigo) => {
     }
 };
 
+
+export async function getStockDisponible(carrito, sucursal, { fetch, headers }) {
+    const items = carrito
+        .filter(item => item.idQuantio) // solo productos con ID válido
+        .map(item => ({
+            idproducto: item.idQuantio,
+            cantidad: item.unidades || 1
+        }));
+
+    if (!items.length) return [];
+
+    const res = await fetch(`${API_URL}/api/pedidos/reservas/stock-disponible`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-sucursal": sucursal,
+            ...headers
+        },
+        body: JSON.stringify({ items })
+    });
+
+    if (!res.ok) throw new Error("Error obteniendo stock disponible");
+
+    const backendData = await res.json(); // [{ idProducto, stockReal, hardActivas, softActivas, disponible }]
+
+    // Mapear los datos del backend para incluir el EAN correspondiente
+    const resultado = backendData.map(stockItem => {
+        // Buscar el item del carrito que corresponde a este idProducto
+        const carritoItem = carrito.find(item => item.idQuantio === stockItem.idProducto);
+
+        return {
+            ean: carritoItem?.ean || stockItem.idProducto, // usar EAN si está disponible, sino el idProducto
+            idProducto: stockItem.idProducto,
+            stockReal: stockItem.stockReal,
+            hardActivas: stockItem.hardActivas,
+            softActivas: stockItem.softActivas,
+            softOtras: stockItem.softOtras,
+            softPropias: stockItem.softPropias,
+            disponible: stockItem.disponible,
+            error: stockItem.error || null
+        };
+    });
+
+    return resultado;
+}
+
+
+
 export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};

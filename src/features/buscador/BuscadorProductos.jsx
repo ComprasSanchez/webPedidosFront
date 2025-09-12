@@ -177,7 +177,7 @@ const BuscadorProductos = () => {
     const handleRealizarPedido = async () => {
         try {
             // 🎯 Crear reservas SOFT (el backend validará por stock automáticamente)
-            await fetch(`${API_URL}/api/pedidos/reservas/soft`, {
+            await fetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
