@@ -1,6 +1,6 @@
 // front/src/features/buscador/BuscadorProductos.jsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCarrito } from "../../context/CarritoContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -21,7 +21,28 @@ const BuscadorProductos = () => {
     const navigate = useNavigate();
     const [eanRecienAgregado, setEanRecienAgregado] = useState(null);
 
-    const sucursalSeleccionada = sessionStorage.getItem("sucursalReponer") || "";
+    // Estado reactivo para la sucursal seleccionada
+    const [sucursalSeleccionada, setSucursalSeleccionada] = useState(
+        sessionStorage.getItem("sucursalReponer") || ""
+    );
+
+    // Efecto para escuchar cambios en sessionStorage
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setSucursalSeleccionada(sessionStorage.getItem("sucursalReponer") || "");
+        };
+
+        // Escuchar cambios en storage
+        window.addEventListener("storage", handleStorageChange);
+
+        // También revisar cada segundo por si acaso (backup)
+        const interval = setInterval(handleStorageChange, 1000);
+
+        return () => {
+            window.removeEventListener("storage", handleStorageChange);
+            clearInterval(interval);
+        };
+    }, []);
 
     // Verificar si el usuario de compras necesita seleccionar sucursal
     const necesitaSeleccionarSucursal = usuario?.rol === "compras" && !sucursalSeleccionada;
