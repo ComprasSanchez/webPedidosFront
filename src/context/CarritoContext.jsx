@@ -11,15 +11,49 @@ export const CarritoProvider = ({ children }) => {
     const [sincronizando, setSincronizando] = useState(false);
     const debounceRef = useRef(null);
 
+    // Estado para la sucursal de reposición (para usuarios de compras)
+    const [sucursalReponer, setSucursalReponer] = useState(
+        sessionStorage.getItem("sucursalReponer") || ""
+    );
+
     const identidadLista = Boolean(usuario?.id && usuario?.sucursal_codigo);
     if (!API_URL) console.warn("⚠️ API_URL no está definida");
 
     // 🔹 Definir orderType según rol
     const orderType = usuario?.rol === "compras" ? "REPOSICION" : "SUCURSAL";
 
+    // 🔹 Efecto para escuchar cambios en sessionStorage (usuarios de compras)
+    useEffect(() => {
+        if (usuario?.rol !== "compras") return;
+
+        const handleStorageChange = () => {
+            const nuevaSucursal = sessionStorage.getItem("sucursalReponer") || "";
+            if (nuevaSucursal !== sucursalReponer) {
+                setSucursalReponer(nuevaSucursal);
+            }
+        };
+
+        // Escuchar cambios en storage y revisar cada segundo
+        window.addEventListener("storage", handleStorageChange);
+        const interval = setInterval(handleStorageChange, 1000);
+
+        return () => {
+            window.removeEventListener("storage", handleStorageChange);
+            clearInterval(interval);
+        };
+    }, [sucursalReponer, usuario?.rol]);
+
+    // 🔹 Determinar la sucursal actual según el rol
+    const sucursalActual = usuario?.rol === "compras" ? sucursalReponer : usuario?.sucursal_codigo;
+
     // --- A) Hidratar carrito desde backend/Redis al cargar
     useEffect(() => {
+        // No cargar si no tenemos usuario o sucursal
+        if (!usuario?.id || !sucursalActual) return;
+
         let mounted = true;
+        setCargandoCarrito(true);
+
         (async () => {
             try {
                 const res = await fetch(`${API_URL}/api/cart`, {
@@ -27,7 +61,7 @@ export const CarritoProvider = ({ children }) => {
                     headers: {
                         "Content-Type": "application/json",
                         "x-user-id": usuario?.id ?? "",
-                        "x-sucursal": usuario?.sucursal_codigo ?? "",
+                        "x-sucursal": sucursalActual,
                         "x-order-type": orderType
                     }
                 });
@@ -42,11 +76,11 @@ export const CarritoProvider = ({ children }) => {
             }
         })();
         return () => { mounted = false; };
-    }, [API_URL, usuario?.id, usuario?.sucursal_codigo, orderType]);
+    }, [API_URL, usuario?.id, sucursalActual, orderType]);
 
     // --- B) Guardar carrito con debounce cada vez que cambia
     useEffect(() => {
-        if (cargandoCarrito) return; // no guardes mientras hidratás
+        if (cargandoCarrito || !sucursalActual) return; // no guardes mientras hidratás
         clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(async () => {
             try {
@@ -57,7 +91,7 @@ export const CarritoProvider = ({ children }) => {
                     headers: {
                         "Content-Type": "application/json",
                         "x-user-id": usuario?.id ?? "",
-                        "x-sucursal": usuario?.sucursal_codigo ?? "",
+                        "x-sucursal": sucursalActual,
                         "x-order-type": orderType
                     },
                     body: JSON.stringify({ items: carrito })
@@ -69,7 +103,7 @@ export const CarritoProvider = ({ children }) => {
             }
         }, 400);
         return () => clearTimeout(debounceRef.current);
-    }, [carrito, cargandoCarrito, API_URL, usuario?.id, usuario?.sucursal_codigo, orderType]);
+    }, [carrito, cargandoCarrito, API_URL, usuario?.id, sucursalActual, orderType]);
 
     // --- Helpers de negocio
     const agregarAlCarrito = (producto, cantidad) => {
@@ -106,7 +140,7 @@ export const CarritoProvider = ({ children }) => {
                 headers: {
                     "Content-Type": "application/json",
                     "x-user-id": usuario?.id ?? "",
-                    "x-sucursal": usuario?.sucursal_codigo ?? "",
+                    "x-sucursal": sucursalActual,
                     "x-order-type": orderType
                 }
             });

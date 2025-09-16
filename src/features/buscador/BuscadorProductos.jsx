@@ -49,7 +49,10 @@ const BuscadorProductos = () => {
 
     // Determinar qué sucursal usar para las búsquedas
     const sucursalParaBusqueda = usuario?.rol === "compras" ? sucursalSeleccionada : usuario?.sucursal_codigo;
-    const idSucursalParaBusqueda = usuario?.id; // Esto se mantiene igual
+
+    // Para usuarios de compras: no pasar sucursalId (se usa sucursalCodigo)
+    // Para usuarios normales: usar su ID como siempre
+    const idSucursalParaBusqueda = usuario?.rol === "compras" ? null : usuario?.id;
 
     const handleProductoEncontrado = (producto) => {
         setProductoSeleccionado(producto);

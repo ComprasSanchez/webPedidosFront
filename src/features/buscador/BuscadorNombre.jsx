@@ -57,7 +57,11 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
 
             url.searchParams.set("busqueda", queryFormateada);
             url.searchParams.set("sucursal", sucursalCodigo);
-            url.searchParams.set("sucursalId", sucursalId);
+            if (sucursalId) {
+                url.searchParams.set("sucursalId", sucursalId);
+            }
+
+            console.log("🔍 BuscadorNombre URL:", url.toString());
 
             const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);

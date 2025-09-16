@@ -13,15 +13,34 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
     const handleBuscarCodigo = async () => {
         const q = queryCode.trim();
         if (!q) return;
-        if (!sucursalCodigo || !sucursalId) {
+
+        // Para usuarios de compras: necesitamos sucursalCodigo
+        // Para usuarios normales: necesitamos sucursalId
+        if (!sucursalCodigo && !sucursalId) {
             console.warn("Falta información de sucursal para la búsqueda");
             return;
         }
 
+        // Debug temporal
+        console.log("🔍 BuscadorCodigo parámetros:", {
+            sucursalCodigo,
+            sucursalId,
+            q
+        });
+
         try {
             setLoadingCode(true);
             setQueryCode("");
-            const res = await fetch(`${API_URL}/api/productos/buscar/${q}?sucursalId=${sucursalId}`);
+
+            // Construir URL con parámetros
+            const params = new URLSearchParams();
+            if (sucursalId) params.append('sucursalId', sucursalId);
+            if (sucursalCodigo) params.append('sucursal', sucursalCodigo);
+
+            const url = `${API_URL}/api/productos/buscar/${q}?${params.toString()}`;
+            console.log("🔍 BuscadorCodigo URL:", url);
+
+            const res = await fetch(url);
             const data = await res.json();
 
             let producto;
