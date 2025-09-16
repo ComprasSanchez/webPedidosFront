@@ -125,7 +125,17 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                     // Vaciar el carrito cuando hay error de validación
                     replaceCarrito([]);
 
-                    toast.error(`La sucursal del archivo (${sucursal_archivo}) no coincide con la seleccionada (${sucursal_seleccionada})`);
+                    toast.error(
+                        `Error de sucursal: El archivo es de la sucursal ${sucursal_archivo}, pero tienes seleccionada la sucursal ${sucursal_seleccionada}`,
+                        {
+                            duration: 6000,
+                            style: {
+                                background: '#fee2e2',
+                                color: '#991b1b',
+                                border: '1px solid #fca5a5',
+                            }
+                        }
+                    );
                     return;
                 } else {
                     toast.error(errorData.error || "Error al procesar el archivo");
