@@ -1,6 +1,4 @@
 export const getStock = (ean, stockDisponible, sucursalActual = null) => {
-    // Log simple para contar llamadas
-    console.log(`📋 getStock llamado para EAN: ${ean}`);
 
     // Verificar que stockDisponible sea un array válido
     if (!Array.isArray(stockDisponible)) {

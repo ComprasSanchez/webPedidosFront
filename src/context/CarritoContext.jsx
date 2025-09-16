@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL; /
 const CarritoContext = createContext();
 
 export const CarritoProvider = ({ children }) => {
-    const { usuario } = useAuth();                 // <-- toma usuario del Auth
+    const { usuario } = useAuth(); // <-- toma usuario del Auth
     const [carrito, setCarrito] = useState([]);
     const [cargandoCarrito, setCargandoCarrito] = useState(true);
     const [sincronizando, setSincronizando] = useState(false);
@@ -13,6 +13,9 @@ export const CarritoProvider = ({ children }) => {
 
     const identidadLista = Boolean(usuario?.id && usuario?.sucursal_codigo);
     if (!API_URL) console.warn("⚠️ API_URL no está definida");
+
+    // 🔹 Definir orderType según rol
+    const orderType = usuario?.rol === "compras" ? "REPOSICION" : "SUCURSAL";
 
     // --- A) Hidratar carrito desde backend/Redis al cargar
     useEffect(() => {
@@ -23,9 +26,9 @@ export const CarritoProvider = ({ children }) => {
                     credentials: "include",
                     headers: {
                         "Content-Type": "application/json",
-                        // si todavía no pasás auth real, podés enviar headers temporales:
                         "x-user-id": usuario?.id ?? "",
-                        "x-sucursal": usuario?.sucursal_codigo ?? ""
+                        "x-sucursal": usuario?.sucursal_codigo ?? "",
+                        "x-order-type": orderType
                     }
                 });
                 if (res.ok) {
@@ -39,7 +42,7 @@ export const CarritoProvider = ({ children }) => {
             }
         })();
         return () => { mounted = false; };
-    }, [API_URL, usuario?.id, usuario?.sucursal_codigo]);
+    }, [API_URL, usuario?.id, usuario?.sucursal_codigo, orderType]);
 
     // --- B) Guardar carrito con debounce cada vez que cambia
     useEffect(() => {
@@ -54,7 +57,8 @@ export const CarritoProvider = ({ children }) => {
                     headers: {
                         "Content-Type": "application/json",
                         "x-user-id": usuario?.id ?? "",
-                        "x-sucursal": usuario?.sucursal_codigo ?? ""
+                        "x-sucursal": usuario?.sucursal_codigo ?? "",
+                        "x-order-type": orderType
                     },
                     body: JSON.stringify({ items: carrito })
                 });
@@ -65,9 +69,9 @@ export const CarritoProvider = ({ children }) => {
             }
         }, 400);
         return () => clearTimeout(debounceRef.current);
-    }, [carrito, cargandoCarrito, API_URL, usuario?.id, usuario?.sucursal_codigo]);
+    }, [carrito, cargandoCarrito, API_URL, usuario?.id, usuario?.sucursal_codigo, orderType]);
 
-    // --- Helpers de negocio (tu API intacta, con mejoras de merge)
+    // --- Helpers de negocio
     const agregarAlCarrito = (producto, cantidad) => {
         setCarrito(prev => {
             const idx = prev.findIndex(p => p.ean === producto.ean);
@@ -96,18 +100,18 @@ export const CarritoProvider = ({ children }) => {
     const vaciarCarrito = async () => {
         setCarrito([]);
         try {
-
             await fetch(`${API_URL}/api/cart`, {
                 method: "DELETE",
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                     "x-user-id": usuario?.id ?? "",
-                    "x-sucursal": usuario?.sucursal_codigo ?? ""
+                    "x-sucursal": usuario?.sucursal_codigo ?? "",
+                    "x-order-type": orderType
                 }
             });
         } catch (e) {
-            toast.error("No se pudo limpiar el carrito remoto (se vació local igual)");
+            console.error("No se pudo limpiar el carrito remoto (se vació local igual)", e);
         }
     };
 
@@ -116,11 +120,9 @@ export const CarritoProvider = ({ children }) => {
         await vaciarCarrito();
     };
 
-    // CarritoContext.jsx (ejemplo)
     const actualizarUnidades = (ean, nuevasUnidades) => {
         setCarrito((prev) => {
             if (nuevasUnidades <= 0) {
-                // si ponen 0 o negativo, lo eliminamos
                 return prev.filter((it) => it.ean !== ean);
             }
             return prev.map((it) =>
@@ -128,7 +130,6 @@ export const CarritoProvider = ({ children }) => {
             );
         });
     };
-
 
     return (
         <CarritoContext.Provider
@@ -151,4 +152,3 @@ export const CarritoProvider = ({ children }) => {
 };
 
 export const useCarrito = () => useContext(CarritoContext);
-

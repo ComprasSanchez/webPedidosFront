@@ -1,49 +1,90 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Toaster } from "react-hot-toast";
+
 import Login from "../features/login/Login";
 import BuscadorProductos from "../features/buscador/BuscadorProductos";
 import RevisarPedido from "../features/revisar/RevisarPedido";
 import PanelAdmin from "../features/admin/PanelAdmin";
 import PanelCredenciales from "../features/admin/PanelCredenciales";
 import Navbar from "../features/navbar/Navbar";
+import Reposicion from "../features/reposicion/Reposicion";
 
-const ProtectedRoute = ({ children }) => {
+// ✅ Ruta privada con control de login + roles
+const PrivateRoute = ({ children, roles }) => {
     const { usuario, initializing } = useAuth();
-    if (initializing) return null; // o un loader/spinner
-    return usuario ? children : <Navigate to="/login" replace />;
-};
 
-const AdminRoute = ({ children }) => {
-    const { usuario, initializing } = useAuth();
-    if (initializing) return null;
+    if (initializing) return null; // spinner/loader si querés
     if (!usuario) return <Navigate to="/login" replace />;
-    if (usuario.rol !== "admin") return <Navigate to="/buscador" replace />;
+
+    if (roles && !roles.includes(usuario.rol)) {
+        return <Navigate to="/login" replace />;
+    }
+
     return children;
 };
-
-
 
 const AppRouter = () => {
     const location = useLocation();
     const hideNavbar = location.pathname === "/login";
-    return (
+    const { usuario } = useAuth();
+
+    // 🔧 Redirección inteligente según el rol
+    const getDefaultRoute = () => {
+        if (!usuario) return "/login";
+        if (usuario.rol === "compras") return "/buscador";
+        if (usuario.rol === "admin") return "/admin";
+        if (usuario.rol === "sucursal") return "/buscador";
+        return "/login";
+    }; return (
         <>
             {!hideNavbar && <Navbar />}
             <Routes>
+                {/* Login */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/admin" element={<AdminRoute><PanelAdmin /></AdminRoute>} />
+
+                {/* Admin */}
+                <Route
+                    path="/admin"
+                    element={
+                        <PrivateRoute roles={["admin"]}>
+                            <PanelAdmin />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/credenciales"
+                    element={
+                        <PrivateRoute roles={["admin"]}>
+                            <PanelCredenciales />
+                        </PrivateRoute>
+                    }
+                />
+
+
+                {/* Sucursales */}
                 <Route
                     path="/buscador"
                     element={
-                        <ProtectedRoute>
+                        <PrivateRoute roles={["sucursal", "compras"]}>
                             <BuscadorProductos />
-                        </ProtectedRoute>
+                        </PrivateRoute>
                     }
                 />
-                <Route path="/admin/credenciales" element={<AdminRoute><PanelCredenciales /></AdminRoute>} />
-                <Route path="/revisar" element={<ProtectedRoute><RevisarPedido /></ProtectedRoute>} />
-                <Route path="*" element={<Navigate to="/login" />} />
+                <Route
+                    path="/revisar"
+                    element={
+                        <PrivateRoute roles={["sucursal", "compras"]}>
+                            <RevisarPedido />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Default */}
+                <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+                <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
             </Routes>
+            <Toaster position="top-center" />
         </>
     );
 };

@@ -58,20 +58,6 @@ const PanelAdmin = () => {
 
     return (
         <div className="admin_wrapper">
-            <button
-                onClick={() => navigate("/admin/credenciales")}
-                style={{
-                    padding: "0.5rem 1rem",
-                    borderRadius: "8px",
-                    background: "#007f96",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer"
-                }}
-            >
-                Gestionar credenciales
-            </button>
-
             <h2 className="admin_titulo">Panel de Administración</h2>
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>

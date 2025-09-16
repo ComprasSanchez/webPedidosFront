@@ -144,19 +144,6 @@ const PanelCredenciales = () => {
 
     return (
         <div className="panel_credenciales">
-            <button
-                onClick={() => navigate("/admin")}
-                style={{
-                    padding: "0.5rem 1rem",
-                    borderRadius: "8px",
-                    background: "#007f96",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer"
-                }}
-            >
-                Gestionar usuarios
-            </button>
 
             <h2 className="panel_credenciales_titulo">Credenciales de Droguerías</h2>
 

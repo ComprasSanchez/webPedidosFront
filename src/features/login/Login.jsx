@@ -21,7 +21,19 @@ const Login = () => {
 
         if (success) {
             const { user } = JSON.parse(localStorage.getItem("session"));
-            navigate(user.rol === "admin" ? "/admin" : "/buscador", { replace: true });
+
+            // 🔧 Redirección inteligente según el rol
+            let redirectTo = "/login"; // fallback
+
+            if (user.rol === "admin") {
+                redirectTo = "/admin";
+            } else if (user.rol === "compras") {
+                redirectTo = "/reposicion";
+            } else if (user.rol === "sucursal") {
+                redirectTo = "/buscador";
+            }
+
+            navigate(redirectTo, { replace: true });
         } else {
             setError("Credenciales incorrectas.");
         }

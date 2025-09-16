@@ -2,26 +2,61 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/logo.png";
-import { FaSearch, FaShoppingCart, FaSignOutAlt } from "react-icons/fa";
+import { FaSearch, FaShoppingCart, FaSignOutAlt, FaUserShield, FaKey, FaStore, FaUsers } from "react-icons/fa";
+import ModalSeleccionSucursal from "../../components/ui/ModalSeleccionSucursal";
 
 export default function Navbar() {
     const { usuario, logout } = useAuth();
     const [open, setOpen] = useState(false);
+    const [modalSucursalOpen, setModalSucursalOpen] = useState(false);
+    const [sucursalSeleccionada, setSucursalSeleccionada] = useState(
+        sessionStorage.getItem("sucursalReponer") || ""
+    );
     const navigate = useNavigate();
 
-    const base_links = [
-        { to: "/buscador", label: "Inicio", icon: FaSearch },
-        { to: "/revisar", label: "Carrito", icon: FaShoppingCart },
-    ];
+    // 🔧 Links según el rol del usuario
+    const getLinks = () => {
+        if (usuario?.rol === "admin") {
+            return [
+                { to: "/admin", label: "Admin", icon: FaUserShield },
+                { to: "/admin/credenciales", label: "Credenciales", icon: FaKey }
+            ];
+        }
 
-    const extra_links =
-        (usuario?.rol === "admin" || usuario?.rol === "compras")
-            ? [{ to: "/admin/usuarios", label: "Usuarios" }]
-            : (usuario?.rol === "reposicion")
-                ? [{ to: "/reposicion", label: "Reposición" }]
-                : [];
+        if (usuario?.rol === "compras") {
+            return [
+                { to: "/reposicion", label: "Reposición", icon: FaSearch }
+            ];
+        }
 
-    const links = [...base_links, ...extra_links];
+        if (usuario?.rol === "sucursal") {
+            return [
+                { to: "/buscador", label: "Inicio", icon: FaSearch },
+                { to: "/revisar", label: "Carrito", icon: FaShoppingCart }
+            ];
+        }
+
+        return [];
+    };
+
+    // 🔧 Ruta de inicio según el rol
+    const getHomeRoute = () => {
+        if (usuario?.rol === "compras") return "/reposicion";
+        if (usuario?.rol === "admin") return "/admin";
+        return "/buscador"; // sucursal por defecto
+    };
+
+    const links = getLinks();
+
+    const handleSelectSucursal = (codigo) => {
+        setSucursalSeleccionada(codigo);
+        sessionStorage.setItem("sucursalReponer", codigo);
+        setModalSucursalOpen(false);
+    };
+
+    const handleOpenModalSucursal = () => {
+        setModalSucursalOpen(true);
+    };
 
     const handle_logout = () => {
         try {
@@ -57,20 +92,39 @@ export default function Navbar() {
 
                 </nav>
                 <NavLink
-                    to="/buscador"
+                    to={getHomeRoute()}
                     className="navbar_brand"
-                    title="Ir al buscador"
-                    aria-label="Ir al buscador"
+                    title="Ir al inicio"
+                    aria-label="Ir al inicio"
                 >
                     <img src={logo} alt="Logo" className="navbar_logo" />
                 </NavLink>
 
                 <div className="navbar_user">
                     <span className="navbar_usuario">
-                        {usuario?.sucursal_codigo ?? usuario?.usuario ?? "Usuario"}
+                        {usuario?.rol === "compras" ? (
+                            sucursalSeleccionada ? `Reponiendo: ${sucursalSeleccionada}` : "Seleccionar sucursal"
+                        ) : (
+                            usuario?.sucursal_codigo ?? usuario?.usuario ?? "Usuario"
+                        )}
                     </span>
                     {usuario ? (
                         <>
+                            {usuario?.rol === "compras" && (
+                                <button
+                                    className="usuarios_icon_btn"
+                                    onClick={handleOpenModalSucursal}
+                                    aria-label="Cambiar sucursal a reponer"
+                                    title={sucursalSeleccionada ? `Cambiar sucursal (actual: ${sucursalSeleccionada})` : "Seleccionar sucursal a reponer"}
+                                    style={{
+                                        color: "#cba204",
+                                        fontSize: "1.3rem",
+                                        border: "1px solid #cba204",
+                                    }}
+                                >
+                                    <FaUsers />
+                                </button>
+                            )}
                             <button
                                 className="carrito_icon_btn"
                                 onClick={handle_logout}
@@ -88,6 +142,12 @@ export default function Navbar() {
                 </div>
 
             </div>
+
+            <ModalSeleccionSucursal
+                isOpen={modalSucursalOpen}
+                onSelect={handleSelectSucursal}
+                onClose={() => setModalSucursalOpen(false)}
+            />
         </header>
     );
 }

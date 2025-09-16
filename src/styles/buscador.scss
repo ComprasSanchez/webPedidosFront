@@ -1,3 +1,23 @@
+/* Mixin para botones con estética moderna */
+@mixin modern_button($color, $hover-bg: null, $hover-border: null) {
+    background: #fff;
+    border: 1px solid $color;
+    color: $color;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, transform .05s ease;
+
+    &:hover {
+        background: if($hover-bg, $hover-bg, lighten($color, 35%));
+        border-color: if($hover-border, $hover-border, darken($color, 10%));
+        border: 1px solid if($hover-border, $hover-border, darken($color, 20%));
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+}
+
 /* Layout principal */
 .buscador_wrapper {
     padding: 0.7rem 2rem;
@@ -53,19 +73,27 @@
 }
 
 .buscador_btn_buscar {
+    @include modern_button(#007f96, #c1e5e9, #005a6b);
     padding: 0.75rem 0.75rem;
     margin: 1px auto;
-    background-color: #007f96d4;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.2s ease;
-}
+    font-size: 1.5rem;
+    min-width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 
-.buscador_btn_buscar:hover {
-    background-color: #00657a;
+    &:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+
+        &:hover {
+            background: #fff;
+            border-color: #007f96;
+            transform: none;
+        }
+    }
 }
 
 /* 🔽 Dropdown pegado al input de nombre */
@@ -286,28 +314,19 @@
 }
 
 .carrito_icon_btn {
+    @include modern_button(#9a1b1b, #f2c7c7, #651111);
     margin: 0 auto;
     width: 34px;
     height: 34px;
-    background: #fdeaea;
-    border: 1px solid #9a1b1b;
-    background: #fff;
-    color: #9a1b1b;
-    border-radius: 8px;
     display: grid;
     place-items: center;
-    cursor: pointer;
-    transition: background-color .15s ease, border-color .15s ease, transform .05s ease;
 }
 
-.carrito_icon_btn:hover {
-    background: #f2c7c7;
-    border-color: #f2c7c7;
-    border: 1px solid #651111;
-}
-
-.carrito_icon_btn:active {
-    transform: scale(0.97);
+.usuarios_icon_btn {
+    @extend .carrito_icon_btn;
+    @include modern_button(#cba204, #f3e5b6, #a67c04);
+    color: #cba204;
+    font-size: 1.3rem;
 }
 
 .buscador_hint {
@@ -339,11 +358,6 @@
     background: #f5f7f8;
     cursor: not-allowed;
     opacity: .8;
-}
-
-.buscador_btn_buscar:disabled {
-    opacity: .6;
-    cursor: not-allowed;
 }
 
 .buscador_resultados_dropdown.sin-resultados {
@@ -403,5 +417,33 @@
 
     100% {
         opacity: 0;
+    }
+}
+
+/* Estilos para el botón de upload de archivos TXT */
+.upload_txt_wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.upload_txt_wrapper .buscador_btn_buscar {
+    @include modern_button(#28a745, #c2ffc2, #1e7e34);
+}
+
+.upload_txt_icon {
+    font-size: 1.5rem;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
     }
 }
