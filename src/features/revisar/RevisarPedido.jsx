@@ -364,7 +364,6 @@ export default function RevisarPedido() {
 
             const data = await response.json();
             // Log para debug
-            console.log("[ENVIAR PEDIDO] Respuesta backend:", data);
 
             if (data.success) {
                 setMostrarResumen(false);
