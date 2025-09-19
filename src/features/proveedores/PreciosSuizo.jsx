@@ -1,9 +1,9 @@
-const PreciosSuizo = ({ ean, precios, seleccionado, onSelect }) => {
+const PreciosSuizo = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
     const p = precios.find((s) => s.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
     const handleClick = () => {
-        if (p && p.priceList != null) onSelect(ean, "suizo");
+        if (p && p.priceList != null) onSelect(idQuantio, "suizo");
     };
 
     if (!p) return <div className={clase}>No disponible</div>;

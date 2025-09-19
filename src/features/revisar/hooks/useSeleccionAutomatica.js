@@ -14,97 +14,100 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
         if (!carrito.length || !reglas) {
+            // ...
             return;
         }
 
         // Verificar que tengamos al menos algunos precios disponibles
         const hayPrecios = preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDisponible?.length;
         if (!hayPrecios) {
+            // ...
             return;
         }
 
-        // Verificar si cambiaron los EANs para este useEffect también
-        const currentEans = carrito.map(item => item.ean).sort();
-        const prevEans = prevEansRef.current;
+        // Usar idQuantio como clave única
+        const currentIds = carrito.map(item => item.idQuantio).sort();
+        const prevIds = prevEansRef.current;
 
         // Identificar si hay productos nuevos (que no estaban antes)
-        const nuevosEans = currentEans.filter(ean => !prevEans.includes(ean));
-        const esInicialCarga = prevEans.length === 0;
+        const nuevosIds = currentIds.filter(id => !prevIds.includes(id));
+        const esInicialCarga = prevIds.length === 0;
         const reglasRecienCargadas = reglas && !reglasLoadedRef.current;
         const preciosRecienCargados = hayPrecios && !preciosLoadedRef.current;
 
         // Ejecutar si: es carga inicial, hay productos nuevos, recién llegaron las reglas, o recién llegaron los precios
-        if (!esInicialCarga && nuevosEans.length === 0 && !reglasRecienCargadas && !preciosRecienCargados) {
+        if (!esInicialCarga && nuevosIds.length === 0 && !reglasRecienCargadas && !preciosRecienCargados) {
+            // ...
             return;
         }
 
-        console.log("🚀 useSeleccionAutomatica ejecutándose:", { esInicialCarga, nuevosEans: nuevosEans.length, reglasRecienCargadas, preciosRecienCargados });
+        // ...
 
         // Marcar que las reglas y precios ya se cargaron
         reglasLoadedRef.current = true;
         preciosLoadedRef.current = true;
 
         const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito: stockDisponible };
-        const productosParaProcesar = esInicialCarga ? carrito : carrito.filter(item => nuevosEans.includes(item.ean));
+        const productosParaProcesar = esInicialCarga ? carrito : carrito.filter(item => nuevosIds.includes(item.idQuantio));
 
         // Solo modificar selección para productos nuevos o carga inicial
         const nuevaSeleccion = esInicialCarga ? {} : { ...seleccion };
 
         productosParaProcesar.forEach((item) => {
-            const stockDepoItem = getStock(item.ean, stockDisponible, sucursal);
-            if (stockDepoItem > 0) {
-                nuevaSeleccion[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
+            // Usar idQuantio para consultar el stock del depósito
+            const stockDepoItem = getStock(item.idQuantio, stockDisponible, sucursal);
+            if (typeof stockDepoItem === "number" && stockDepoItem > 0) {
+                nuevaSeleccion[item.idQuantio] = { proveedor: "deposito", motivo: "Stock Depo" };
                 return;
             }
 
             const match = matchConvenio(item, reglas);
             if (match.aplica) {
                 const elegido = pickPorPrioridad(item, match.prioridad, ctx);
-                nuevaSeleccion[item.ean] = elegido
+                nuevaSeleccion[item.idQuantio] = elegido
                     ? { proveedor: elegido, motivo: "Condición / Acuerdo" }
                     : { proveedor: "Falta", motivo: "Falta" };
                 return;
             }
 
             const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
-            nuevaSeleccion[item.ean] = ideal ? { proveedor: ideal, motivo: "Mejor precio" }
+            nuevaSeleccion[item.idQuantio] = ideal ? { proveedor: ideal, motivo: "Mejor precio" }
                 : { proveedor: "Falta", motivo: "Falta" };
         });
 
+        // ...
         setSeleccion(nuevaSeleccion);
 
-        // Actualizar la referencia de EANs
-        prevEansRef.current = currentEans;
+        // Actualizar la referencia de idQuantio
+        prevEansRef.current = currentIds;
     }, [carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock]);
 
     // auto-ajustes (depósito gana, motivo coherente, salir de "Falta" si aparece opción)
     // NOTA: Solo se ejecuta cuando cambian los EANs del carrito o precios/stock, NO cuando cambian las unidades
     useEffect(() => {
+        // Verificar si realmente cambiaron los idQuantio
+        const currentIds = carrito.map(item => item.idQuantio).sort();
+        const prevIds = prevEansAutoAjustesRef.current;
 
-        // Verificar si realmente cambiaron los EANs
-        const currentEans = carrito.map(item => item.ean).sort();
-        const prevEans = prevEansAutoAjustesRef.current;
-
-        const eansChanged = currentEans.length !== prevEans.length ||
-            currentEans.some((ean, index) => ean !== prevEans[index]);
-
+        const idsChanged = currentIds.length !== prevIds.length ||
+            currentIds.some((id, index) => id !== prevIds[index]);
 
         // Actualizar la referencia para auto-ajustes
-        prevEansAutoAjustesRef.current = currentEans;
+        prevEansAutoAjustesRef.current = currentIds;
 
-        // Solo ejecutar si cambiaron los EANs o los precios/stock
-        if (!eansChanged && carrito.length > 0) {
+        // Solo ejecutar si cambiaron los ids o los precios/stock
+        if (!idsChanged && carrito.length > 0) {
             return; // No hacer nada si solo cambiaron las unidades
         }
 
         // Limpiar selecciones de productos eliminados
         let nueva = { ...seleccion };
-        const eansActuales = carrito.map(item => item.ean);
+        const idsActuales = carrito.map(item => item.idQuantio);
 
         // Eliminar selecciones de productos que ya no están en el carrito
-        Object.keys(nueva).forEach(ean => {
-            if (!eansActuales.includes(ean)) {
-                delete nueva[ean];
+        Object.keys(nueva).forEach(id => {
+            if (!idsActuales.includes(id)) {
+                delete nueva[id];
             }
         });
 
@@ -118,32 +121,31 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         let cambios = false;
 
         carrito.forEach((item) => {
-            const sel = nueva[item.ean] || {};
+            const sel = nueva[item.idQuantio] || {};
             const prov = sel.proveedor;
             const motivo = sel.motivo;
             const stockDepo = getStock(item.ean, stockDisponible, sucursal);
             const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
             if (stockDepo > 0 && prov !== "deposito") {
-                nueva[item.ean] = { proveedor: "deposito", motivo: "Stock Depo" };
+                nueva[item.idQuantio] = { proveedor: "deposito", motivo: "Stock Depo" };
                 cambios = true;
                 return;
             }
             if (prov === "deposito" && stockDepo > 0 && motivo !== "Stock Depo") {
-                nueva[item.ean].motivo = "Stock Depo";
+                nueva[item.idQuantio].motivo = "Stock Depo";
                 cambios = true;
             }
             if (prov === ideal && prov !== "deposito" && motivo !== "Mejor precio") {
-                nueva[item.ean].motivo = "Mejor precio";
+                nueva[item.idQuantio].motivo = "Mejor precio";
                 cambios = true;
             }
             if (motivo === "Falta" && (stockDepo > 0 || ideal)) {
-                nueva[item.ean] = stockDepo > 0
+                nueva[item.idQuantio] = stockDepo > 0
                     ? { proveedor: "deposito", motivo: "Stock Depo" }
                     : { proveedor: ideal, motivo: "Mejor precio" };
                 cambios = true;
             }
-
         });
 
         // Verificar si hubo cambios en la limpieza o en los ajustes

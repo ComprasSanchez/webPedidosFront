@@ -1,10 +1,10 @@
-const PreciosMonroe = ({ ean, precios, seleccionado, onSelect }) => {
+const PreciosMonroe = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
     const p = precios.find((m) => m.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
     const handleClick = () => {
         if (p && p.priceList != null) {
-            onSelect(ean, "monroe");
+            onSelect(idQuantio, "monroe");
         }
     };
 

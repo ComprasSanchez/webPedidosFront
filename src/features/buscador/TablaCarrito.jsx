@@ -50,7 +50,7 @@ const TablaCarrito = ({ eanRecienAgregado }) => {
                                     <button
                                         className="qty__btn"
                                         onClick={() =>
-                                            actualizarUnidades(item.ean, Math.max(1, (item.unidades || 1) - 1))
+                                            actualizarUnidades(item.idQuantio, Math.max(1, (item.unidades || 1) - 1))
                                         }
                                     >
                                         −
@@ -61,7 +61,7 @@ const TablaCarrito = ({ eanRecienAgregado }) => {
                                     <button
                                         className="qty__btn"
                                         onClick={() =>
-                                            actualizarUnidades(item.ean, (item.unidades || 1) + 1)
+                                            actualizarUnidades(item.idQuantio, (item.unidades || 1) + 1)
                                         }
                                     >
                                         +
@@ -72,7 +72,7 @@ const TablaCarrito = ({ eanRecienAgregado }) => {
                             <td>
                                 <button
                                     className="carrito_icon_btn"
-                                    onClick={() => eliminarDelCarrito(item.ean)}
+                                    onClick={() => eliminarDelCarrito(item.idQuantio)}
                                     aria-label={`Eliminar ${item.descripcion}`}
                                     title="Eliminar"
                                 >

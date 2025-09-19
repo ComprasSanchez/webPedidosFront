@@ -47,7 +47,8 @@
 
 .buscador_codigo {
     flex: 0 0 250px;
-    /* angosto */
+    position: relative;
+    /* Ensure dropdown is positioned relative to this container */
 }
 
 .buscador_nombre {
@@ -446,4 +447,19 @@
     100% {
         transform: rotate(360deg);
     }
+}
+
+#lista-resultados-codigo {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    z-index: 50;
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 6px;
 }

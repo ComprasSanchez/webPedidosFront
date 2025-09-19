@@ -9,6 +9,7 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
     const { usuario } = useAuth();
     const [queryCode, setQueryCode] = useState("");
     const [loadingCode, setLoadingCode] = useState(false);
+    const [productosEncontrados, setProductosEncontrados] = useState([]);
 
     const handleBuscarCodigo = async () => {
         const q = queryCode.trim();
@@ -21,16 +22,10 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
             return;
         }
 
-        // Debug temporal
-        console.log("🔍 BuscadorCodigo parámetros:", {
-            sucursalCodigo,
-            sucursalId,
-            q
-        });
-
         try {
             setLoadingCode(true);
             setQueryCode("");
+            setProductosEncontrados([]);
 
             // Construir URL con parámetros
             const params = new URLSearchParams();
@@ -38,25 +33,32 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
             if (sucursalCodigo) params.append('sucursal', sucursalCodigo);
 
             const url = `${API_URL}/api/productos/buscar/${q}?${params.toString()}`;
-            console.log("🔍 BuscadorCodigo URL:", url);
 
             const res = await fetch(url);
             const data = await res.json();
 
-            let producto;
+
             if (data.encontrado) {
-                producto = {
-                    ean: data.ean,
-                    descripcion: data.descripcion,
-                    stockSucursal: data.stockSucursal,
-                    precios: { deposito: 0 },
-                    idQuantio: data.idQuantio ?? data.codPlex ?? null,
-                    laboratorio: data.laboratorio || "Desconocido",
-                    CodLab: data.CodLab || "Desconocido"
-                };
+                if (Array.isArray(data.productos) && data.productos.length > 0) {
+                    // Caso: múltiples productos encontrados
+                    setProductosEncontrados(data.productos);
+                } else {
+                    // Caso: un solo producto encontrado
+                    const producto = {
+                        ean: data.ean || q,
+                        descripcion: data.descripcion,
+                        stockSucursal: data.stockSucursal || 0,
+                        precios: { deposito: 0 },
+                        idQuantio: data.idQuantio || null,
+                        laboratorio: data.laboratorio || "Desconocido",
+                        CodLab: data.CodLab || "Desconocido"
+                    };
+                    onProductoEncontrado(producto);
+                }
             } else {
+
                 // No está en nuestra base → igual se puede pedir por EAN si lo escribieron
-                producto = {
+                const producto = {
                     ean: q,
                     descripcion: `Producto no registrado`,
                     stockSucursal: 0,
@@ -65,9 +67,8 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
                     laboratorio: "Desconocido",
                     CodLab: "Desconocido"
                 };
+                onProductoEncontrado(producto);
             }
-
-            onProductoEncontrado(producto);
         } catch (err) {
             console.error("Error buscando producto:", err);
             const producto = {
@@ -83,6 +84,11 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
         } finally {
             setLoadingCode(false);
         }
+    };
+
+    const handleSeleccionarProducto = (producto) => {
+        onProductoEncontrado(producto);
+        setProductosEncontrados([]);
     };
 
     return (
@@ -101,6 +107,27 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
             </button>
             {/* hint de estado */}
             {loadingCode && <div className="buscador_hint"><span className="spinner" /> Buscando…</div>}
+
+            {productosEncontrados.length > 0 && (
+                <div
+                    id="lista-resultados-codigo"
+                    className="buscador_resultados_dropdown"
+                    role="listbox"
+                >
+                    {productosEncontrados.map((producto, i) => (
+                        <button
+                            key={`${producto.idProducto || i}`}
+                            className="buscador_resultado_item"
+                            onClick={() => handleSeleccionarProducto(producto)}
+                            role="option"
+                            title={producto.ean ? `EAN ${producto.ean}` : "Sin EAN"}
+                        >
+                            <span className="resultado_titulo">{producto.descripcion}</span>
+
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

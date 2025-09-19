@@ -50,22 +50,22 @@ export default function TablaRevisar({
                 </thead>
 
                 <tbody>
-                    {carrito.map((item) => (
+                    {carrito.map((item, index) => (
                         <FilaItem
-                            key={item.ean}
+                            key={`${item.idQuantio || item.ean}-${index}`}
                             item={item}
-                            seleccion={seleccion[item.ean]}
+                            seleccion={seleccion[item.idQuantio || item.ean]}
                             preciosMonroe={preciosMonroe}
                             preciosSuizo={preciosSuizo}
                             preciosCofarsur={preciosCofarsur}
                             stockDisponible={stockDisponible}
                             onElegirProveedor={onElegirProveedor}
                             onMotivo={onMotivo}
-                            onEliminar={() => onEliminar(item.ean)}
-                            onChangeQty={onChangeQty}                // puede venir null y no pasa nada
-                            pedir={!noPedirMap[item.ean]}
+                            onEliminar={() => onEliminar(item.idQuantio)}
+                            onChangeQty={(idQuantio, unidades) => onChangeQty(item.idQuantio, unidades)}
+                            pedir={!noPedirMap[item.idQuantio || item.ean]}
                             togglePedir={() =>
-                                onToggleNoPedir(item.ean, /* noPedirChecked */ !!(!noPedirMap[item.ean]))
+                                onToggleNoPedir(item.idQuantio || item.ean, /* noPedirChecked */ !!(!noPedirMap[item.idQuantio || item.ean]))
                             }
                             getStock={getStock}
                             precioValido={precioValido}

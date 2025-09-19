@@ -1,4 +1,4 @@
-const PreciosCofarsur = ({ ean, precios, seleccionado, onSelect }) => {
+const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
     const p = precios.find((c) => c.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
@@ -16,7 +16,7 @@ const PreciosCofarsur = ({ ean, precios, seleccionado, onSelect }) => {
 
     const handleClick = () => {
         if (p && precio && precio > 0) {
-            onSelect(ean, "cofarsur");
+            onSelect(idQuantio, "cofarsur");
         }
     };
 

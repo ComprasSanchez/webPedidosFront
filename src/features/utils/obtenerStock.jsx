@@ -1,11 +1,11 @@
-export const getStock = (ean, stockDisponible, sucursalActual = null) => {
+export const getStock = (idQuantio, stockDisponible, sucursalActual = null) => {
 
     // Verificar que stockDisponible sea un array válido
     if (!Array.isArray(stockDisponible)) {
         return "-";
     }
 
-    const s = stockDisponible.find((item) => item.ean === ean);
+    const s = stockDisponible.find((item) => String(item.idProducto ?? item.idQuantio) === String(idQuantio));
 
     if (!s) {
         return "-";
@@ -37,12 +37,12 @@ export const getStock = (ean, stockDisponible, sucursalActual = null) => {
 
     return s.stock || "-";
 };// Función adicional para obtener detalles completos del stock ATP
-export const getStockDetails = (ean, stockDisponible) => {
+
+export const getStockDetails = (idQuantio, stockDisponible) => {
     if (!Array.isArray(stockDisponible)) {
         return null;
     }
-
-    const s = stockDisponible.find((item) => item.ean === ean);
+    const s = stockDisponible.find((item) => String(item.idProducto ?? item.idQuantio) === String(idQuantio));
     if (!s) return null;
 
     return {

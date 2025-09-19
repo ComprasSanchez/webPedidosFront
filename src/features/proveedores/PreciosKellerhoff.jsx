@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
-const PreciosKellerhoff = ({ ean, seleccionado, onSelect }) => {
+const PreciosKellerhoff = ({ idQuantio, ean, seleccionado, onSelect }) => {
     const [showModal, setShowModal] = useState(false);
     const modalRef = useRef(null);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
@@ -11,7 +11,7 @@ const PreciosKellerhoff = ({ ean, seleccionado, onSelect }) => {
     };
 
     const handleConfirm = () => {
-        onSelect(ean, "kellerhoff");
+        onSelect(idQuantio, "kellerhoff");
         window.open("https://www.kellerhoff.com.ar/", "_blank", "noopener");
         setShowModal(false);
     };
@@ -19,7 +19,7 @@ const PreciosKellerhoff = ({ ean, seleccionado, onSelect }) => {
     const handleCancel = (e) => {
         e.stopPropagation();
         setShowModal(false);
-        onSelect(ean, "kellerhoff");
+        onSelect(idQuantio, "kellerhoff");
     };
 
     useEffect(() => {

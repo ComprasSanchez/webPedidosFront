@@ -2,7 +2,7 @@
 export function construirResumenPedido(carritoConPrecios, seleccion) {
     const porProveedor = {};
     carritoConPrecios.forEach((item) => {
-        const prov = seleccion[item.ean]?.proveedor ?? "Falta";
+    const prov = (seleccion[item.idQuantio] || seleccion[item.ean])?.proveedor ?? "Falta";
         if (!porProveedor[prov]) porProveedor[prov] = { totalUnidades: 0, totalMonto: 0, items: [] };
         const precioUsado =
             prov === "deposito" ? 0

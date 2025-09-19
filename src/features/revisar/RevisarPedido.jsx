@@ -35,14 +35,51 @@ export default function RevisarPedido() {
     const timeoutRef = useRef(null);
     const graciaRef = useRef(null);
 
+    // Estado reactivo para la sucursal seleccionada (usuarios de compras)
+    const [sucursalSeleccionada, setSucursalSeleccionada] = useState(() => {
+        const stored = sessionStorage.getItem("sucursalReponer");
+        return stored || "";
+    });
+
+    // Efecto para escuchar cambios en sessionStorage
+    useEffect(() => {
+        if (usuario?.rol !== "compras") return;
+
+        const handleStorageChange = () => {
+            const nuevaSucursal = sessionStorage.getItem("sucursalReponer") || "";
+            if (nuevaSucursal !== sucursalSeleccionada) {
+                setSucursalSeleccionada(nuevaSucursal);
+            }
+        };
+
+        window.addEventListener("storage", handleStorageChange);
+        const interval = setInterval(handleStorageChange, 1000);
+
+        return () => {
+            window.removeEventListener("storage", handleStorageChange);
+            clearInterval(interval);
+        };
+    }, [sucursalSeleccionada, usuario?.rol]);
+
+    // Determinar la sucursal actual según el rol
+    const sucursalActual = usuario?.rol === "compras" ? sucursalSeleccionada : usuario?.sucursal_codigo;
+
+    // Validación: sucursal debe ser una cadena no vacía
+    const sucursalValida = sucursalActual && typeof sucursalActual === 'string' && sucursalActual.trim() !== '';
+
     const cancelarReservaSoft = async () => {
 
         try {
+            // Validar que tenemos sucursal antes de hacer la petición
+            if (!sucursalValida) {
+                return;
+            }
+
             const response = await authFetch(`${API_URL}/api/pedidos/reservas-soft/cancelar-soft`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-sucursal": usuario.sucursal_codigo
+                    "x-sucursal": sucursalActual
                 }
             });
 
@@ -60,13 +97,16 @@ export default function RevisarPedido() {
 
     const regenerarReservasSoft = async () => {
         try {
-            console.log("🔄 Regenerando reservas SOFT después de actualización...");
+            // Validar que tenemos sucursal antes de hacer la petición
+            if (!sucursalValida) {
+                return;
+            }
 
             const response = await authFetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-sucursal': usuario.sucursal_codigo
+                    'x-sucursal': sucursalActual
                 },
                 body: JSON.stringify({
                     items: carrito
@@ -79,12 +119,18 @@ export default function RevisarPedido() {
             });
 
             if (response.ok) {
-                console.log("✅ Reservas SOFT regeneradas exitosamente");
+                // ...
             } else {
-                console.warn("⚠️ No se pudieron regenerar las reservas SOFT:", response.status);
+                if (response.status === 401) {
+                    toast.error("Sesión expirada. Por favor, inicia sesión nuevamente.");
+                    // Opcional: redirigir al login
+                    // navigate("/login");
+                } else {
+                    toast.error("Error al regenerar reservas. Revisa la consola para más detalles.");
+                }
             }
         } catch (error) {
-            console.warn("⚠️ Error al regenerar reservas SOFT:", error.message);
+            toast.error("Error de conexión al regenerar reservas.");
             // No bloqueamos el flujo, solo logueamos
         }
     };
@@ -139,16 +185,16 @@ export default function RevisarPedido() {
     }, []);
 
     const { preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, loading: loadingPS }
-        = usePreciosYStock({ carrito, sucursal: usuario?.sucursal_codigo, authFetch, authHeaders });
+        = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders });
 
 
-    const { reglas, ready, matchConvenio } = useConvenios({ sucursal: usuario?.sucursal_codigo });
+    const { reglas, ready, matchConvenio } = useConvenios({ sucursal: sucursalActual });
 
     // Crear una versión de getStock que ya tenga la sucursal aplicada
-    const getStockConSucursal = (ean, stockData) => getStock(ean, stockData, usuario?.sucursal_codigo);
+    const getStockConSucursal = (idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual);
 
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
-        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: usuario?.sucursal_codigo
+        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual
     });
 
     const { noPedirMap, toggleNoPedir, persistirCarrito } = usePersistenciaCarrito({ carrito, usuario, replaceCarrito });
@@ -156,13 +202,19 @@ export default function RevisarPedido() {
     const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDisponible?.length);
     const loading = loadingPS || !ready;
 
-    const handleMotivo = (ean, motivo) => setSeleccion(prev => ({ ...prev, [ean]: { ...prev[ean], motivo } }));
+    const handleMotivo = (idQuantio, motivo) => setSeleccion(prev => ({ ...prev, [idQuantio]: { ...prev[idQuantio], motivo } }));
 
-    const handleElegirProveedor = (ean, nuevoProveedor) => {
-        const item = carrito.find(x => x.ean === ean);
-        const stockDepo = getStock(ean, stockDisponible, usuario?.sucursal_codigo);
+    // Permitir que handleElegirProveedor reciba idQuantio o ean (para Kellerhoff)
+    const handleElegirProveedor = (idQuantioOrEan, nuevoProveedor) => {
+        let item = carrito.find(x => x.idQuantio === idQuantioOrEan);
+        if (!item) {
+            // fallback para Kellerhoff, que pasa ean
+            item = carrito.find(x => x.ean === idQuantioOrEan);
+        }
+        if (!item) return;
+        const stockDepo = getStock(item.idQuantio, stockDisponible, sucursalActual);
         const match = matchConvenio(item, reglas);
-        const proveedorIdeal = mejorProveedor(ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
+        const proveedorIdeal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
         // Validar que no se pueda seleccionar depósito si el stock no es válido
         if (nuevoProveedor === "deposito") {
@@ -173,7 +225,7 @@ export default function RevisarPedido() {
         }
 
         setSeleccion(prev => {
-            const actual = prev[ean] ?? {};
+            const actual = prev[item.idQuantio] ?? {};
             let nuevoMotivo = actual.motivo;
 
             if (nuevoProveedor === "deposito" && stockDepo > 0) {
@@ -187,7 +239,7 @@ export default function RevisarPedido() {
                 nuevoMotivo = "";
             }
 
-            return { ...prev, [ean]: { ...actual, proveedor: nuevoProveedor, motivo: nuevoMotivo } };
+            return { ...prev, [item.idQuantio]: { ...actual, proveedor: nuevoProveedor, motivo: nuevoMotivo } };
         });
     };
 
@@ -195,20 +247,26 @@ export default function RevisarPedido() {
     const handleConfirmar = () => {
 
         const hayFaltasDeMotivo = carrito
-            .filter(item => !noPedirMap[item.ean])
-            .some((item) => requiereJustificacion(seleccion[item.ean]?.motivo));
+            .filter(item => !noPedirMap[item.idQuantio])
+            .some((item) => {
+                const motivo = seleccion[item.idQuantio]?.motivo;
+                const req = requiereJustificacion(motivo);
+                return req;
+            });
+
 
         if (hayFaltasDeMotivo) {
             toast.error("Tenés productos sin motivo seleccionado. Completalos antes de confirmar el pedido.");
             return;
         }
 
+
         const haySinPrecioValido = carrito
-            .filter(item => !noPedirMap[item.ean])
+            .filter(item => !noPedirMap[item.idQuantio])
             .some((item) => {
-                const motivo = seleccion[item.ean]?.motivo;
+                const motivo = seleccion[item.idQuantio]?.motivo;
                 if (motivo === "Falta") return false;
-                const prov = seleccion[item.ean]?.proveedor;
+                const prov = seleccion[item.idQuantio]?.proveedor;
                 if (!prov || prov === "deposito" || prov === "kellerhoff") return false;
                 const fuente =
                     prov === "monroe" ? preciosMonroe :
@@ -217,16 +275,18 @@ export default function RevisarPedido() {
 
                 const p = fuente.find(x => x.ean === item.ean);
                 const precio = getPrecioFinal(p, prov);
-
-                return !(typeof precio === "number" && precio > 0);
+                const sinPrecio = !(typeof precio === "number" && precio > 0);
+                return sinPrecio;
             });
+
 
         if (haySinPrecioValido) {
             alert("⚠️ Tenés productos seleccionados sin precio válido. Elegí otro proveedor o quitá esos ítems antes de confirmar.");
             return;
         }
 
-        const carritoFiltrado = carrito.filter(it => !noPedirMap[it.ean]);
+
+        const carritoFiltrado = carrito.filter(it => !noPedirMap[it.idQuantio]);
         if (carritoFiltrado.length === 0) {
             toast("No hay líneas para enviar (todas marcadas como “No pedir”).");
             return;
@@ -234,17 +294,14 @@ export default function RevisarPedido() {
 
         const carritoConPrecios = carritoFiltrado.map((item) => {
             const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
-
-            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...stockDisponible].find(p => p.ean === item.ean);
-            const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.id ?? null;
-
+            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...stockDisponible].find(p => (p.idProducto ?? p.idQuantio) === item.idQuantio);
+            const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.idProducto ?? fuente?.id ?? null;
             return {
                 ...item,
                 precios,
                 idQuantio,
             };
         });
-
 
         const resumenFinal = construirResumenPedido(carritoConPrecios, seleccion);
         setResumenFinal(resumenFinal);
@@ -258,10 +315,10 @@ export default function RevisarPedido() {
         const toastId = toast.loading("Enviando pedido...");
 
         const itemsParaEnviar = carrito
-            .filter(item => !noPedirMap[item.ean])
+            .filter(item => !noPedirMap[item.idQuantio])
             .map(item => {
-                const provSel = seleccion[item.ean]?.proveedor;
-                const motivo = seleccion[item.ean]?.motivo;
+                const provSel = seleccion[item.idQuantio]?.proveedor;
+                const motivo = seleccion[item.idQuantio]?.motivo;
 
                 let proveedor = provSel;
                 let precio = 0;
@@ -300,19 +357,24 @@ export default function RevisarPedido() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    sucursal: usuario?.sucursal_codigo,
+                    sucursal: sucursalActual,
                     items: itemsParaEnviar,
                 }),
             });
 
             const data = await response.json();
+            // Log para debug
+            console.log("[ENVIAR PEDIDO] Respuesta backend:", data);
 
             if (data.success) {
                 setMostrarResumen(false);
                 const enviados = new Set(itemsParaEnviar.map(i => i.codebar));
                 const restantes = carrito
                     .filter(it => !enviados.has(it.ean))
-                    .map(it => ({ ...it, noPedir: !!noPedirMap[it.ean] }));
+                    .map(it => {
+                        const key = it.idQuantio || it.ean;
+                        return { ...it, noPedir: !!noPedirMap[key] };
+                    });
 
                 // await persistirCarrito(restantes);
                 replaceCarrito(restantes);
@@ -352,34 +414,54 @@ export default function RevisarPedido() {
                     toast.success("Pedido enviado correctamente", { id: toastId });
                 }
             } else if (data.resultados?.errores.length > 0) {
-                // Solo hubo errores
-                toast.error(
-                    <div>
-                        <strong>Error al enviar pedido</strong>
-                        <br />
-                        <div style={{ marginTop: '8px' }}>
-                            {data.resultados.errores.map(r => (
-                                <div key={r.proveedor} style={{ marginBottom: '8px' }}>
-                                    <strong>{r.proveedor}:</strong> {r.error}
-                                    {r.detalle && <div style={{ fontSize: '0.9em' }}>{r.detalle}</div>}
-                                    {r.debug && (
-                                        <details style={{ fontSize: '0.9em', marginTop: '4px' }}>
-                                            <summary>Más detalles</summary>
-                                            <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.9em' }}>
-                                                {JSON.stringify(r.debug, null, 2)}
-                                            </pre>
-                                        </details>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>,
-                    {
-                        id: toastId,
-                        duration: 15000,
-                        style: { maxWidth: '500px' }
-                    }
-                );
+                // Si todos los errores son de proveedor "Falta", mostrar info en vez de error
+                const soloFaltas = data.resultados.errores.length > 0 &&
+                    data.resultados.errores.every(r => r.proveedor === "Falta");
+                if (soloFaltas) {
+                    toast(
+                        <div>
+                            <strong>Todos los productos fueron marcados como "Falta"</strong>
+                            <br />
+                            <span style={{ fontSize: '0.95em' }}>
+                                El pedido fue registrado solo para control interno. No se envió a ningún proveedor.
+                            </span>
+                        </div>,
+                        {
+                            id: toastId,
+                            duration: 12000,
+                            style: { maxWidth: '500px', background: '#fffbe6', color: '#856404' }
+                        }
+                    );
+                } else {
+                    // Solo hubo errores
+                    toast.error(
+                        <div>
+                            <strong>Error al enviar pedido</strong>
+                            <br />
+                            <div style={{ marginTop: '8px' }}>
+                                {data.resultados.errores.map(r => (
+                                    <div key={r.proveedor} style={{ marginBottom: '8px' }}>
+                                        <strong>{r.proveedor}:</strong> {r.error}
+                                        {r.detalle && <div style={{ fontSize: '0.9em' }}>{r.detalle}</div>}
+                                        {r.debug && (
+                                            <details style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                                <summary>Más detalles</summary>
+                                                <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.9em' }}>
+                                                    {JSON.stringify(r.debug, null, 2)}
+                                                </pre>
+                                            </details>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>,
+                        {
+                            id: toastId,
+                            duration: 15000,
+                            style: { maxWidth: '500px' }
+                        }
+                    );
+                }
             } else {
                 toast.error(`Error al enviar pedido${data?.error ? `: ${data.error}` : ""}`, { id: toastId });
             }
@@ -457,6 +539,49 @@ export default function RevisarPedido() {
         window.location.reload();
     };
 
+    // Validación: usuarios de compras necesitan tener sucursal seleccionada
+    if (usuario?.rol === "compras" && !sucursalValida) {
+        return (
+            <div className="revisar_wrapper">
+                <Toaster position="top-center" />
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "60vh",
+                    textAlign: "center",
+                    padding: "2rem"
+                }}>
+                    <h2 style={{ color: "#dc3545", marginBottom: "1rem" }}>
+                        Selecciona una sucursal para revisar el pedido
+                    </h2>
+                    <p style={{ fontSize: "1.1rem", color: "#666", marginBottom: "1.5rem" }}>
+                        Para revisar y enviar el pedido, primero debes seleccionar qué sucursal vas a reponer.
+                    </p>
+                    <p style={{ fontSize: "1rem", color: "#666" }}>
+                        Usa el ícono <strong>🏪</strong> en la parte superior derecha para seleccionar una sucursal.
+                    </p>
+                    <button
+                        onClick={() => navigate("/buscador")}
+                        style={{
+                            marginTop: "2rem",
+                            padding: "0.75rem 2rem",
+                            backgroundColor: "#007bff",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "1rem"
+                        }}
+                    >
+                        Volver al Buscador
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="revisar_wrapper">
 
@@ -473,8 +598,8 @@ export default function RevisarPedido() {
                     seleccion={seleccion}
                     onElegirProveedor={handleElegirProveedor}
                     onMotivo={handleMotivo}
-                    onEliminar={(ean) => eliminarDelCarrito(ean)}
-                    onChangeQty={(ean, unidades) => actualizarUnidades(ean, unidades)}
+                    onEliminar={(idQuantio) => eliminarDelCarrito(idQuantio)}
+                    onChangeQty={(idQuantio, unidades) => actualizarUnidades(idQuantio, unidades)}
                     noPedirMap={noPedirMap}
                     onToggleNoPedir={toggleNoPedir}
                     getStock={getStockConSucursal}

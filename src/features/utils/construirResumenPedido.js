@@ -3,7 +3,7 @@ export const construirResumenPedido = (carrito, seleccion) => {
     const resumen = {};
 
     for (const item of carrito) {
-        const sel = seleccion[item.ean];
+        const sel = seleccion[item.idQuantio] || seleccion[item.ean];
         if (!sel || !sel.proveedor) continue;
 
         const prov = sel.proveedor; // "deposito" | "monroe" | "suizo" | "cofarsur" | "kellerhoff" | "Falta"

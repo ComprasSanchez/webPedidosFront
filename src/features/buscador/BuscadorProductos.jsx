@@ -76,12 +76,23 @@ const BuscadorProductos = () => {
 
     const handleRealizarPedido = async () => {
         try {
+            // Determinar la sucursal actual según el rol del usuario
+            const sucursalActual = usuario?.rol === "compras" ? sucursalSeleccionada : usuario?.sucursal_codigo;
+
+            // Validar que tenemos una sucursal válida
+            if (!sucursalActual || sucursalActual.trim() === '') {
+                console.warn("⚠️ No se puede crear reservas SOFT sin sucursal válida");
+                return;
+            }
+
+            console.log("🎯 Creando reservas SOFT para sucursal:", sucursalActual);
+
             // 🎯 Crear reservas SOFT (el backend validará por stock automáticamente)
             await fetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-sucursal': usuario.sucursal_codigo
+                    'x-sucursal': sucursalActual
                 },
                 body: JSON.stringify({
                     items: carrito

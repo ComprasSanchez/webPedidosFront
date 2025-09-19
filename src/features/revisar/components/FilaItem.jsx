@@ -40,11 +40,11 @@ export default function FilaItem({
     const proveedorActual = seleccion?.proveedor;
 
 
-    const hayDepo = hayStockDeposito(item.ean, stockDisponible);
-    const stockDepo = getStock(item.ean, stockDisponible); // seguimos mostrando el número
+    const hayDepo = hayStockDeposito(item.idQuantio, stockDisponible);
+    const stockDepo = getStock(item.idQuantio, stockDisponible); // seguimos mostrando el número
     const stockDepoValido = typeof stockDepo === "number" && stockDepo > 0;
     const hayAlgunaDrogConPrecio = hayDrogConPrecioValido(
-        item.ean,
+        item.idQuantio,
         { preciosMonroe, preciosSuizo, preciosCofarsur },
         precioValido
     );
@@ -79,7 +79,7 @@ export default function FilaItem({
                 <QtyControl
                     value={item.unidades || 1}
                     disabled={!pedir}
-                    onChange={(v) => onChangeQty?.(item.ean, v)}
+                    onChange={(v) => onChangeQty?.(item.idQuantio, v)}
                 />
             </td>
 
@@ -91,12 +91,13 @@ export default function FilaItem({
                 activo={proveedorActual === "deposito"}
                 disabled={!pedir || !stockDepoValido}
                 valorMostrado={stockDepo}
-                onSelect={() => onElegirProveedor(item.ean, "deposito")}
+                onSelect={() => onElegirProveedor(item.idQuantio, "deposito")}
             />
 
             {/* Monroe */}
             <td className={proveedorActual === "monroe" ? "celda_activa" : ""}>
                 <PreciosMonroe
+                    idQuantio={item.idQuantio}
                     ean={item.ean}
                     precios={preciosMonroe}
                     seleccionado={proveedorActual === "monroe"}
@@ -107,6 +108,7 @@ export default function FilaItem({
             {/* Suizo */}
             <td className={proveedorActual === "suizo" ? "celda_activa" : ""}>
                 <PreciosSuizo
+                    idQuantio={item.idQuantio}
                     ean={item.ean}
                     precios={preciosSuizo}
                     seleccionado={proveedorActual === "suizo"}
@@ -117,6 +119,7 @@ export default function FilaItem({
             {/* Cofarsur */}
             <td className={proveedorActual === "cofarsur" ? "celda_activa" : ""}>
                 <PreciosCofarsur
+                    idQuantio={item.idQuantio}
                     ean={item.ean}
                     precios={preciosCofarsur}
                     seleccionado={proveedorActual === "cofarsur"}
@@ -127,9 +130,10 @@ export default function FilaItem({
             {/* Kellerhoff (kellerhoff en slug si así lo usás en back/estado) */}
             <td className={"celda_kellerhoff" + (proveedorActual === "kellerhoff" ? " celda_activa" : "")}>
                 <PreciosKellerhoff
+                    idQuantio={item.idQuantio}
                     ean={item.ean}
                     seleccionado={proveedorActual === "kellerhoff"}
-                    onSelect={onElegirProveedor}
+                    onSelect={(idQuantio, proveedor) => onElegirProveedor(idQuantio, proveedor)}
                 />
             </td>
 
@@ -141,7 +145,7 @@ export default function FilaItem({
                     proveedorActual={proveedorActual}
                     stockDepo={stockDepo}
                     hayAlgoPedible={hayAlgoPedible}
-                    onChange={(v) => onMotivo(item.ean, v)}
+                    onChange={(v) => onMotivo(item.idQuantio, v)}
                     opciones={opcionesMotivo}
                 />
 
@@ -152,7 +156,7 @@ export default function FilaItem({
                 <button
                     className="carrito_icon_btn"
                     title="Eliminar del carrito"
-                    onClick={onEliminar}
+                    onClick={() => onEliminar(item.idQuantio)}
                 >
                     <FaTrash />
                 </button>

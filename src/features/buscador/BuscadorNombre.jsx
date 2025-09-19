@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { useCarrito } from "../../context/CarritoContext";
 import { API_URL } from "../../config/api";
+import DuplicateProductsModal from "../../components/ui/DuplicateProductsModal";
 
 const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCodigo, sucursalId }) => {
     const { usuario, authFetch } = useAuth();
@@ -15,6 +16,11 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
     const [loadingName, setLoadingName] = useState(false);
     const [loadingTxt, setLoadingTxt] = useState(false);
     const nombreBoxRef = useRef(null);
+
+    // Estados para manejar duplicados
+    const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
+    const [duplicateItems, setDuplicateItems] = useState([]);
+    const [pendingItems, setPendingItems] = useState([]);
 
     // cerrar dropdown al click afuera o Escape
     useEffect(() => {
@@ -145,17 +151,66 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
 
             const data = await res.json();
 
-            replaceCarrito(data.items);
+            // Mapear los items del TXT al formato del carrito
+            const itemsParaCarrito = data.items.map(item => ({
+                ...item,
+                unidades: item.cantidad || 1, // Mapear 'cantidad' del TXT a 'unidades' del carrito
+                // Mantener 'cantidad' para compatibilidad si se necesita
+            }));
 
-            toast.success(
-                `Archivo cargado: ${data.totalItems} items, ${data.totalUnidades} unidades`
-            );
+            console.log("🔍 Items del TXT mapeados al carrito:", itemsParaCarrito.slice(0, 3)); // Log de los primeros 3 items
+
+            // Verificar si hay duplicados
+            if (data.hasDuplicates) {
+                const duplicates = itemsParaCarrito.filter(item => item.isDuplicate);
+                const nonDuplicates = itemsParaCarrito.filter(item => !item.isDuplicate);
+
+                console.log("🔍 Se encontraron duplicados:", data.duplicateEans);
+
+                // Agregar primero los no duplicados al carrito
+                replaceCarrito(nonDuplicates);
+
+                // Mostrar modal para resolver duplicados
+                setDuplicateItems(duplicates);
+                setPendingItems(nonDuplicates);
+                setShowDuplicatesModal(true);
+
+                toast.warning(
+                    `Archivo cargado con ${data.duplicateEans.length} códigos duplicados. Resuelve los conflictos.`,
+                    { duration: 5000 }
+                );
+            } else {
+                // No hay duplicados, proceder normal
+                replaceCarrito(itemsParaCarrito);
+
+                toast.success(
+                    `Archivo cargado: ${data.totalItems} items, ${data.totalUnidades} unidades`
+                );
+            }
         } catch (err) {
             toast.error("Error al procesar el archivo");
         } finally {
             setLoadingTxt(false);
             e.target.value = ""; // limpiar input para poder re-subir
         }
+    };
+
+    // Función para manejar la resolución de duplicados
+    const handleResolveDuplicates = (resolvedItems) => {
+        // Combinar items no duplicados con items resueltos
+        const finalItems = [...pendingItems, ...resolvedItems];
+        replaceCarrito(finalItems);
+
+        const totalItems = finalItems.length;
+        const totalUnidades = finalItems.reduce((sum, item) => sum + item.unidades, 0);
+
+        toast.success(
+            `Duplicados resueltos: ${totalItems} items, ${totalUnidades} unidades`
+        );
+
+        // Limpiar estados
+        setDuplicateItems([]);
+        setPendingItems([]);
     };
 
     return (
@@ -231,6 +286,14 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                     Sin resultados…
                 </div>
             )}
+
+            {/* Modal para duplicados */}
+            <DuplicateProductsModal
+                isOpen={showDuplicatesModal}
+                onClose={() => setShowDuplicatesModal(false)}
+                duplicateItems={duplicateItems}
+                onResolve={handleResolveDuplicates}
+            />
         </div>
     );
 };

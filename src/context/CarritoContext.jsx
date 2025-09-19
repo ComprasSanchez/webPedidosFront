@@ -108,27 +108,55 @@ export const CarritoProvider = ({ children }) => {
     // --- Helpers de negocio
     const agregarAlCarrito = (producto, cantidad) => {
         setCarrito(prev => {
-            const idx = prev.findIndex(p => p.ean === producto.ean);
+
+            // Normalizar idQuantio a string
+            const idQuantio = String(producto.idQuantio || producto.idProducto);
+            if (!idQuantio) {
+                console.warn("⚠️ Producto sin identificador único (idQuantio o idProducto):", producto);
+                return prev; // No agregar productos sin identificador único
+            }
+
+            // Buscar producto existente por idQuantio (como string)
+            const idx = prev.findIndex(p => String(p.idQuantio) === idQuantio);
             if (idx >= 0) {
                 const copia = [...prev];
                 const unidadesPrev = Number(copia[idx].unidades || 0);
-                copia[idx] = { ...copia[idx], ...producto, unidades: unidadesPrev + Number(cantidad || 0) };
+                copia[idx] = {
+                    ...copia[idx],
+                    ...producto, // Actualizar datos del producto existente
+                    idQuantio, // Forzar string
+                    unidades: unidadesPrev + Number(cantidad || 0) // Sumar unidades
+                };
                 return copia;
             }
-            return [...prev, { ...producto, unidades: Number(cantidad || 0) }];
+
+            // Normalizar el producto antes de agregarlo
+            const nuevoProducto = {
+                ...producto, // Mantener otros atributos si existen
+                idQuantio, // Forzar string
+                ean: producto.ean,
+                nombre: producto.nombre,
+                unidades: Number(cantidad || 0)
+            };
+            return [...prev, nuevoProducto];
         });
     };
 
-    const actualizarCantidad = (ean, nuevaCantidad) => {
-        setCarrito(prev => prev.map(p => p.ean === ean ? { ...p, unidades: Number(nuevaCantidad || 0) } : p));
+
+    // Ahora usa idQuantio (CodPlex) para identificar el producto
+    const actualizarCantidad = (idQuantio, nuevaCantidad) => {
+        setCarrito(prev => prev.map(p => p.idQuantio === idQuantio ? { ...p, unidades: Number(nuevaCantidad || 0) } : p));
     };
+
 
     function replaceCarrito(items) {
         setCarrito(items);
     }
 
-    const eliminarDelCarrito = (ean) => {
-        setCarrito(prev => prev.filter(p => p.ean !== ean));
+
+    // Ahora usa idQuantio (CodPlex) para identificar el producto
+    const eliminarDelCarrito = (idQuantio) => {
+        setCarrito(prev => prev.filter(p => p.idQuantio !== idQuantio));
     };
 
     const vaciarCarrito = async () => {
@@ -154,13 +182,15 @@ export const CarritoProvider = ({ children }) => {
         await vaciarCarrito();
     };
 
-    const actualizarUnidades = (ean, nuevasUnidades) => {
+
+    // Ahora usa idQuantio (CodPlex) para identificar el producto
+    const actualizarUnidades = (idQuantio, nuevasUnidades) => {
         setCarrito((prev) => {
             if (nuevasUnidades <= 0) {
-                return prev.filter((it) => it.ean !== ean);
+                return prev.filter((it) => it.idQuantio !== idQuantio);
             }
             return prev.map((it) =>
-                it.ean === ean ? { ...it, unidades: nuevasUnidades } : it
+                it.idQuantio === idQuantio ? { ...it, unidades: nuevasUnidades } : it
             );
         });
     };

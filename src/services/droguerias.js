@@ -10,44 +10,10 @@ function withTimeout(promise, ms = 12000, controller) {
     return promise.finally(() => clearTimeout(id));
 }
 
-export const getStockDeposito = async (carrito, sucursalCodigo) => {
-    if (!sucursalCodigo) {
-        console.warn("❌ No se recibió sucursalCodigo para consultar stock");
-        return [];
-    }
-
-    const eanUnicos = [...new Set(carrito.map((item) => item.ean))];
-
-
-    try {
-        const res = await fetch(`${API_URL}/api/stock/quantio/batch`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
-            body: JSON.stringify({ sucursal: sucursalCodigo, eans: eanUnicos }),
-        });
-
-
-        if (!res.ok) {
-            const txt = await res.text().catch(() => "");
-            console.error("Batch stock HTTP", res.status, txt);
-            return eanUnicos.map(ean => ({ ean, stock: "-", error: "HTTP_ERROR" }));
-        }
-
-        const data = await res.json(); // [{ean, stock}]
-        // Mapear a salida alineada al carrito (por si hay repetidos)
-        const map = new Map(data.map(d => [String(d.ean), d]));
-        return carrito.map(item => {
-            const d = map.get(String(item.ean));
-            return { ean: item.ean, stock: d ? d.stock : "-", error: d?.error || null };
-        });
-    } catch (err) {
-        console.error("Error consultando stock Quantio (batch):", err);
-        return carrito.map(item => ({ ean: item.ean, stock: "-", error: "ERROR_CONEXION" }));
-    }
-};
-
-
 export async function getStockDisponible(carrito, sucursal, { fetch, headers }) {
+
+    // ...
+
     const items = carrito
         .filter(item => item.idQuantio) // solo productos con ID válido
         .map(item => ({
@@ -70,6 +36,8 @@ export async function getStockDisponible(carrito, sucursal, { fetch, headers }) 
     if (!res.ok) throw new Error("Error obteniendo stock disponible");
 
     const backendData = await res.json(); // [{ idProducto, stockReal, hardActivas, softActivas, disponible }]
+
+    // ...
 
     // Mapear los datos del backend para incluir el EAN correspondiente
     const resultado = backendData.map(stockItem => {
@@ -304,7 +272,6 @@ export async function getPreciosCofarsur(
         return carrito.map(it => ({ ean: it.ean, stock: null, priceList: null, offerPrice: null, offers: [], _status: 0 }));
     }
 }
-
 
 // Simula delay de red
 const delay = (ms = 300) =>
