@@ -76,40 +76,6 @@ export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
 
     const controller = new AbortController();
 
-    // Fallback legacy (por si falla el batch)
-    async function fallbackLegacy() {
-        const calls = carrito.map(async (item) => {
-            const url = `${API_URL}/api/droguerias/monroe/${encodeURIComponent(item.ean)}?sucursal=${encodeURIComponent(sucursal)}&unidades=${encodeURIComponent(item.unidades)}`;
-            const ctrl = new AbortController();
-            try {
-                const res = await withTimeout(
-                    f(url, { headers: { ...baseHeaders }, signal: ctrl.signal }),
-                    timeoutMs,
-                    ctrl
-                );
-                if (!res.ok) {
-                    return { ean: item.ean, stock: null, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], noDisponible: false, error: `HTTP ${res.status}`, _status: res.status };
-                }
-                const data = await res.json();
-                const stock = data?.stock === true;
-                const priceList = typeof data?.priceList === 'number' ? data.priceList : null;
-                const offerPrice = typeof data?.offerPrice === 'number' ? data.offerPrice : null;
-                const finalPrice = offerPrice ?? priceList ?? null;
-                const effectiveDiscountPct = (typeof priceList === 'number' && typeof finalPrice === 'number')
-                    ? Number(((1 - (finalPrice / priceList)) * 100).toFixed(2))
-                    : null;
-                const offers = Array.isArray(data?.offers) ? data.offers : [];
-                const error = typeof data?.error === 'string' ? data.error : null;
-                const noDisponible = data?.noDisponible === true;
-
-                return { ean: item.ean, stock, priceList, offerPrice, finalPrice, effectiveDiscountPct, offers, noDisponible, error, _status: res.status };
-            } catch (e) {
-                return { ean: item.ean, stock: null, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], noDisponible: false, error: 'Error de conexión', _status: 0 };
-            }
-        });
-        return Promise.all(calls);
-    }
-
     try {
         // Llamada batch
         const res = await withTimeout(
@@ -125,14 +91,12 @@ export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
         );
 
         if (!res.ok) {
-            // Si el batch no responde OK, caemos a legacy
-            return await fallbackLegacy();
+            throw new Error('Error consultando Monroe batch');
         }
 
         const data = await res.json(); // { error, resultados: { [ean]: {...} } }
         if (data.error) {
-            // Si el back devolvió error, caemos a legacy
-            return await fallbackLegacy();
+            throw new Error(data.error);
         }
 
         const resultados = data.resultados || {};
@@ -170,13 +134,27 @@ export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
                 error: r.error || null,
                 _status: res.status
             };
-        });
+        }); x
 
     } catch (err) {
-        // Error de red/timeout -> legacy
-        return await fallbackLegacy();
+        // Error de red/timeout -> mostrar error directo
+        return items.map(it => ({
+            ean: it.ean,
+            stock: null,
+            priceList: null,
+            offerPrice: null,
+            finalPrice: null,
+            effectiveDiscountPct: null,
+            minimo_unids: null,
+            offers: [],
+            noDisponible: false,
+            error: err.message || 'Error de conexión',
+            _status: 0
+        }));
     }
 }
+
+
 export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
