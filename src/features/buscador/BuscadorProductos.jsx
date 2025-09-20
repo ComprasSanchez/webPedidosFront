@@ -74,41 +74,48 @@ const BuscadorProductos = () => {
         setProductoSeleccionado(null);
     };
 
-    const handleRealizarPedido = async () => {
-        try {
-            // Determinar la sucursal actual según el rol del usuario
-            const sucursalActual = usuario?.rol === "compras" ? sucursalSeleccionada : usuario?.sucursal_codigo;
+    const handleRealizarPedido = () => {
+        // Navegar inmediatamente para mejor UX
+        navigate("/revisar");
 
-            // Validar que tenemos una sucursal válida
-            if (!sucursalActual || sucursalActual.trim() === '') {
-                console.warn("⚠️ No se puede crear reservas SOFT sin sucursal válida");
-                return;
+        // Crear reservas SOFT en segundo plano (sin bloquear la interfaz)
+        const crearReservasSoft = async () => {
+            try {
+                // Determinar la sucursal actual según el rol del usuario
+                const sucursalActual = usuario?.rol === "compras" ? sucursalSeleccionada : usuario?.sucursal_codigo;
+
+                // Validar que tenemos una sucursal válida
+                if (!sucursalActual || sucursalActual.trim() === '') {
+                    console.warn("⚠️ No se puede crear reservas SOFT sin sucursal válida");
+                    return;
+                }
+
+                console.log("🎯 Creando reservas SOFT para sucursal:", sucursalActual);
+
+                // 🎯 Crear reservas SOFT (el backend validará por stock automáticamente)
+                await fetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-sucursal': sucursalActual
+                    },
+                    body: JSON.stringify({
+                        items: carrito
+                            .filter(item => item.idQuantio) // Solo productos con ID válido
+                            .map(item => ({
+                                idproducto: item.idQuantio,
+                                cantidad: item.unidades || 1
+                            }))
+                    })
+                });
+            } catch (error) {
+                console.warn('Reserva SOFT fallida, se continúa sin frenar:', error.message);
+                // No se muestra nada al usuario
             }
+        };
 
-            console.log("🎯 Creando reservas SOFT para sucursal:", sucursalActual);
-
-            // 🎯 Crear reservas SOFT (el backend validará por stock automáticamente)
-            await fetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-sucursal': sucursalActual
-                },
-                body: JSON.stringify({
-                    items: carrito
-                        .filter(item => item.idQuantio) // Solo productos con ID válido
-                        .map(item => ({
-                            idproducto: item.idQuantio,
-                            cantidad: item.unidades || 1
-                        }))
-                })
-            });
-        } catch (error) {
-            console.warn('Reserva SOFT fallida, se continúa sin frenar:', error.message);
-            // No se muestra nada al usuario
-        } finally {
-            navigate("/revisar");
-        }
+        // Ejecutar en segundo plano
+        crearReservasSoft();
     };
 
     // Si es usuario de compras y no tiene sucursal seleccionada, mostrar mensaje
