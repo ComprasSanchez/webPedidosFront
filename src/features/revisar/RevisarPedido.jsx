@@ -176,17 +176,8 @@ export default function RevisarPedido() {
         };
     }, [carrito]);
 
-    // Mostrar mensaje de éxito después de recargar la página
-    useEffect(() => {
-        if (sessionStorage.getItem('preciosActualizados') === 'true') {
-            sessionStorage.removeItem('preciosActualizados');
-            toast.success("Precios y stock actualizados correctamente");
-        }
-    }, []);
-
     const { preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, loading: loadingPS }
         = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders });
-
 
     const { reglas, ready, matchConvenio } = useConvenios({ sucursal: sucursalActual });
 
@@ -201,6 +192,21 @@ export default function RevisarPedido() {
 
     const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDisponible?.length);
     const loading = loadingPS || !ready;
+
+    // Mostrar toast cuando termine el loading y haya flag de actualización
+    useEffect(() => {
+        const flag = localStorage.getItem('preciosActualizados');
+        const timestamp = localStorage.getItem('preciosActualizadosTime');
+        const now = Date.now();
+        const recentReload = timestamp && (now - parseInt(timestamp)) < 5000; // 5 segundos
+
+        // Mostrar toast si terminó loading, hay datos Y (hay flag O fue recarga reciente)
+        if (!loading && datosCompletos && (flag === 'true' || recentReload)) {
+            localStorage.removeItem('preciosActualizados');
+            localStorage.removeItem('preciosActualizadosTime');
+            toast.success("Precios y stock actualizados");
+        }
+    }, [loading, datosCompletos]);
 
     const handleMotivo = (idQuantio, motivo) => setSeleccion(prev => ({ ...prev, [idQuantio]: { ...prev[idQuantio], motivo } }));
 
@@ -532,7 +538,8 @@ export default function RevisarPedido() {
 
         // Marcar que se está actualizando para mostrar el loading nativo
         sessionStorage.setItem('actualizandoPrecios', 'true');
-        sessionStorage.setItem('preciosActualizados', 'true');
+        localStorage.setItem('preciosActualizados', 'true');
+        localStorage.setItem('preciosActualizadosTime', Date.now().toString());
 
         // Recargar inmediatamente para mostrar el loading y luego los datos frescos
         window.location.reload();
