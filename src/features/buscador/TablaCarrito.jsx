@@ -1,10 +1,14 @@
 // front/src/features/buscador/TablaCarrito.jsx
 
+
 import { FaTrash } from "react-icons/fa";
 import { useCarrito } from "../../context/CarritoContext";
+import { useState } from "react";
 
 const TablaCarrito = ({ eanRecienAgregado }) => {
-    const { carrito, eliminarDelCarrito, actualizarUnidades } = useCarrito();
+
+    const { carrito, eliminarDelCarrito, actualizarUnidades, vaciarCarrito } = useCarrito();
+    const [showConfirm, setShowConfirm] = useState(false);
 
     if (carrito.length === 0) {
         return (
@@ -31,8 +35,37 @@ const TablaCarrito = ({ eanRecienAgregado }) => {
                         <th>Descripción</th>
                         <th>Laboratorio</th>
                         <th>Stock sucursal</th>
-                        <th>Unidades</th>
-                        <th><FaTrash /></th>
+                        <th>
+                            Unidades
+                        </th>
+                        <th style={{ cursor: "pointer", position: "relative" }}
+                            onClick={() => setShowConfirm(true)}
+                            title="Vaciar carrito"> <FaTrash />
+                            {showConfirm && (
+                                <span style={{ position: "absolute", left: "50%", top: "100%", transform: "translate(-50%, 0)", zIndex: 10 }}>
+                                    <button
+                                        style={{ margin: 4, background: "#c00", color: "#fff", border: "none", borderRadius: 4, padding: "4px 10px", cursor: "pointer" }}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            vaciarCarrito();
+                                            setShowConfirm(false);
+                                        }}
+                                    >
+                                        Confirmar vaciado
+                                    </button>
+                                    <button
+                                        style={{ margin: 4, background: "#eee", color: "#333", border: "1px solid #ccc", borderRadius: 4, padding: "4px 10px", cursor: "pointer" }}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            setShowConfirm(false);
+                                        }}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </span>
+                            )}
+
+                        </th>
                     </tr>
                 </thead>
                 <tbody>

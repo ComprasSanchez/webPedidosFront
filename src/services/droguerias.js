@@ -65,43 +65,116 @@ export async function getStockDisponible(carrito, sucursal, { fetch, headers }) 
 export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
+    const timeoutMs = opts.timeoutMs ?? 15000;
 
-    try {
+    // Si no hay EANs o sucursal, devolver vacío
+    const items = (carrito || [])
+        .filter(it => it?.ean)
+        .map(it => ({ ean: it.ean, cantidad: it.cantidad || it.unidades || 1 }));
+
+    if (!items.length || !sucursal) return [];
+
+    const controller = new AbortController();
+
+    // Fallback legacy (por si falla el batch)
+    async function fallbackLegacy() {
         const calls = carrito.map(async (item) => {
             const url = `${API_URL}/api/droguerias/monroe/${encodeURIComponent(item.ean)}?sucursal=${encodeURIComponent(sucursal)}&unidades=${encodeURIComponent(item.unidades)}`;
-
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 12000);
-
+            const ctrl = new AbortController();
             try {
-                const res = await f(url, { headers: { ...baseHeaders }, signal: controller.signal });
-
-                // si hay 401/403 devolvemos estructura “vacía” para no romper la UI
+                const res = await withTimeout(
+                    f(url, { headers: { ...baseHeaders }, signal: ctrl.signal }),
+                    timeoutMs,
+                    ctrl
+                );
                 if (!res.ok) {
-                    console.warn('Monroe no-OK', res.status);
-                    return { ean: item.ean, stock: null, priceList: null, offerPrice: null, offers: [], _status: res.status };
+                    return { ean: item.ean, stock: null, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], noDisponible: false, error: `HTTP ${res.status}`, _status: res.status };
                 }
-
                 const data = await res.json();
-                // normalizamos por seguridad
                 const stock = data?.stock === true;
                 const priceList = typeof data?.priceList === 'number' ? data.priceList : null;
                 const offerPrice = typeof data?.offerPrice === 'number' ? data.offerPrice : null;
+                const finalPrice = offerPrice ?? priceList ?? null;
+                const effectiveDiscountPct = (typeof priceList === 'number' && typeof finalPrice === 'number')
+                    ? Number(((1 - (finalPrice / priceList)) * 100).toFixed(2))
+                    : null;
                 const offers = Array.isArray(data?.offers) ? data.offers : [];
+                const error = typeof data?.error === 'string' ? data.error : null;
+                const noDisponible = data?.noDisponible === true;
 
-                return { ean: item.ean, stock, priceList, offerPrice, offers, _status: res.status };
+                return { ean: item.ean, stock, priceList, offerPrice, finalPrice, effectiveDiscountPct, offers, noDisponible, error, _status: res.status };
             } catch (e) {
-                console.warn('Error fetch Monroe', e?.message || e);
-                return { ean: item.ean, stock: null, priceList: null, offerPrice: null, offers: [], _status: 0 };
-            } finally {
-                clearTimeout(id);
+                return { ean: item.ean, stock: null, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], noDisponible: false, error: 'Error de conexión', _status: 0 };
             }
         });
+        return Promise.all(calls);
+    }
 
-        return await Promise.all(calls);
+    try {
+        // Llamada batch
+        const res = await withTimeout(
+            f(`${API_URL}/api/droguerias/monroe/batch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...baseHeaders },
+                credentials: 'include',
+                body: JSON.stringify({ sucursal, items }),
+                signal: controller.signal
+            }),
+            timeoutMs,
+            controller
+        );
+
+        if (!res.ok) {
+            // Si el batch no responde OK, caemos a legacy
+            return await fallbackLegacy();
+        }
+
+        const data = await res.json(); // { error, resultados: { [ean]: {...} } }
+        if (data.error) {
+            // Si el back devolvió error, caemos a legacy
+            return await fallbackLegacy();
+        }
+
+        const resultados = data.resultados || {};
+
+        // Mapeo al shape que usa tu front (por EAN)
+        return items.map(it => {
+            const r = resultados[it.ean];
+            if (!r) {
+                return { ean: it.ean, stock: false, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, minimo_unids: null, offers: [], noDisponible: false, error: null, _status: res.status };
+            }
+
+            const stock = r.stock === true;
+            const priceList = typeof r.priceList === 'number' ? r.priceList : null;
+            const offerPrice = typeof r.offerPrice === 'number' ? r.offerPrice : null;
+            const finalPrice = (typeof r.finalPrice === 'number') ? r.finalPrice : (offerPrice ?? priceList ?? null);
+            const effectiveDiscountPct = (typeof r.effectiveDiscountPct === 'number')
+                ? r.effectiveDiscountPct
+                : ((typeof priceList === 'number' && typeof finalPrice === 'number')
+                    ? Number(((1 - (finalPrice / priceList)) * 100).toFixed(2))
+                    : null);
+            const minimo_unids = Number.isFinite(r.minimo_unids) ? r.minimo_unids : null;
+            const offers = Array.isArray(r.offers) ? r.offers : [];
+            const noDisponible = r.noDisponible === true;
+
+            return {
+                ean: it.ean,
+                stock,
+                priceList,
+                offerPrice,
+                finalPrice,
+                effectiveDiscountPct,
+                minimo_unids,
+                offers,
+                noDisponible,
+                error: r.error || null,
+                _status: res.status
+            };
+        });
+
     } catch (err) {
-        console.error("Error en getPreciosMonroe:", err?.message || err);
-        return carrito.map(it => ({ ean: it.ean, stock: null, priceList: null, offerPrice: null, offers: [], _status: 0 }));
+        // Error de red/timeout -> legacy
+        return await fallbackLegacy();
     }
 }
 export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
