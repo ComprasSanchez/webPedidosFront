@@ -276,16 +276,56 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
 }
 
 
-export async function getPreciosCofarsur(
-    carrito,
-    sucursal,
-    opts = {}
-) {
+export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
     const timeoutMs = opts.timeoutMs ?? 12000;
 
-    const calls = carrito.map(async (item) => {
+    // Si no hay EANs o sucursal, devolver vacío
+    const items = (carrito || [])
+        .filter(it => it?.ean)
+        .map(it => ({ ean: it.ean, cantidad: it.cantidad || 1 }));
+
+    if (!items.length || !sucursal) return [];
+
+    // DETECTAR TIPO DE USUARIO Y CANTIDAD
+    // Si hay header x-user-rol o si detectamos contexto de compras/reposición
+    const userAgent = baseHeaders['user-agent'] || '';
+    const userRole = baseHeaders['x-user-rol'] || ''; // Si se puede pasar desde contexto
+    const isReposicion = userRole === 'compras' ||
+        userAgent.includes('compras') ||
+        userAgent.includes('reposicion') ||
+        window?.location?.pathname?.includes('/reposicion');
+
+    const shouldUseBatch = isReposicion && items.length >= 15;
+
+    // 📊 LOG PARA MONITOREO
+    console.log(`[Cofarsur] Decisión:`, {
+        userRole,
+        isReposicion,
+        productCount: items.length,
+        shouldUseBatch,
+        endpoint: shouldUseBatch ? 'REST_BATCH' : 'SOAP_INDIVIDUAL',
+        decision: shouldUseBatch
+            ? `REST batch para ${items.length} productos (usuario: ${userRole})`
+            : `SOAP individual para ${items.length} productos (usuario: ${userRole || 'sucursal'})`
+    });
+
+    // DECISIÓN: usar batch (REST) o individual (SOAP)
+    if (shouldUseBatch) {
+        // USAR ENDPOINT BATCH (REST) para usuarios de reposición con 15+ productos
+        return await getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeoutMs });
+    } else {
+        // USAR ENDPOINT INDIVIDUAL (SOAP) para sucursales o lotes pequeños
+        return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+    }
+}
+
+// Función auxiliar para consultas individuales (SOAP)
+async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs }) {
+    console.log(`[Cofarsur] 🔵 Ejecutando SOAP individual para ${items.length} productos`);
+
+    const calls = items.map(async (item) => {
         const url = `${API_URL}/api/droguerias/cofarsur/${encodeURIComponent(item.ean)}?sucursal=${encodeURIComponent(sucursal)}`;
         const controller = new AbortController();
 
@@ -297,8 +337,8 @@ export async function getPreciosCofarsur(
             );
 
             if (!res.ok) {
-                console.warn('Cofarsur no-OK', res.status);
-                return { ean: item.ean, stock: null, priceList: null, offerPrice: null, offers: [], _status: res.status };
+                console.warn('Cofarsur individual no-OK', res.status);
+                return { ean: item.ean, stock: null, priceList: null, offerPrice: null, offers: [], minimo_unids: null, _status: res.status };
             }
 
             const data = await res.json();
@@ -308,19 +348,105 @@ export async function getPreciosCofarsur(
             const offers = Array.isArray(data?.offers) ? data.offers : [];
             const error = typeof data?.error === 'string' ? data.error : null;
 
-            return { ean: item.ean, stock, priceList, offerPrice, offers, error, _status: res.status };
+            // 🔧 EXTRAER CANTIDAD MÍNIMA DEL SOAP
+            const minimo_unids = typeof data?.cantidadMinima === 'number' ? data.cantidadMinima : null;
+
+            // 📊 LOG CANTIDAD MÍNIMA FRONTEND
+            console.log(`[Cofarsur] 🔵 SOAP Frontend - EAN: ${item.ean}, cantidadMinima: ${data?.cantidadMinima}, minimo_unids: ${minimo_unids}, mostrarán: ${minimo_unids > 1 ? 'SÍ' : 'NO'}`);
+
+            return {
+                ean: item.ean,
+                stock,
+                priceList,
+                offerPrice,
+                offers,
+                error,
+                minimo_unids,  // ✅ Agregar cantidad mínima
+                _status: res.status
+            };
 
         } catch (e) {
-            console.warn('Error fetch Cofarsur', e?.message || e);
-            return { ean: item.ean, stock: null, priceList: null, offerPrice: null, offers: [], _status: 0 };
+            console.warn('Error fetch Cofarsur individual', e?.message || e);
+            return { ean: item.ean, stock: null, priceList: null, offerPrice: null, offers: [], minimo_unids: null, _status: 0 };
         }
     });
 
     try {
-        return await Promise.all(calls);
+        const results = await Promise.all(calls);
+        console.log(`[Cofarsur] ✅ SOAP individual exitoso para ${items.length} productos`);
+        return results;
     } catch (err) {
-        console.error("Error en getPreciosCofarsur:", err?.message || err);
-        return carrito.map(it => ({ ean: it.ean, stock: null, priceList: null, offerPrice: null, offers: [], _status: 0 }));
+        console.error("Error en getPreciosCofarsurIndividual:", err?.message || err);
+        return items.map(it => ({ ean: it.ean, stock: null, priceList: null, offerPrice: null, offers: [], minimo_unids: null, _status: 0 }));
+    }
+}
+
+// Función auxiliar para consultas batch (REST)
+async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeoutMs }) {
+    console.log(`[Cofarsur] 🟢 Ejecutando REST batch para ${items.length} productos`);
+
+    const controller = new AbortController();
+
+    try {
+        // Llamada batch REST
+        const res = await withTimeout(
+            f(`${API_URL}/api/droguerias/cofarsur/batch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...baseHeaders },
+                credentials: 'include',
+                body: JSON.stringify({ sucursal, items }),
+                signal: controller.signal
+            }),
+            timeoutMs,
+            controller
+        );
+
+        if (!res.ok) {
+            console.warn('Cofarsur batch no-OK, fallback a individual', res.status);
+            // Fallback a individual si falla el batch
+            return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+        }
+
+        const data = await res.json(); // { error, resultados: { [ean]: {...} } }
+        if (data.error) {
+            console.warn('Cofarsur batch error, fallback a individual:', data.error);
+            // Fallback a individual si hay error
+            return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+        }
+
+        const resultados = data.resultados || {};
+
+        console.log(`[Cofarsur] ✅ REST batch exitoso para ${items.length} productos`);
+
+        // Mapeo al shape que usa el frontend (por EAN)
+        return items.map(it => {
+            const r = resultados[it.ean];
+            if (!r) {
+                return { ean: it.ean, stock: false, priceList: null, offerPrice: null, offers: [], error: null, minimo_unids: null, _status: res.status };
+            }
+
+            const stock = r.stock === true;
+            const priceList = typeof r.priceList === 'number' ? r.priceList : null;
+            const offerPrice = typeof r.offerPrice === 'number' ? r.offerPrice : null;
+            const offers = Array.isArray(r.offers) ? r.offers : [];
+            const error = typeof r.error === 'string' ? r.error : null;
+
+            return {
+                ean: it.ean,
+                stock,
+                priceList,
+                offerPrice,
+                offers,
+                error,
+                minimo_unids: null,  // ⚠️ REST no maneja cantidades mínimas
+                _status: res.status
+            };
+        });
+
+    } catch (err) {
+        console.warn('Error en getPreciosCofarsurBatch, fallback a individual:', err?.message || err);
+        // Fallback a individual en caso de error de red
+        return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
     }
 }
 

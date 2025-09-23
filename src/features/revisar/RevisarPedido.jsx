@@ -177,7 +177,7 @@ export default function RevisarPedido() {
     }, [carrito]);
 
     const { preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, loading: loadingPS }
-        = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders });
+        = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario });
 
     const { reglas, ready, matchConvenio } = useConvenios({ sucursal: sucursalActual });
 

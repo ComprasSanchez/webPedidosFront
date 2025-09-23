@@ -14,6 +14,12 @@ const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect }) =>
     const precio = p.offerPrice ?? p.priceList;
     if (!precio || precio === 0) return <div className={clase}>SIN PRECIO</div>;
 
+    // 🔧 EXTRAER CANTIDAD MÍNIMA
+    const minUnits = Number.isFinite(p.minimo_unids) ? p.minimo_unids : null;
+
+    // 📊 LOG CANTIDAD MÍNIMA COMPONENTE
+    console.log(`[Cofarsur] 🎨 Componente - EAN: ${ean}, minimo_unids: ${p.minimo_unids}, minUnits: ${minUnits}, mostrará: ${minUnits > 1 ? 'SÍ Min.: ' + minUnits : 'NO'}`);
+
     const handleClick = () => {
         if (p && precio && precio > 0) {
             onSelect(idQuantio, "cofarsur");
@@ -39,9 +45,13 @@ const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect }) =>
                     ✔
                 </span>
             </div>
-            {p.offers?.length > 0 && (
+            {/* ✅ MOSTRAR OFERTAS Y CANTIDAD MÍNIMA */}
+            {(p.offers?.length > 0 || minUnits > 1) && (
                 <div style={{ marginTop: "4px", fontSize: "11px", color: "#333" }}>
-                    {p.offers.map((o, idx) => (
+                    {/* Mostrar cantidad mínima si es mayor a 1 */}
+                    {minUnits > 1 && <div>Min.: {minUnits}</div>}
+                    {/* Mostrar ofertas */}
+                    {p.offers?.map((o, idx) => (
                         <div key={idx}>{o.descripcion}</div>
                     ))}
                 </div>
