@@ -25,7 +25,8 @@ export default function Navbar() {
 
         if (usuario?.rol === "compras") {
             return [
-                { to: "/reposicion", label: "Reposición", icon: FaSearch }
+                { to: "/reposicion", label: "Reposición", icon: FaSearch },
+                { to: "/revisar", label: "Carrito", icon: FaShoppingCart }
             ];
         }
 
@@ -103,7 +104,7 @@ export default function Navbar() {
                 <div className="navbar_user">
                     <span className="navbar_usuario">
                         {usuario?.rol === "compras" ? (
-                            sucursalSeleccionada ? `Reponiendo: ${sucursalSeleccionada}` : "Seleccionar sucursal"
+                            sucursalSeleccionada ? `Repo: ${sucursalSeleccionada}` : "Seleccionar sucursal"
                         ) : (
                             usuario?.sucursal_codigo ?? usuario?.usuario ?? "Usuario"
                         )}
