@@ -299,18 +299,6 @@ export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
 
     const shouldUseBatch = isReposicion && items.length >= 15;
 
-    // 📊 LOG PARA MONITOREO
-    console.log(`[Cofarsur] Decisión:`, {
-        userRole,
-        isReposicion,
-        productCount: items.length,
-        shouldUseBatch,
-        endpoint: shouldUseBatch ? 'REST_BATCH' : 'SOAP_INDIVIDUAL',
-        decision: shouldUseBatch
-            ? `REST batch para ${items.length} productos (usuario: ${userRole})`
-            : `SOAP individual para ${items.length} productos (usuario: ${userRole || 'sucursal'})`
-    });
-
     // DECISIÓN: usar batch (REST) o individual (SOAP)
     if (shouldUseBatch) {
         // USAR ENDPOINT BATCH (REST) para usuarios de reposición con 15+ productos
