@@ -311,7 +311,6 @@ export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
 
 // Función auxiliar para consultas individuales (SOAP)
 async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs }) {
-    console.log(`[Cofarsur] 🔵 Ejecutando SOAP individual para ${items.length} productos`);
 
     const calls = items.map(async (item) => {
         const url = `${API_URL}/api/droguerias/cofarsur/${encodeURIComponent(item.ean)}?sucursal=${encodeURIComponent(sucursal)}`;
@@ -339,9 +338,6 @@ async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, t
             // 🔧 EXTRAER CANTIDAD MÍNIMA DEL SOAP
             const minimo_unids = typeof data?.cantidadMinima === 'number' ? data.cantidadMinima : null;
 
-            // 📊 LOG CANTIDAD MÍNIMA FRONTEND
-            console.log(`[Cofarsur] 🔵 SOAP Frontend - EAN: ${item.ean}, cantidadMinima: ${data?.cantidadMinima}, minimo_unids: ${minimo_unids}, mostrarán: ${minimo_unids > 1 ? 'SÍ' : 'NO'}`);
-
             return {
                 ean: item.ean,
                 stock,
@@ -361,7 +357,6 @@ async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, t
 
     try {
         const results = await Promise.all(calls);
-        console.log(`[Cofarsur] ✅ SOAP individual exitoso para ${items.length} productos`);
         return results;
     } catch (err) {
         console.error("Error en getPreciosCofarsurIndividual:", err?.message || err);
@@ -371,7 +366,6 @@ async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, t
 
 // Función auxiliar para consultas batch (REST)
 async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeoutMs }) {
-    console.log(`[Cofarsur] 🟢 Ejecutando REST batch para ${items.length} productos`);
 
     const controller = new AbortController();
 
@@ -403,8 +397,6 @@ async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeou
         }
 
         const resultados = data.resultados || {};
-
-        console.log(`[Cofarsur] ✅ REST batch exitoso para ${items.length} productos`);
 
         // Mapeo al shape que usa el frontend (por EAN)
         return items.map(it => {

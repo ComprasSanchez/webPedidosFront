@@ -17,9 +17,6 @@ const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect }) =>
     // 🔧 EXTRAER CANTIDAD MÍNIMA
     const minUnits = Number.isFinite(p.minimo_unids) ? p.minimo_unids : null;
 
-    // 📊 LOG CANTIDAD MÍNIMA COMPONENTE
-    console.log(`[Cofarsur] 🎨 Componente - EAN: ${ean}, minimo_unids: ${p.minimo_unids}, minUnits: ${minUnits}, mostrará: ${minUnits > 1 ? 'SÍ Min.: ' + minUnits : 'NO'}`);
-
     const handleClick = () => {
         if (p && precio && precio > 0) {
             onSelect(idQuantio, "cofarsur");
