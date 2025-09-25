@@ -22,7 +22,7 @@ export default function UltimosPedidos() {
     const [start, setStart] = useState("");
     const [end, setEnd] = useState("");
 
-    const [idsFiltrados, setIdsFiltrados] = useState(null);
+    const [idsFiltrados, setIdsFiltrados] = useState(null); // ahora serán id_pedido
 
     // data
     const [page, setPage] = useState(1);
@@ -51,10 +51,10 @@ export default function UltimosPedidos() {
     }
 
     const handleAbrir = (e) => {
-        const { start, end, ids } = e.detail || {};
+        const { start, end, idPedidos } = e.detail || {};
         if (start) setStart(start);
         if (end) setEnd(end);
-        setIdsFiltrados(ids?.length ? ids : null);
+        setIdsFiltrados(idPedidos?.length ? idPedidos : null);
         setOpen(true);
 
         // fetch con filtros directamente
@@ -63,7 +63,7 @@ export default function UltimosPedidos() {
         const hasta = end || e_;
 
         queueMicrotask(() => {
-            fetchPedidos(1, ids?.length ? ids : null, desde, hasta);
+            fetchPedidos(1, idPedidos?.length ? idPedidos : null, desde, hasta);
         });
     };
 
@@ -136,13 +136,23 @@ export default function UltimosPedidos() {
 
             if (idsFiltro?.length) {
                 const idsSet = new Set(idsFiltro.map(id => String(id)));
-
-                pedidosFiltrados = pedidosFiltrados.filter(p => {
-                    return p.items?.some(i => {
-                        const idProductoStr = String(i.id_producto);
-                        return idsSet.has(idProductoStr);
+                // Filtrar por id_pedido y solo ítems pendientes (sin número válido)
+                const excluidas = ['kellerof', 'kellerhoff', 'falta', 'Faltante', 'Falta'];
+                pedidosFiltrados = pedidosFiltrados
+                    .flatMap(p => p.items.map(i => ({ ...i, pedidoFecha: p.fecha })))
+                    .filter(i => {
+                        const pendiente =
+                            i.nro_pedido_drogueria == null ||
+                            i.nro_pedido_drogueria === 'Sin nro de pedido' ||
+                            i.nro_pedido_drogueria === '0';
+                        const drogExcluida = excluidas.includes((i.drogueria_comprada || '').toLowerCase());
+                        return idsSet.has(String(i.id_pedido)) && pendiente && !drogExcluida;
                     });
-                });
+                // Reconvertir a estructura de pedidos para la tabla
+                pedidosFiltrados = pedidosFiltrados.map(i => ({
+                    fecha: i.pedidoFecha,
+                    items: [i]
+                }));
             }
 
             setResult({

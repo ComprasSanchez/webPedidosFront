@@ -32,12 +32,12 @@ export default function PedidosAlertBanner() {
     if (oculto || pendientes.length === 0) return null;
 
     const handleVer = () => {
-        // Abrimos el panel de Últimos pedidos con filtros
-        const ids = [...new Set(pendientes.map(p => p.id_producto).filter(Boolean))];
+        // Abrimos el panel de Últimos pedidos con filtros usando id_pedido
+        const idPedidos = pendientes.map(p => p.id_pedido).filter(Boolean);
 
         const now = new Date();
         const desde = new Date(now);
-        desde.setDate(now.getDate() - 7); // Aumentamos a 7 días para estar seguros
+        desde.setDate(now.getDate() - 3); // Aumentamos a 3 días para estar seguros
 
         const format = d => d.toISOString().slice(0, 10);
 
@@ -45,7 +45,7 @@ export default function PedidosAlertBanner() {
             detail: {
                 start: format(desde),
                 end: format(now),
-                ids
+                idPedidos
             }
         }));
         setOculto(true); // oculta el banner después
