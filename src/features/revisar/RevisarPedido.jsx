@@ -369,13 +369,41 @@ export default function RevisarPedido() {
             });
 
             const data = await response.json();
-            // Log para debug
 
             if (data.success) {
                 setMostrarResumen(false);
-                const enviados = new Set(itemsParaEnviar.map(i => i.codebar));
+
+                // Solo sacar del carrito los productos que realmente se enviaron con éxito
+                let productosExitosos = new Set();
+
+                if (data.resultados?.exitos) {
+                    // Función para normalizar nombres de proveedores
+                    const normalizeProveedor = (proveedor) => {
+                        return proveedor.toLowerCase()
+                            .normalize('NFD')
+                            .replace(/[\u0300-\u036f]/g, '') // Remover acentos
+                            .trim();
+                    };
+
+                    // Para cada proveedor exitoso, identificar qué productos se enviaron
+                    data.resultados.exitos.forEach(resultado => {
+                        const proveedorNormalizado = normalizeProveedor(resultado.proveedor);
+
+                        const itemsDeEsteProveedor = itemsParaEnviar.filter(item =>
+                            normalizeProveedor(item.proveedor) === proveedorNormalizado
+                        );
+                        itemsDeEsteProveedor.forEach(item => {
+                            productosExitosos.add(item.codebar);
+                        });
+                    });
+                } else if (!data.parcial) {
+                    // Si no hay data.resultados pero success=true y no es parcial, 
+                    // asumir que todos los enviados fueron exitosos
+                    productosExitosos = new Set(itemsParaEnviar.map(i => i.codebar));
+                }
+
                 const restantes = carrito
-                    .filter(it => !enviados.has(it.ean))
+                    .filter(it => !productosExitosos.has(it.ean))
                     .map(it => {
                         const key = it.idQuantio || it.ean;
                         return { ...it, noPedir: !!noPedirMap[key] };
@@ -385,36 +413,94 @@ export default function RevisarPedido() {
                 replaceCarrito(restantes);
 
                 if (data.parcial) {
-                    // Algunos pedidos funcionaron y otros no
-                    toast(
-                        <div>
-                            <strong>Pedido parcialmente completado</strong>
-                            <br />
-                            <div style={{ marginTop: '8px' }}>
-                                <strong>✅ Exitosos:</strong>
-                                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
-                                    {data.resultados.exitos.map(r => (
-                                        <li key={r.proveedor}>
-                                            {r.proveedor}: #{r.nroPedido} ({r.items} productos)
-                                        </li>
-                                    ))}
-                                </ul>
-                                <strong>❌ Con errores:</strong>
-                                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
-                                    {data.resultados.errores.map(r => (
-                                        <li key={r.proveedor}>
-                                            {r.proveedor}: {r.error} ({r.items} productos)
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>,
-                        {
-                            id: toastId,
-                            duration: 15000,
-                            style: { maxWidth: '500px' }
-                        }
+                    // Detectar si hay errores de crédito agotado en pedidos parciales
+                    const hayErroresCreditoCofarsur = data.resultados.errores.some(r =>
+                        r.proveedor === 'cofarsur' && r.creditoAgotado === true
                     );
+
+                    if (hayErroresCreditoCofarsur) {
+                        // Toast específico para pedido parcial con crédito agotado de Cofarsur
+                        toast(
+                            <div>
+                                <strong>🚫 Pedido parcial: Cofarsur sin crédito</strong>
+                                <br />
+                                <div style={{ marginTop: '8px' }}>
+                                    <strong>✅ Pedidos confirmados:</strong>
+                                    <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                        {data.resultados.exitos.map(r => (
+                                            <li key={r.proveedor}>
+                                                {r.proveedor}: #{r.nroPedido} ({r.items} productos)
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <div style={{ marginTop: '12px', padding: '8px', background: '#fff5f5', borderRadius: '4px', borderLeft: '3px solid #dc3545' }}>
+                                        <strong>🚫 Cofarsur sin crédito disponible</strong>
+                                        <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                            La cuenta no tiene crédito o está bloqueada para compras.
+                                            <br />
+                                            Productos afectados: {data.resultados.errores.find(r => r.proveedor === 'cofarsur')?.items || 0} productos
+                                        </div>
+                                        <div style={{ fontSize: '0.85em', marginTop: '6px', fontStyle: 'italic' }}>
+                                            💡 Podés cambiar esos productos a otro proveedor o marcarlos como "Falta"
+                                        </div>
+                                    </div>
+                                    {/* Otros errores (no Cofarsur) */}
+                                    {data.resultados.errores.filter(r => r.proveedor !== 'cofarsur').length > 0 && (
+                                        <>
+                                            <strong style={{ marginTop: '8px', display: 'block' }}>❌ Otros errores:</strong>
+                                            <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                                {data.resultados.errores.filter(r => r.proveedor !== 'cofarsur').map(r => (
+                                                    <li key={r.proveedor}>
+                                                        {r.proveedor}: {r.error} ({r.items} productos)
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    )}
+                                </div>
+                            </div>,
+                            {
+                                id: toastId,
+                                duration: 20000, // Más tiempo porque hay más información
+                                style: {
+                                    maxWidth: '600px',
+                                    background: '#fffbf0',
+                                    borderLeft: '4px solid #f59e0b'
+                                }
+                            }
+                        );
+                    } else {
+                        // Toast genérico para pedidos parciales sin crédito agotado
+                        toast(
+                            <div>
+                                <strong>Pedido parcialmente completado</strong>
+                                <br />
+                                <div style={{ marginTop: '8px' }}>
+                                    <strong>✅ Exitosos:</strong>
+                                    <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                        {data.resultados.exitos.map(r => (
+                                            <li key={r.proveedor}>
+                                                {r.proveedor}: #{r.nroPedido} ({r.items} productos)
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <strong>❌ Con errores:</strong>
+                                    <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                        {data.resultados.errores.map(r => (
+                                            <li key={r.proveedor}>
+                                                {r.proveedor}: {r.error} ({r.items} productos)
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>,
+                            {
+                                id: toastId,
+                                duration: 15000,
+                                style: { maxWidth: '500px' }
+                            }
+                        );
+                    }
                 } else {
                     toast.success("Pedido enviado correctamente", { id: toastId });
                 }
@@ -438,34 +524,76 @@ export default function RevisarPedido() {
                         }
                     );
                 } else {
-                    // Solo hubo errores
-                    toast.error(
-                        <div>
-                            <strong>Error al enviar pedido</strong>
-                            <br />
-                            <div style={{ marginTop: '8px' }}>
-                                {data.resultados.errores.map(r => (
-                                    <div key={r.proveedor} style={{ marginBottom: '8px' }}>
-                                        <strong>{r.proveedor}:</strong> {r.error}
-                                        {r.detalle && <div style={{ fontSize: '0.9em' }}>{r.detalle}</div>}
-                                        {r.debug && (
-                                            <details style={{ fontSize: '0.9em', marginTop: '4px' }}>
-                                                <summary>Más detalles</summary>
-                                                <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.9em' }}>
-                                                    {JSON.stringify(r.debug, null, 2)}
-                                                </pre>
-                                            </details>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>,
-                        {
-                            id: toastId,
-                            duration: 15000,
-                            style: { maxWidth: '500px' }
-                        }
+                    // Detectar si hay errores de crédito agotado en Cofarsur
+                    const hayErroresCreditoCofarsur = data.resultados.errores.some(r =>
+                        r.proveedor === 'cofarsur' && r.creditoAgotado === true
                     );
+
+                    if (hayErroresCreditoCofarsur) {
+                        // Toast específico para crédito agotado
+                        toast.error(
+                            <div>
+                                <strong>🚫 Cuenta Cofarsur sin crédito</strong>
+                                <br />
+                                <div style={{ marginTop: '8px', fontSize: '0.95em' }}>
+                                    La cuenta de Cofarsur no tiene crédito disponible o está bloqueada para realizar compras.
+                                    <br /><br />
+                                    <strong>¿Qué hacer?</strong>
+                                    <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                                        <li>Contactar al área de compras para verificar el estado de la cuenta</li>
+                                        <li>Elegir otro proveedor para estos productos</li>
+                                        <li>Marcar como "Falta" si no hay alternativas</li>
+                                    </ul>
+                                    {data.resultados.errores
+                                        .filter(r => r.proveedor === 'cofarsur')
+                                        .map(r => (
+                                            <div key={r.proveedor} style={{ marginTop: '8px', fontSize: '0.9em', opacity: 0.8 }}>
+                                                Productos afectados: {r.items} productos
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </div>,
+                            {
+                                id: toastId,
+                                duration: 20000, // Más tiempo para leer las instrucciones
+                                style: {
+                                    maxWidth: '600px',
+                                    background: '#fff5f5',
+                                    borderLeft: '4px solid #dc3545'
+                                }
+                            }
+                        );
+                    } else {
+                        // Toast genérico para otros errores
+                        toast.error(
+                            <div>
+                                <strong>Error al enviar pedido</strong>
+                                <br />
+                                <div style={{ marginTop: '8px' }}>
+                                    {data.resultados.errores.map(r => (
+                                        <div key={r.proveedor} style={{ marginBottom: '8px' }}>
+                                            <strong>{r.proveedor}:</strong> {r.error}
+                                            {r.detalle && <div style={{ fontSize: '0.9em' }}>{r.detalle}</div>}
+                                            {r.debug && (
+                                                <details style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                                    <summary>Más detalles</summary>
+                                                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.9em' }}>
+                                                        {JSON.stringify(r.debug, null, 2)}
+                                                    </pre>
+                                                </details>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>,
+                            {
+                                id: toastId,
+                                duration: 15000,
+                                style: { maxWidth: '500px' }
+                            }
+                        );
+                    }
                 }
             } else {
                 toast.error(`Error al enviar pedido${data?.error ? `: ${data.error}` : ""}`, { id: toastId });

@@ -67,8 +67,6 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                 url.searchParams.set("sucursalId", sucursalId);
             }
 
-            console.log("🔍 BuscadorNombre URL:", url.toString());
-
             const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
@@ -158,14 +156,11 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                 // Mantener 'cantidad' para compatibilidad si se necesita
             }));
 
-            console.log("🔍 Items del TXT mapeados al carrito:", itemsParaCarrito.slice(0, 3)); // Log de los primeros 3 items
 
             // Verificar si hay duplicados
             if (data.hasDuplicates) {
                 const duplicates = itemsParaCarrito.filter(item => item.isDuplicate);
                 const nonDuplicates = itemsParaCarrito.filter(item => !item.isDuplicate);
-
-                console.log("🔍 Se encontraron duplicados:", data.duplicateEans);
 
                 // Agregar primero los no duplicados al carrito
                 replaceCarrito(nonDuplicates);

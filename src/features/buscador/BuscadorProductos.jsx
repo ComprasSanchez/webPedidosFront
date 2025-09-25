@@ -90,8 +90,6 @@ const BuscadorProductos = () => {
                     return;
                 }
 
-                console.log("🎯 Creando reservas SOFT para sucursal:", sucursalActual);
-
                 // 🎯 Crear reservas SOFT (el backend validará por stock automáticamente)
                 await fetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
                     method: 'POST',
