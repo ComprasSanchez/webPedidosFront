@@ -27,7 +27,7 @@ export default function RevisarPedido() {
     const [resumenFinal, setResumenFinal] = useState(null);
     const [isSending, setIsSending] = useState(false);
     const navigate = useNavigate();
-    const { carrito, eliminarDelCarrito, actualizarUnidades, replaceCarrito } = useCarrito();
+    const { carrito, eliminarDelCarrito, actualizarUnidades, replaceCarrito, soloDeposito } = useCarrito();
     const { authFetch, authHeaders, usuario } = useAuth();
     const [showModal, setShowModal] = useState(false);
     const [reservaVencida, setReservaVencida] = useState(false);
@@ -177,7 +177,7 @@ export default function RevisarPedido() {
     }, [carrito]);
 
     const { preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, loading: loadingPS }
-        = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario });
+        = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario, soloDeposito });
 
     const { reglas, ready, matchConvenio } = useConvenios({ sucursal: sucursalActual });
 
@@ -721,6 +721,13 @@ export default function RevisarPedido() {
 
             <Toaster position="top-center" />
             <h2 className="buscador_titulo">REVISAR PEDIDO</h2>
+
+            {/* Indicador visual de modo "Solo depósito" */}
+            {soloDeposito && (
+                <div className="solo_deposito_indicator">
+                    🏪 <strong>Modo Solo Depósito:</strong> No se consultarán droguerías externas
+                </div>
+            )}
 
             {carrito.length === 0 ? <SinProductos /> : (
                 <TablaRevisar

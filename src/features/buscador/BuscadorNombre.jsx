@@ -2,25 +2,40 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FaSearch, FaFileUpload, FaSpinner } from "react-icons/fa";
+import { TiHome } from "react-icons/ti";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { useCarrito } from "../../context/CarritoContext";
 import { API_URL } from "../../config/api";
 import DuplicateProductsModal from "../../components/ui/DuplicateProductsModal";
+import useTxtUpload from "./useTxtUpload";
 
 const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCodigo, sucursalId }) => {
     const { usuario, authFetch } = useAuth();
-    const { replaceCarrito } = useCarrito();
+    const { replaceCarrito, soloDeposito, setSoloDeposito } = useCarrito();
     const [queryName, setQueryName] = useState("");
     const [resultadosNombre, setResultadosNombre] = useState([]);
     const [loadingName, setLoadingName] = useState(false);
-    const [loadingTxt, setLoadingTxt] = useState(false);
+    // TXT upload hook
+    const {
+        loadingTxt,
+        showDuplicatesModal,
+        duplicateItems,
+        pendingItems,
+        handleUploadTxt,
+        handleResolveDuplicates,
+        setShowDuplicatesModal
+    } = useTxtUpload({
+        sucursalCodigo,
+        replaceCarrito,
+        authFetch,
+        toast,
+        soloDeposito,
+        setSoloDeposito
+    });
     const nombreBoxRef = useRef(null);
 
-    // Estados para manejar duplicados
-    const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
-    const [duplicateItems, setDuplicateItems] = useState([]);
-    const [pendingItems, setPendingItems] = useState([]);
+    // ...existing code...
 
     // cerrar dropdown al click afuera o Escape
     useEffect(() => {
@@ -97,117 +112,6 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
     };
 
 
-    const handleUploadTxt = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append("file", file);
-        if (sucursalCodigo) {
-            formData.append("sucursal_codigo", sucursalCodigo);
-        }
-
-        setLoadingTxt(true);
-
-        try {
-            const res = await authFetch(`${API_URL}/api/reposicion/upload-txt`, {
-                method: "POST",
-                body: formData,
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({ error: "Error desconocido" }));
-
-                // Limpiar estado
-                setLoadingTxt(false);
-                e.target.value = "";
-
-                // Manejo específico para error de validación de sucursal
-                if (res.status === 400 && errorData.detalles) {
-                    const { sucursal_seleccionada, sucursal_archivo } = errorData.detalles;
-
-                    // Vaciar el carrito cuando hay error de validación
-                    replaceCarrito([]);
-
-                    toast.error(
-                        `Error de sucursal: El archivo es de la sucursal ${sucursal_archivo}, pero tienes seleccionada la sucursal ${sucursal_seleccionada}`,
-                        {
-                            duration: 6000,
-                            style: {
-                                background: '#fee2e2',
-                                color: '#991b1b',
-                                border: '1px solid #fca5a5',
-                            }
-                        }
-                    );
-                    return;
-                } else {
-                    toast.error(errorData.error || "Error al procesar el archivo");
-                    return;
-                }
-            }
-
-            const data = await res.json();
-
-            // Mapear los items del TXT al formato del carrito
-            const itemsParaCarrito = data.items.map(item => ({
-                ...item,
-                unidades: item.cantidad || 1, // Mapear 'cantidad' del TXT a 'unidades' del carrito
-                // Mantener 'cantidad' para compatibilidad si se necesita
-            }));
-
-
-            // Verificar si hay duplicados
-            if (data.hasDuplicates) {
-                const duplicates = itemsParaCarrito.filter(item => item.isDuplicate);
-                const nonDuplicates = itemsParaCarrito.filter(item => !item.isDuplicate);
-
-                // Agregar primero los no duplicados al carrito
-                replaceCarrito(nonDuplicates);
-
-                // Mostrar modal para resolver duplicados
-                setDuplicateItems(duplicates);
-                setPendingItems(nonDuplicates);
-                setShowDuplicatesModal(true);
-
-                toast.warning(
-                    `Archivo cargado con ${data.duplicateEans.length} códigos duplicados. Resuelve los conflictos.`,
-                    { duration: 5000 }
-                );
-            } else {
-                // No hay duplicados, proceder normal
-                replaceCarrito(itemsParaCarrito);
-
-                toast.success(
-                    `Archivo cargado: ${data.totalItems} items, ${data.totalUnidades} unidades`
-                );
-            }
-        } catch (err) {
-            toast.error("Error al procesar el archivo");
-        } finally {
-            setLoadingTxt(false);
-            e.target.value = ""; // limpiar input para poder re-subir
-        }
-    };
-
-    // Función para manejar la resolución de duplicados
-    const handleResolveDuplicates = (resolvedItems) => {
-        // Combinar items no duplicados con items resueltos
-        const finalItems = [...pendingItems, ...resolvedItems];
-        replaceCarrito(finalItems);
-
-        const totalItems = finalItems.length;
-        const totalUnidades = finalItems.reduce((sum, item) => sum + item.unidades, 0);
-
-        toast.success(
-            `Duplicados resueltos: ${totalItems} items, ${totalUnidades} unidades`
-        );
-
-        // Limpiar estados
-        setDuplicateItems([]);
-        setPendingItems([]);
-    };
-
     return (
         <div className="buscador_form buscador_nombre" ref={nombreBoxRef}>
             <input
@@ -225,28 +129,46 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
             </button>
 
             {usuario?.rol === "compras" && (
-                <div className="upload_txt_wrapper">
-                    <label htmlFor="uploadTxt" className="buscador_btn_buscar">
-                        {loadingTxt ? (
-                            <>
-                                <FaSpinner className="upload_txt_icon spinner" />
-                                Procesando...
-                            </>
-                        ) : (
-                            <>
-                                <FaFileUpload className="upload_txt_icon" />
-                            </>
-                        )}
-                    </label>
-                    <input
-                        id="uploadTxt"
-                        type="file"
-                        accept=".txt"
-                        onChange={handleUploadTxt}
-                        style={{ display: "none" }}
-                        disabled={loadingTxt}
-                    />
-                </div>
+                <>
+                    <div className="upload_txt_wrapper">
+                        <label htmlFor="uploadTxt" className="buscador_btn_buscar">
+                            {loadingTxt ? (
+                                <>
+                                    <FaSpinner className="upload_txt_icon spinner" />
+                                </>
+                            ) : (
+                                <>
+                                    <FaFileUpload className="upload_txt_icon" />
+                                </>
+                            )}
+                        </label>
+                        <input
+                            id="uploadTxt"
+                            type="file"
+                            accept=".txt"
+                            onChange={handleUploadTxt}
+                            style={{ display: "none" }}
+                            disabled={loadingTxt}
+                        />
+                    </div>
+                    <div className="solo_deposito_wrapper">
+                        <label
+                            htmlFor="soloDeposito"
+                            className={`solo_deposito_toggle ${soloDeposito ? 'active' : 'inactive'}`}
+                            title={soloDeposito ? "Solo depósito activado" : "Consultar todas las droguerías"}
+                        >
+                            <input
+                                id="soloDeposito"
+                                type="checkbox"
+                                checked={soloDeposito}
+                                onChange={(e) => setSoloDeposito(e.target.checked)}
+                                disabled={loadingTxt}
+                                style={{ display: 'none' }}
+                            />
+                            <TiHome className="solo_deposito_icon" />
+                        </label>
+                    </div>
+                </>
             )}
 
             {loadingName && <div className="buscador_hint"><span className="spinner" /> Buscando…</div>}

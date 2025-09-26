@@ -16,6 +16,9 @@ export const CarritoProvider = ({ children }) => {
         sessionStorage.getItem("sucursalReponer") || ""
     );
 
+    // Estado para el flag "Solo depósito" (solo para usuarios de compras)
+    const [soloDeposito, setSoloDeposito] = useState(false);
+
     const identidadLista = Boolean(usuario?.id && usuario?.sucursal_codigo);
     if (!API_URL) console.warn("⚠️ API_URL no está definida");
 
@@ -161,6 +164,7 @@ export const CarritoProvider = ({ children }) => {
 
     const vaciarCarrito = async () => {
         setCarrito([]);
+        setSoloDeposito(false); // Resetear flag cuando se vacía carrito
         try {
             await fetch(`${API_URL}/api/cart`, {
                 method: "DELETE",
@@ -201,6 +205,8 @@ export const CarritoProvider = ({ children }) => {
                 carrito,
                 cargandoCarrito,
                 sincronizando,
+                soloDeposito,
+                setSoloDeposito,
                 agregarAlCarrito,
                 actualizarCantidad,
                 eliminarDelCarrito,

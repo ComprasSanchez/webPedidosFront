@@ -439,6 +439,70 @@
     animation: spin 1s linear infinite;
 }
 
+/* Estilos para el toggle "Solo depósito" */
+.solo_deposito_wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.solo_deposito_toggle {
+    padding: 0.75rem 0.75rem;
+    margin: 1px auto;
+    font-size: 1.5rem;
+    min-width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, transform .05s ease;
+    border: 1px solid;
+
+    /* Estado inactivo (rojo suave) */
+    &.inactive {
+        background: #fff;
+        border-color: #dc3545;
+        color: #dc3545;
+
+        &:hover {
+            background: #f8d7da;
+            border-color: #c82333;
+        }
+    }
+
+    /* Estado activo (verde suave) */
+    &.active {
+        background: #d4edda;
+        border-color: #28a745;
+        color: #155724;
+
+        &:hover {
+            background: #c3e6cb;
+            border-color: #1e7e34;
+        }
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+
+    &:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+
+        &:hover {
+            transform: none;
+        }
+    }
+}
+
+.solo_deposito_icon {
+    font-size: 1.5rem;
+    pointer-events: none;
+}
+
 @keyframes spin {
     0% {
         transform: rotate(0deg);
