@@ -389,7 +389,16 @@ async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeou
             return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
         }
 
-        const data = await res.json(); // { error, resultados: { [ean]: {...} } }
+        let data;
+        try {
+            data = await res.json(); // { error, resultados: { [ean]: {...} } }
+        } catch (jsonError) {
+            // Si no es JSON válido, probablemente es HTML de error
+            const text = await res.text();
+            console.warn('Cofarsur devolvió HTML en lugar de JSON, fallback a individual');
+            return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+        }
+
         if (data.error) {
             console.warn('Cofarsur batch error, fallback a individual:', data.error);
             // Fallback a individual si hay error
