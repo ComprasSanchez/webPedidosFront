@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { API_URL } from "../../config/api";
 
-function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch, toast, soloDeposito, setSoloDeposito, procesarZipData }) {
+function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarrito, authFetch, toast, soloDeposito, setSoloDeposito, procesarZipData }) {
     const [loadingTxt, setLoadingTxt] = useState(false);
     const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
     const [duplicateItems, setDuplicateItems] = useState([]);
@@ -44,6 +44,8 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch, toast, soloDe
         if (sucursalCodigo) {
             formData.append("sucursal_codigo", sucursalCodigo);
         }
+        // Enviar el estado del switch "Solo Depo"
+        formData.append("soloDeposito", soloDeposito ? "true" : "false");
 
         setLoadingTxt(true);
 
@@ -96,27 +98,63 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch, toast, soloDe
             const data = await res.json();
 
             if (isZip) {
-                // Manejo específico para ZIP - procesar directamente sin modal
-                if (procesarZipData) {
-                    try {
-                        procesarZipData(data);
-                    } catch (error) {
-                        console.error("Error en procesarZipData:", error);
-                        throw error; // Re-lanzar el error para que lo capture el catch principal
-                    }
+                // Manejo específico para ZIP según el modo
+                if (data.modo === 'SOLO_DEPOSITO') {
+                    // 🟢 MODO SOLO DEPO: Flujo directo completado
+                    console.log('🏠 ZIP procesado en modo Solo Depo - Pedidos generados automáticamente');
 
                     // Calcular duplicados totales
                     const duplicadosTotales = data.resumen?.reduce((sum, item) => {
                         return sum + (item.duplicados?.cantidad || 0);
                     }, 0) || 0;
 
-                    let mensaje = `Carga masiva completada: ${data.totales.sucursales} sucursales, ${data.totales.productos} productos cargados`;
+                    const pedidosGenerados = data.pedidos_deposito?.pedidos_resumen?.length || 0;
+                    const productosEnviados = data.pedidos_deposito?.productos_enviados || 0;
+
+                    let mensaje = `✅ Solo Depo - Procesamiento completado:\n`;
+                    mensaje += `🏠 ${pedidosGenerados} pedidos generados automáticamente\n`;
+                    mensaje += `📦 ${productosEnviados} productos enviados al depósito\n`;
+                    mensaje += `🏢 ${data.totales.sucursales} sucursales procesadas`;
 
                     if (duplicadosTotales > 0) {
                         mensaje += `\n📋 Se consolidaron ${duplicadosTotales} productos duplicados`;
                     }
 
-                    toast.success(mensaje, { duration: 5000 });
+                    toast.success(mensaje, {
+                        duration: 6000,
+                        style: { maxWidth: '500px' }
+                    });
+
+                    // No procesar carrito en modo Solo Depo
+                    setLoadingTxt(false);
+                    e.target.value = "";
+                    return;
+
+                } else {
+                    // 🛒 MODO TRADICIONAL: Procesar carrito para revisión manual
+                    console.log('🛒 ZIP procesado en modo Tradicional - Enviando al carrito');
+
+                    if (procesarZipData) {
+                        try {
+                            procesarZipData(data);
+                        } catch (error) {
+                            console.error("Error en procesarZipData:", error);
+                            throw error;
+                        }
+
+                        // Calcular duplicados totales
+                        const duplicadosTotales = data.resumen?.reduce((sum, item) => {
+                            return sum + (item.duplicados?.cantidad || 0);
+                        }, 0) || 0;
+
+                        let mensaje = `Carga masiva completada: ${data.totales.sucursales} sucursales, ${data.totales.productos} productos cargados`;
+
+                        if (duplicadosTotales > 0) {
+                            mensaje += `\n📋 Se consolidaron ${duplicadosTotales} productos duplicados`;
+                        }
+
+                        toast.success(mensaje, { duration: 5000 });
+                    }
                 }
             } else {
                 // Manejo tradicional para archivos TXT individuales
@@ -133,7 +171,10 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch, toast, soloDe
                 if (data.hasDuplicates) {
                     const duplicates = itemsParaCarrito.filter(item => item.isDuplicate);
                     const nonDuplicates = itemsParaCarrito.filter(item => !item.isDuplicate);
-                    replaceCarrito(nonDuplicates);
+                    
+                    // ACUMULAR productos en lugar de reemplazar
+                    acumularProductosEnCarrito(nonDuplicates);
+                    
                     setDuplicateItems(duplicates);
                     setPendingItems(nonDuplicates);
                     setShowDuplicatesModal(true);
@@ -142,11 +183,17 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch, toast, soloDe
                         { duration: 5000 }
                     );
                 } else {
-                    replaceCarrito(itemsParaCarrito);
+                    // ACUMULAR productos en lugar de reemplazar
+                    const { agregados, actualizados } = acumularProductosEnCarrito(itemsParaCarrito);
+                    
                     const modoText = soloDeposito ? " (Solo depósito)" : "";
-                    toast.success(
-                        `Archivo cargado: ${data.totalItems} items, ${data.totalUnidades} unidades${modoText}`
-                    );
+                    let mensaje = `Archivo cargado: ${data.totalItems} items, ${data.totalUnidades} unidades${modoText}`;
+                    
+                    if (actualizados > 0) {
+                        mensaje += `\n📋 ${actualizados} productos consolidados con cantidades existentes`;
+                    }
+                    
+                    toast.success(mensaje, { duration: 5000 });
                 }
             }
         } catch (err) {
@@ -161,12 +208,17 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch, toast, soloDe
     // Handler para resolver duplicados
     const handleResolveDuplicates = (resolvedItems) => {
         const finalItems = [...pendingItems, ...resolvedItems];
-        replaceCarrito(finalItems);
+        const { agregados, actualizados } = acumularProductosEnCarrito(finalItems);
+        
         const totalItems = finalItems.length;
         const totalUnidades = finalItems.reduce((sum, item) => sum + item.unidades, 0);
-        toast.success(
-            `Duplicados resueltos: ${totalItems} items, ${totalUnidades} unidades`
-        );
+        
+        let mensaje = `Duplicados resueltos: ${totalItems} items, ${totalUnidades} unidades`;
+        if (actualizados > 0) {
+            mensaje += `\n📋 ${actualizados} productos consolidados con cantidades existentes`;
+        }
+        
+        toast.success(mensaje, { duration: 5000 });
         setDuplicateItems([]);
         setPendingItems([]);
     };

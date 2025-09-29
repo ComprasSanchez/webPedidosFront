@@ -175,6 +175,39 @@ export const CarritoProvider = ({ children }) => {
         setCarrito(items);
     }
 
+    // Función para acumular productos (sumar cantidades de productos existentes)
+    function acumularProductosEnCarrito(nuevosItems) {
+        let agregados = 0;
+        let actualizados = 0;
+
+        setCarrito(prev => {
+            // Crear un Map del carrito actual para búsqueda rápida por EAN
+            const carritoMap = new Map();
+            prev.forEach(item => {
+                carritoMap.set(item.ean, item);
+            });
+
+            // Procesar nuevos items: sumar cantidades o agregar nuevos
+            nuevosItems.forEach(nuevoItem => {
+                if (carritoMap.has(nuevoItem.ean)) {
+                    // Producto existe: sumar cantidades
+                    const itemExistente = carritoMap.get(nuevoItem.ean);
+                    itemExistente.unidades = (itemExistente.unidades || 0) + (nuevoItem.unidades || 0);
+                    actualizados++;
+                } else {
+                    // Producto nuevo: agregarlo al Map
+                    carritoMap.set(nuevoItem.ean, nuevoItem);
+                    agregados++;
+                }
+            });
+
+            // Convertir Map de vuelta a array
+            return Array.from(carritoMap.values());
+        });
+
+        return { agregados, actualizados };
+    }
+
     // Funciones específicas para modo bulk
     const procesarZipData = (zipData) => {
         try {
@@ -265,6 +298,7 @@ export const CarritoProvider = ({ children }) => {
                 limpiarCarritoPostPedido,
                 actualizarUnidades,
                 replaceCarrito,
+                acumularProductosEnCarrito,
                 // Funciones para modo bulk
                 modoBulk,
                 setModoBulk,

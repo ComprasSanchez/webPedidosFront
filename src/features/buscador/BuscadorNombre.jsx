@@ -12,7 +12,7 @@ import useTxtUpload from "./useTxtUpload";
 
 const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCodigo, sucursalId }) => {
     const { usuario, authFetch } = useAuth();
-    const { replaceCarrito, soloDeposito, setSoloDeposito, procesarZipData } = useCarrito();
+    const { replaceCarrito, acumularProductosEnCarrito, soloDeposito, setSoloDeposito, procesarZipData } = useCarrito();
 
     // Eliminamos la lógica complicada de modo ZIP masivo
     const [queryName, setQueryName] = useState("");
@@ -30,6 +30,7 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
     } = useTxtUpload({
         sucursalCodigo,
         replaceCarrito,
+        acumularProductosEnCarrito,
         authFetch,
         toast,
         soloDeposito,
