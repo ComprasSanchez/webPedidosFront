@@ -171,10 +171,10 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
                 if (data.hasDuplicates) {
                     const duplicates = itemsParaCarrito.filter(item => item.isDuplicate);
                     const nonDuplicates = itemsParaCarrito.filter(item => !item.isDuplicate);
-                    
+
                     // ACUMULAR productos en lugar de reemplazar
                     acumularProductosEnCarrito(nonDuplicates);
-                    
+
                     setDuplicateItems(duplicates);
                     setPendingItems(nonDuplicates);
                     setShowDuplicatesModal(true);
@@ -185,14 +185,14 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
                 } else {
                     // ACUMULAR productos en lugar de reemplazar
                     const { agregados, actualizados } = acumularProductosEnCarrito(itemsParaCarrito);
-                    
+
                     const modoText = soloDeposito ? " (Solo depósito)" : "";
                     let mensaje = `Archivo cargado: ${data.totalItems} items, ${data.totalUnidades} unidades${modoText}`;
-                    
+
                     if (actualizados > 0) {
                         mensaje += `\n📋 ${actualizados} productos consolidados con cantidades existentes`;
                     }
-                    
+
                     toast.success(mensaje, { duration: 5000 });
                 }
             }
@@ -209,15 +209,15 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
     const handleResolveDuplicates = (resolvedItems) => {
         const finalItems = [...pendingItems, ...resolvedItems];
         const { agregados, actualizados } = acumularProductosEnCarrito(finalItems);
-        
+
         const totalItems = finalItems.length;
         const totalUnidades = finalItems.reduce((sum, item) => sum + item.unidades, 0);
-        
+
         let mensaje = `Duplicados resueltos: ${totalItems} items, ${totalUnidades} unidades`;
         if (actualizados > 0) {
             mensaje += `\n📋 ${actualizados} productos consolidados con cantidades existentes`;
         }
-        
+
         toast.success(mensaje, { duration: 5000 });
         setDuplicateItems([]);
         setPendingItems([]);
