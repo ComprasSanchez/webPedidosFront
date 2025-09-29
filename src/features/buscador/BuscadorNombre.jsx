@@ -8,11 +8,14 @@ import { useAuth } from "../../context/AuthContext";
 import { useCarrito } from "../../context/CarritoContext";
 import { API_URL } from "../../config/api";
 import DuplicateProductsModal from "../../components/ui/DuplicateProductsModal";
+
 import useTxtUpload from "./useTxtUpload";
 
 const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCodigo, sucursalId }) => {
     const { usuario, authFetch } = useAuth();
-    const { replaceCarrito, soloDeposito, setSoloDeposito } = useCarrito();
+    const { replaceCarrito, soloDeposito, setSoloDeposito, procesarZipData } = useCarrito();
+
+    // Eliminamos la lógica complicada de modo ZIP masivo
     const [queryName, setQueryName] = useState("");
     const [resultadosNombre, setResultadosNombre] = useState([]);
     const [loadingName, setLoadingName] = useState(false);
@@ -31,7 +34,8 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
         authFetch,
         toast,
         soloDeposito,
-        setSoloDeposito
+        setSoloDeposito,
+        procesarZipData
     });
     const nombreBoxRef = useRef(null);
 
@@ -131,7 +135,11 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
             {usuario?.rol === "compras" && (
                 <>
                     <div className="upload_txt_wrapper">
-                        <label htmlFor="uploadTxt" className="buscador_btn_buscar">
+                        <label
+                            htmlFor="uploadTxt"
+                            className="buscador_btn_buscar"
+                            title="Subir archivo TXT o ZIP"
+                        >
                             {loadingTxt ? (
                                 <>
                                     <FaSpinner className="upload_txt_icon spinner" />
@@ -145,7 +153,7 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                         <input
                             id="uploadTxt"
                             type="file"
-                            accept=".txt"
+                            accept=".txt,.zip"
                             onChange={handleUploadTxt}
                             style={{ display: "none" }}
                             disabled={loadingTxt}
@@ -211,6 +219,8 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                 duplicateItems={duplicateItems}
                 onResolve={handleResolveDuplicates}
             />
+
+            {/* Modal ZIP eliminado - procesamiento directo */}
         </div>
     );
 };

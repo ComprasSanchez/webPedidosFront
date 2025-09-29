@@ -461,7 +461,7 @@ export default function RevisarPedido() {
                             </div>,
                             {
                                 id: toastId,
-                                duration: 20000, // Más tiempo porque hay más información
+                                duration: 12000, // Más tiempo porque hay más información
                                 style: {
                                     maxWidth: '600px',
                                     background: '#fffbf0',
@@ -687,14 +687,14 @@ export default function RevisarPedido() {
                     textAlign: "center",
                     padding: "2rem"
                 }}>
-                    <h2 style={{ color: "#dc3545", marginBottom: "1rem" }}>
-                        Selecciona una sucursal para revisar el pedido
+                    <h2 style={{ color: "#f59e0b", marginBottom: "1rem" }}>
+                        📋 Revisión de pedido individual
                     </h2>
                     <p style={{ fontSize: "1.1rem", color: "#666", marginBottom: "1.5rem" }}>
-                        Para revisar y enviar el pedido, primero debes seleccionar qué sucursal vas a reponer.
+                        Esta página es para revisar pedidos de sucursales individuales. Si tienes productos cargados, necesitas seleccionar una sucursal específica para continuar.
                     </p>
                     <p style={{ fontSize: "1rem", color: "#666" }}>
-                        Usa el ícono <strong>🏪</strong> en la parte superior derecha para seleccionar una sucursal.
+                        Usa el ícono <strong>🏪</strong> para seleccionar una sucursal, o ve al buscador para cargar archivos ZIP masivos.
                     </p>
                     <button
                         onClick={() => navigate("/buscador")}

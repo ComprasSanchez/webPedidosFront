@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
+import ZipProcessor from "../services/zipProcessor.js";
+import SessionStorageService from "../services/sessionStorageService.js";
 const API_URL = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL; // fallback
 
 const CarritoContext = createContext();
@@ -18,6 +20,10 @@ export const CarritoProvider = ({ children }) => {
 
     // Estado para el flag "Solo depósito" (solo para usuarios de compras)
     const [soloDeposito, setSoloDeposito] = useState(false);
+
+    // Estado para modo bulk (carga masiva de ZIP)
+    const [modoBulk, setModoBulk] = useState(false);
+    const [carritosBulk, setCarritosBulk] = useState({}); // { sucursal1: [...items], sucursal2: [...items] }
 
     const identidadLista = Boolean(usuario?.id && usuario?.sucursal_codigo);
     if (!API_URL) console.warn("⚠️ API_URL no está definida");
@@ -48,6 +54,19 @@ export const CarritoProvider = ({ children }) => {
 
     // 🔹 Determinar la sucursal actual según el rol
     const sucursalActual = usuario?.rol === "compras" ? sucursalReponer : usuario?.sucursal_codigo;
+
+    // 🔹 Detectar modo bulk automáticamente
+    useEffect(() => {
+        const esModoBulk = usuario?.rol === "compras" && !sucursalReponer;
+        if (esModoBulk !== modoBulk) {
+            setModoBulk(esModoBulk);
+            if (!esModoBulk) {
+                // Limpiar carritos bulk y metadatos al salir del modo bulk
+                setCarritosBulk({});
+                SessionStorageService.clearMetadatosBulk();
+            }
+        }
+    }, [sucursalReponer, usuario?.rol, modoBulk]);
 
     // --- A) Hidratar carrito desde backend/Redis al cargar
     useEffect(() => {
@@ -156,6 +175,32 @@ export const CarritoProvider = ({ children }) => {
         setCarrito(items);
     }
 
+    // Funciones específicas para modo bulk
+    const procesarZipData = (zipData) => {
+        try {
+            const carritoConsolidado = ZipProcessor.procesarZipData(zipData, carritosBulk);
+
+            setCarritosBulk(carritoConsolidado);
+            setModoBulk(true);
+            setSoloDeposito(true); // Forzar modo solo depósito en bulk
+        } catch (error) {
+            console.error('Error procesando ZIP:', error);
+            throw error;
+        }
+    };
+
+    const obtenerCarritosSucursales = () => {
+        return modoBulk ? carritosBulk : {};
+    };
+
+    const obtenerTotalProductosBulk = () => {
+        return ZipProcessor.calcularTotales(carritosBulk).totalProductos;
+    };
+
+    const obtenerTotalUnidadesBulk = () => {
+        return ZipProcessor.calcularTotales(carritosBulk).totalUnidades;
+    };
+
 
     // Ahora usa idQuantio (CodPlex) para identificar el producto
     const eliminarDelCarrito = (idQuantio) => {
@@ -165,6 +210,12 @@ export const CarritoProvider = ({ children }) => {
     const vaciarCarrito = async () => {
         setCarrito([]);
         setSoloDeposito(false); // Resetear flag cuando se vacía carrito
+
+        // Limpiar también estado bulk y metadatos en sessionStorage
+        setCarritosBulk({});
+        setModoBulk(false);
+        SessionStorageService.clearMetadatosBulk();
+
         try {
             await fetch(`${API_URL}/api/cart`, {
                 method: "DELETE",
@@ -214,6 +265,15 @@ export const CarritoProvider = ({ children }) => {
                 limpiarCarritoPostPedido,
                 actualizarUnidades,
                 replaceCarrito,
+                // Funciones para modo bulk
+                modoBulk,
+                setModoBulk,
+                carritosBulk,
+                setCarritosBulk,
+                procesarZipData,
+                obtenerCarritosSucursales,
+                obtenerTotalProductosBulk,
+                obtenerTotalUnidadesBulk,
             }}
         >
             {children}

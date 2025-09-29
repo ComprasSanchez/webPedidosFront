@@ -1,25 +1,44 @@
+// useTxtUpload.js
+
 import { useState } from "react";
 import { API_URL } from "../../config/api";
 
-/**
- * Hook para manejar la carga y procesamiento de archivos TXT para el carrito.
- * @param {Object} params
- * @param {string} params.sucursalCodigo
- * @param {function} params.replaceCarrito
- * @param {function} params.authFetch
- * @param {object} params.toast
- * @param {boolean} params.soloDeposito - Estado actual del flag soloDeposito del carrito
- * @param {function} params.setSoloDeposito - Función para setear flag soloDeposito en el carrito
- */
-export default function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch, toast, soloDeposito, setSoloDeposito }) {
+function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch, toast, soloDeposito, setSoloDeposito, procesarZipData }) {
     const [loadingTxt, setLoadingTxt] = useState(false);
     const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
     const [duplicateItems, setDuplicateItems] = useState([]);
-    const [pendingItems, setPendingItems] = useState([]);    // Handler para subir el archivo TXT
+    const [pendingItems, setPendingItems] = useState([]);
+
+    // Handler para subir archivo (TXT individual o ZIP masivo)
     const handleUploadTxt = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Detectar tipo de archivo
+        const fileName = file.name.toLowerCase();
+        const isZip = fileName.endsWith('.zip');
+        const isTxt = fileName.endsWith('.txt');
+
+        // Validaciones según tipo de archivo
+        if (!isZip && !isTxt) {
+            toast.error("Solo se permiten archivos .txt o .zip");
+            e.target.value = "";
+            return;
+        }
+
+        if (isZip && sucursalCodigo) {
+            toast.error("Los archivos ZIP solo se pueden cargar sin sucursal seleccionada");
+            e.target.value = "";
+            return;
+        }
+
+        if (isTxt && !sucursalCodigo) {
+            toast.error("Los archivos TXT requieren tener una sucursal seleccionada");
+            e.target.value = "";
+            return;
+        }
+
+        // Preparar FormData
         const formData = new FormData();
         formData.append("file", file);
         if (sucursalCodigo) {
@@ -29,7 +48,20 @@ export default function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch
         setLoadingTxt(true);
 
         try {
-            const res = await authFetch(`${API_URL}/api/reposicion/upload-txt`, {
+            // Usar endpoint diferente según tipo de archivo
+            const endpoint = isZip
+                ? `${API_URL}/api/reposicion/upload-zip`
+                : `${API_URL}/api/reposicion/upload-txt`;
+
+            // Log de debugging para autenticación
+            console.log('🔍 Upload debugging:', {
+                endpoint,
+                isZip,
+                hasAuthFetch: !!authFetch,
+                archivo: file.name
+            });
+
+            const res = await authFetch(endpoint, {
                 method: "POST",
                 body: formData,
             });
@@ -63,36 +95,63 @@ export default function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch
 
             const data = await res.json();
 
-            const itemsParaCarrito = data.items.map(item => ({
-                ...item,
-                unidades: item.cantidad || 1,
-            }));
+            if (isZip) {
+                // Manejo específico para ZIP - procesar directamente sin modal
+                if (procesarZipData) {
+                    try {
+                        procesarZipData(data);
+                    } catch (error) {
+                        console.error("Error en procesarZipData:", error);
+                        throw error; // Re-lanzar el error para que lo capture el catch principal
+                    }
 
-            // Setear flag soloDeposito en el contexto del carrito si está marcado
-            if (setSoloDeposito && soloDeposito) {
-                setSoloDeposito(true);
-            }
+                    // Calcular duplicados totales
+                    const duplicadosTotales = data.resumen?.reduce((sum, item) => {
+                        return sum + (item.duplicados?.cantidad || 0);
+                    }, 0) || 0;
 
-            if (data.hasDuplicates) {
-                const duplicates = itemsParaCarrito.filter(item => item.isDuplicate);
-                const nonDuplicates = itemsParaCarrito.filter(item => !item.isDuplicate);
-                replaceCarrito(nonDuplicates);
-                setDuplicateItems(duplicates);
-                setPendingItems(nonDuplicates);
-                setShowDuplicatesModal(true);
-                toast.warning(
-                    `Archivo cargado con ${data.duplicateEans.length} códigos duplicados. Resuelve los conflictos.`,
-                    { duration: 5000 }
-                );
+                    let mensaje = `Carga masiva completada: ${data.totales.sucursales} sucursales, ${data.totales.productos} productos cargados`;
+
+                    if (duplicadosTotales > 0) {
+                        mensaje += `\n📋 Se consolidaron ${duplicadosTotales} productos duplicados`;
+                    }
+
+                    toast.success(mensaje, { duration: 5000 });
+                }
             } else {
-                replaceCarrito(itemsParaCarrito);
-                const modoText = soloDeposito ? " (Solo depósito)" : "";
-                toast.success(
-                    `Archivo cargado: ${data.totalItems} items, ${data.totalUnidades} unidades${modoText}`
-                );
+                // Manejo tradicional para archivos TXT individuales
+                const itemsParaCarrito = data.items.map(item => ({
+                    ...item,
+                    unidades: item.cantidad || 1,
+                }));
+
+                // Setear flag soloDeposito en el contexto del carrito si está marcado
+                if (setSoloDeposito && soloDeposito) {
+                    setSoloDeposito(true);
+                }
+
+                if (data.hasDuplicates) {
+                    const duplicates = itemsParaCarrito.filter(item => item.isDuplicate);
+                    const nonDuplicates = itemsParaCarrito.filter(item => !item.isDuplicate);
+                    replaceCarrito(nonDuplicates);
+                    setDuplicateItems(duplicates);
+                    setPendingItems(nonDuplicates);
+                    setShowDuplicatesModal(true);
+                    toast.warning(
+                        `Archivo cargado con ${data.duplicateEans.length} códigos duplicados. Resuelve los conflictos.`,
+                        { duration: 5000 }
+                    );
+                } else {
+                    replaceCarrito(itemsParaCarrito);
+                    const modoText = soloDeposito ? " (Solo depósito)" : "";
+                    toast.success(
+                        `Archivo cargado: ${data.totalItems} items, ${data.totalUnidades} unidades${modoText}`
+                    );
+                }
             }
         } catch (err) {
-            toast.error("Error al procesar el archivo");
+            console.error("Error procesando archivo:", err.message);
+            toast.error(`Error al procesar el archivo: ${err.message}`);
         } finally {
             setLoadingTxt(false);
             e.target.value = "";
@@ -124,3 +183,5 @@ export default function useTxtUpload({ sucursalCodigo, replaceCarrito, authFetch
         setShowDuplicatesModal
     };
 }
+
+export default useTxtUpload;

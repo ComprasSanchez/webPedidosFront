@@ -59,7 +59,7 @@ export default function FilaItem({
             {/* Descripción + tooltip laboratorio */}
             <td className="celda_descripcion_hover" style={{ position: "relative", cursor: "pointer" }}>
                 <span className="desc_texto">
-                    {item.descripcion}
+                    {item.descripcion || item.nombre || `Producto ${item.ean}`}
                 </span>
                 <span className="celda_ean">{item.ean}</span>
                 <div className="globo_hover">

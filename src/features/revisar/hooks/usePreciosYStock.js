@@ -15,7 +15,14 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
         const prev = eanListRef.current.sort();
         const hayNuevo = eans.some(e => !prev.includes(e));
 
-        if (!carrito.length || !sucursal || !hayNuevo) return;
+        // Detectar productos del ZIP que necesitan consulta forzada
+        const hayProductosZip = carrito.some(item => item.desde_zip === true);
+
+        if (hayProductosZip) {
+            console.log('🔍 Detectados productos del ZIP, forzando consulta de precios y stock');
+        }
+
+        if (!carrito.length || !sucursal || (!hayNuevo && !hayProductosZip)) return;
 
         (async () => {
             setLoading(true);
@@ -49,6 +56,11 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
 
             eanListRef.current = eans;
             setLoading(false);
+
+            // Limpiar flags de ZIP después de la consulta (opcional, para optimización futura)
+            if (hayProductosZip) {
+                console.log('✅ Consulta de productos ZIP completada');
+            }
         })();
     }, [carrito, sucursal, authFetch, authHeaders, usuario?.rol, soloDeposito]);
 

@@ -44,8 +44,7 @@ const BuscadorProductos = () => {
         };
     }, []);
 
-    // Verificar si el usuario de compras necesita seleccionar sucursal
-    const necesitaSeleccionarSucursal = usuario?.rol === "compras" && !sucursalSeleccionada;
+    // Ya no bloqueamos el buscador por falta de sucursal
 
     // Determinar qué sucursal usar para las búsquedas
     const sucursalParaBusqueda = usuario?.rol === "compras" ? sucursalSeleccionada : usuario?.sucursal_codigo;
@@ -115,34 +114,6 @@ const BuscadorProductos = () => {
         // Ejecutar en segundo plano
         crearReservasSoft();
     };
-
-    // Si es usuario de compras y no tiene sucursal seleccionada, mostrar mensaje
-    if (necesitaSeleccionarSucursal) {
-        return (
-            <div className="buscador_wrapper">
-                <PedidosAlertBanner />
-                <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: "60vh",
-                    textAlign: "center",
-                    padding: "2rem"
-                }}>
-                    <h2 style={{ color: "#dc3545", marginBottom: "1rem" }}>
-                        Selecciona una sucursal para reponer
-                    </h2>
-                    <p style={{ fontSize: "1.1rem", color: "#666", marginBottom: "1.5rem" }}>
-                        Para usar el buscador, primero debes seleccionar qué sucursal vas a reponer.
-                    </p>
-                    <p style={{ fontSize: "1rem", color: "#666" }}>
-                        Usa el ícono <strong>🏪</strong> en la parte superior derecha para seleccionar una sucursal.
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="buscador_wrapper">

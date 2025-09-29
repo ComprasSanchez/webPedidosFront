@@ -51,7 +51,11 @@ export default function Navbar() {
 
     const handleSelectSucursal = (codigo) => {
         setSucursalSeleccionada(codigo);
-        sessionStorage.setItem("sucursalReponer", codigo);
+        if (codigo) {
+            sessionStorage.setItem("sucursalReponer", codigo);
+        } else {
+            sessionStorage.removeItem("sucursalReponer");
+        }
         setModalSucursalOpen(false);
     };
 
@@ -104,7 +108,7 @@ export default function Navbar() {
                 <div className="navbar_user">
                     <span className="navbar_usuario">
                         {usuario?.rol === "compras" ? (
-                            sucursalSeleccionada ? `Repo: ${sucursalSeleccionada}` : "Seleccionar sucursal"
+                            sucursalSeleccionada ? `Repo: ${sucursalSeleccionada}` : "Modo ZIP masivo"
                         ) : (
                             usuario?.sucursal_codigo ?? usuario?.usuario ?? "Usuario"
                         )}
@@ -116,7 +120,7 @@ export default function Navbar() {
                                     className="usuarios_icon_btn"
                                     onClick={handleOpenModalSucursal}
                                     aria-label="Cambiar sucursal a reponer"
-                                    title={sucursalSeleccionada ? `Cambiar sucursal (actual: ${sucursalSeleccionada})` : "Seleccionar sucursal a reponer"}
+                                    title={sucursalSeleccionada ? `Cambiar sucursal (actual: ${sucursalSeleccionada})` : "Seleccionar sucursal o activar modo ZIP masivo"}
                                     style={{
                                         color: "#cba204",
                                         fontSize: "1.3rem",

@@ -79,6 +79,18 @@ export const AuthProvider = ({ children }) => {
 
     const authFetch = async (url, options = {}) => {
         const headers = { ...(options.headers || {}), ...authHeaders };
+
+        // Debug logging para ZIP uploads
+        if (url.includes('upload-zip')) {
+            console.log('🔐 AuthFetch debug:', {
+                url: url.split('/').pop(),
+                hasToken: !!token,
+                hasAuthHeader: !!headers.Authorization,
+                authHeaderPrefix: headers.Authorization?.substring(0, 20) + '...',
+                usuario: usuario?.usuario
+            });
+        }
+
         return nativeFetch(url, { ...options, headers });
     };
 
