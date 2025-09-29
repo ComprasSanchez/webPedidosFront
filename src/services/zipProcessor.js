@@ -20,7 +20,11 @@ export class ZipProcessor {
             throw new Error('Datos de ZIP inválidos');
         }
 
-        // Empezar con carritos existentes
+        // Detectar si es modo Solo Depo
+        const esSoloDepo = zipData.modo === 'SOLO_DEPOSITO';
+        console.log(`🔍 Procesando ZIP - Modo: ${esSoloDepo ? 'Solo Depo' : 'Tradicional'}`);
+
+        // Empezar con carritos existentes (mantener productos para resumen en Solo Depo)
         const carritoConsolidado = { ...carritosBulkExistente };
 
         // Determinar si limpiar metadatos viejos
@@ -40,11 +44,6 @@ export class ZipProcessor {
         zipData.resumen.forEach(item => {
             const sucursal = item.sucursal;
 
-            // Inicializar array si no existe la sucursal o no es un array
-            if (!carritoConsolidado[sucursal] || !Array.isArray(carritoConsolidado[sucursal])) {
-                carritoConsolidado[sucursal] = [];
-            }
-
             // Inicializar metadatos de sucursal
             if (!metadatosSucursales[sucursal]) {
                 metadatosSucursales[sucursal] = {
@@ -52,7 +51,8 @@ export class ZipProcessor {
                     archivos: [],
                     detallesDuplicados: [],
                     productosInvalidos: 0,
-                    detallesInvalidos: []
+                    detallesInvalidos: [],
+                    nroPedidoDeposito: null // Número de pedido del depósito
                 };
             }
 
@@ -85,8 +85,13 @@ export class ZipProcessor {
                 metadatosSucursales[sucursal].archivos.push(item.archivo);
             }
 
-            // Consolidar productos de esta sucursal
-            if (item.productos_detalle) {
+            // 🔄 SOLO procesar productos para el carrito en modo Tradicional
+            if (!esSoloDepo && item.productos_detalle) {
+                // Inicializar array si no existe la sucursal
+                if (!carritoConsolidado[sucursal] || !Array.isArray(carritoConsolidado[sucursal])) {
+                    carritoConsolidado[sucursal] = [];
+                }
+
                 const productosConArchivo = item.productos_detalle.map(producto => ({
                     ...producto,
                     sucursal: sucursal,
@@ -118,8 +123,68 @@ export class ZipProcessor {
                     metadatosSucursales[sucursal].detallesDuplicados.push(...resultado.duplicadosDetalle);
                     metadatosSucursales[sucursal].duplicados += resultado.duplicadosDetalle.length;
                 }
+            } else if (esSoloDepo && item.productos_detalle) {
+                // 🏠 MODO SOLO DEPO: Procesar productos SOLO para mostrar resumen (NO van al carrito principal)
+                console.log(`🏠 ${sucursal}: Solo Depo - Procesando productos para resumen (no van al carrito principal)`);
+
+                // Procesar productos normalmente para el resumen
+                const productosConArchivo = item.productos_detalle.map(producto => ({
+                    ...producto,
+                    sucursal: sucursal,
+                    archivo_origen: item.archivo,
+                    archivos_origen: [item.archivo],
+                    nombre: producto.nombre || ProductosInvalidosService.extraerNombreProducto(producto.lineaOriginal) || producto.descripcion || `Producto ${producto.ean}`
+                }));
+
+                const validacionInvalidos = ProductosInvalidosService.detectarProductosInvalidos(productosConArchivo);
+
+                // Agregar productos válidos a carritosBulk SOLO para mostrar el resumen
+                if (!carritoConsolidado[sucursal]) {
+                    carritoConsolidado[sucursal] = [];
+                }
+
+                // Guardar estadísticas de productos inválidos
+                if (validacionInvalidos.productosInvalidos.length > 0) {
+                    metadatosSucursales[sucursal].productosInvalidos += validacionInvalidos.productosInvalidos.length;
+                    metadatosSucursales[sucursal].detallesInvalidos.push(...validacionInvalidos.productosInvalidos);
+                }
+
+                // PASO 2: Usar servicio de duplicados para consolidar productos para el resumen
+                const resultado = DuplicadosService.consolidarConCarritoExistente(
+                    carritoConsolidado[sucursal],
+                    validacionInvalidos.productosValidos
+                );
+
+                carritoConsolidado[sucursal] = resultado.carritoConsolidado;
+
+                // Agregar duplicados a metadatos si los hay
+                if (resultado.duplicadosDetalle.length > 0) {
+                    metadatosSucursales[sucursal].detallesDuplicados.push(...resultado.duplicadosDetalle);
+                    metadatosSucursales[sucursal].duplicados += resultado.duplicadosDetalle.length;
+                }
             }
         });
+
+        // Extraer números de pedidos del depósito de la respuesta del backend
+        if (zipData.pedidos_deposito?.pedidos_resumen) {
+            zipData.pedidos_deposito.pedidos_resumen.forEach(pedido => {
+                const sucursal = pedido.sucursal;
+                if (metadatosSucursales[sucursal] && pedido.nroPedidoQuantio) {
+                    // Acumular múltiples números de pedido en lugar de sobreescribir
+                    if (!metadatosSucursales[sucursal].nrosPedidosDeposito) {
+                        metadatosSucursales[sucursal].nrosPedidosDeposito = [];
+                    }
+
+                    // Evitar duplicados si ya existe el número
+                    if (!metadatosSucursales[sucursal].nrosPedidosDeposito.includes(pedido.nroPedidoQuantio)) {
+                        metadatosSucursales[sucursal].nrosPedidosDeposito.push(pedido.nroPedidoQuantio);
+                    }
+
+                    // Mantener compatibilidad con el campo original (usar el último agregado)
+                    metadatosSucursales[sucursal].nroPedidoDeposito = pedido.nroPedidoQuantio;
+                }
+            });
+        }
 
         // Guardar metadatos actualizados
         SessionStorageService.setMetadatosBulk(metadatosSucursales);

@@ -53,12 +53,14 @@ const CarritoBulk = ({ carritosBulk, totalSucursales, totalProductos, totalUnida
                             const unidades = items.reduce((sum, item) => sum + (item.unidades || 0), 0);
                             const nombreArchivo = items[0]?.archivo_origen || 'N/A';
 
-                            // Obtener información de duplicados y productos inválidos
+                            // Obtener información de duplicados, productos inválidos y números de pedidos
                             const metadatos = JSON.parse(sessionStorage.getItem('metadatosBulk') || '{}');
                             const duplicados = metadatos[sucursal]?.duplicados || 0;
                             const detallesDuplicados = metadatos[sucursal]?.detallesDuplicados || [];
                             const productosInvalidos = metadatos[sucursal]?.productosInvalidos || 0;
                             const detallesInvalidos = metadatos[sucursal]?.detallesInvalidos || [];
+                            const nroPedidoDeposito = metadatos[sucursal]?.nroPedidoDeposito;
+                            const nrosPedidosDeposito = metadatos[sucursal]?.nrosPedidosDeposito || [];
 
                             const handleClickDuplicados = () => {
                                 setModalDuplicados({
@@ -113,7 +115,28 @@ const CarritoBulk = ({ carritosBulk, totalSucursales, totalProductos, totalUnida
                                     <td className="numero_cell">{productos}</td>
                                     <td className="numero_cell">{unidades}</td>
                                     <td className="estado_cell">
-                                        <span className="estado_badge estado_listo">✅ Listo</span>
+                                        {nrosPedidosDeposito.length > 0 ? (
+                                            <div className="pedidos_container">
+                                                {nrosPedidosDeposito.map((numeroPedido, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="estado_badge estado_pedido"
+                                                        title={`Pedido generado: ${numeroPedido}`}
+                                                        style={{
+                                                            marginRight: index < nrosPedidosDeposito.length - 1 ? '4px' : '0',
+                                                            marginBottom: '2px',
+                                                            display: 'inline-block'
+                                                        }}
+                                                    >
+                                                        📋 {numeroPedido}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="estado_badge estado_sin_pedido" title="No se generó pedido (sin stock)">
+                                                ⚠️ Sin pedido
+                                            </span>
+                                        )}
                                     </td>
                                 </tr>
                             );

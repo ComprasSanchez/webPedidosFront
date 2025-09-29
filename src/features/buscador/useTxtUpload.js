@@ -125,7 +125,16 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
                         style: { maxWidth: '500px' }
                     });
 
-                    // No procesar carrito en modo Solo Depo
+                    // ✅ SÍ procesar datos para mostrar resumen, pero marcar como Solo Depo
+                    if (procesarZipData) {
+                        try {
+                            procesarZipData(data);
+                        } catch (error) {
+                            console.error("Error en procesarZipData:", error);
+                            throw error;
+                        }
+                    }
+
                     setLoadingTxt(false);
                     e.target.value = "";
                     return;
