@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FaSearch, FaFileUpload, FaSpinner } from "react-icons/fa";
-import { TiHome } from "react-icons/ti";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { useCarrito } from "../../context/CarritoContext";
@@ -173,7 +172,15 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                                 disabled={loadingTxt}
                                 style={{ display: 'none' }}
                             />
-                            <TiHome className="solo_deposito_icon" />
+                            <span className="solo_deposito_label">Solo DEPO</span>
+                            <div className="modern_switch">
+                                <div className="slider">
+                                    <div className="circle">
+                                        <span className="switch_no">NO</span>
+                                        <span className="switch_si">SI</span>
+                                    </div>
+                                </div>
+                            </div>
                         </label>
                     </div>
                 </>
