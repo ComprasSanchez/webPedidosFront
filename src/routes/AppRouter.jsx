@@ -9,6 +9,8 @@ import PanelAdmin from "../features/admin/PanelAdmin";
 import PanelCredenciales from "../features/admin/PanelCredenciales";
 import Navbar from "../features/navbar/Navbar";
 import Reposicion from "../features/reposicion/Reposicion";
+import CrucePedidos from "../features/reposicion/CrucePedidos";
+import FaltantesDeposito from "../features/reposicion/FaltantesDeposito";
 
 // ✅ Ruta privada con control de login + roles
 const PrivateRoute = ({ children, roles }) => {
@@ -76,6 +78,26 @@ const AppRouter = () => {
                     element={
                         <PrivateRoute roles={["sucursal", "compras"]}>
                             <RevisarPedido />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Cruce de Pedidos */}
+                <Route
+                    path="/cruce-pedidos"
+                    element={
+                        <PrivateRoute roles={["compras", "admin"]}>
+                            <CrucePedidos />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Faltantes del Depósito */}
+                <Route
+                    path="/faltantes-deposito"
+                    element={
+                        <PrivateRoute roles={["compras", "admin"]}>
+                            <FaltantesDeposito />
                         </PrivateRoute>
                     }
                 />

@@ -252,18 +252,22 @@ export default function RevisarPedido() {
 
     const handleConfirmar = () => {
 
-        const hayFaltasDeMotivo = carrito
-            .filter(item => !noPedirMap[item.idQuantio])
-            .some((item) => {
-                const motivo = seleccion[item.idQuantio]?.motivo;
-                const req = requiereJustificacion(motivo);
-                return req;
-            });
+        // 🔄 Para usuarios de reposición, omitir validación de motivos
+        const esUsuarioReposicion = usuario?.rol === "compras";
 
+        if (!esUsuarioReposicion) {
+            const hayFaltasDeMotivo = carrito
+                .filter(item => !noPedirMap[item.idQuantio])
+                .some((item) => {
+                    const motivo = seleccion[item.idQuantio]?.motivo;
+                    const req = requiereJustificacion(motivo);
+                    return req;
+                });
 
-        if (hayFaltasDeMotivo) {
-            toast.error("Tenés productos sin motivo seleccionado. Completalos antes de confirmar el pedido.");
-            return;
+            if (hayFaltasDeMotivo) {
+                toast.error("Tenés productos sin motivo seleccionado. Completalos antes de confirmar el pedido.");
+                return;
+            }
         }
 
 
@@ -379,6 +383,7 @@ export default function RevisarPedido() {
                 if (data.resultados?.exitos) {
                     // Función para normalizar nombres de proveedores
                     const normalizeProveedor = (proveedor) => {
+                        if (!proveedor) return '';
                         return proveedor.toLowerCase()
                             .normalize('NFD')
                             .replace(/[\u0300-\u036f]/g, '') // Remover acentos
