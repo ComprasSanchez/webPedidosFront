@@ -15,10 +15,10 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
     // Memorizar productos esenciales para selección automática (ignorar cambios de unidades y flags)
     const productosEsenciales = useMemo(() => {
-        return carrito.filter(item => 
+        return carrito.filter(item =>
             (item.idQuantio || item.ean) && item.unidades > 0
         );
-    }, [carrito.map(item => 
+    }, [carrito.map(item =>
         `${item.idQuantio || 'null'}-${item.ean || 'null'}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}`
     ).join('|')]);
 
