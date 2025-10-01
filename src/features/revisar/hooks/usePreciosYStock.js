@@ -24,48 +24,73 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
         // Usar el carrito esencial ya filtrado y memorizado
         const productosExistentes = carritoEsencial;
 
-        // Crear firma estable basada SOLO en EANs esenciales
-        const eansEsenciales = productosExistentes.map(item => item.ean).sort();
-        const firmaActual = eansEsenciales.join(',');
-        const firmaPrevia = eanListRef.current.join(',');
-
-        // Solo ejecutar si cambia la firma de EANs (productos agregados/eliminados realmente)
-        const cambioEstructural = firmaActual !== firmaPrevia;
+        // Detectar solo productos NUEVOS (que no estaban en la consulta anterior)
+        const eansActuales = productosExistentes.map(item => item.ean).sort();
+        const eansPrevios = eanListRef.current || [];
+        const eansNuevos = eansActuales.filter(ean => !eansPrevios.includes(ean));
+        const eansEliminados = eansPrevios.filter(ean => !eansActuales.includes(ean));
 
         // Detectar productos del ZIP que necesitan consulta forzada
-        const hayProductosZip = productosExistentes.some(item => item.desde_zip === true);
+        const productosZipNuevos = productosExistentes.filter(item =>
+            item.desde_zip === true && eansNuevos.includes(item.ean)
+        );
+        const hayProductosZipNuevos = productosZipNuevos.length > 0;
 
-        if (hayProductosZip) {
-            console.log('🔍 Detectados productos del ZIP, forzando consulta de precios y stock');
+        if (hayProductosZipNuevos) {
+            console.log('🔍 Detectados productos ZIP nuevos, forzando consulta:', productosZipNuevos.map(p => p.ean));
         }
 
-        // Solo ejecutar si: hay productos, hay sucursal, Y (cambió estructura O hay productos ZIP)
-        if (!productosExistentes.length || !sucursal || (!cambioEstructural && !hayProductosZip)) {
-            console.log('⏭️ [PRECIOS] Saltando consulta - Sin cambios estructurales');
+        // Limpiar precios de productos eliminados (sin hacer consultas)
+        if (eansEliminados.length > 0) {
+            console.log('🧹 [PRECIOS] Limpiando precios de productos eliminados:', eansEliminados);
+
+            setPM(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
+            setPS(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
+            setPC(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
+            setSD(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
+        }
+
+        // Solo consultar precios para productos realmente NUEVOS
+        const productosNuevosParaConsulta = productosExistentes.filter(item => eansNuevos.includes(item.ean));
+
+        if (!sucursal || (eansNuevos.length === 0 && !hayProductosZipNuevos)) {
+            console.log('⏭️ [PRECIOS] No hay productos nuevos para consultar');
+            // Actualizar referencia aunque no consultemos
+            eanListRef.current = eansActuales;
             return;
         }
 
-        console.log('🔄 [PRECIOS] Ejecutando consulta - Cambio estructural detectado');
+        console.log('🔄 [PRECIOS] Consultando solo productos NUEVOS:', eansNuevos);
 
         (async () => {
             setLoading(true);
 
-            // Crear lista de productos del carrito original para las consultas (necesita unidades reales)
-            const productosParaConsulta = carrito.filter(item => item.ean && item.unidades > 0);
+            // Crear lista de productos del carrito original solo para los NUEVOS (necesita unidades reales)
+            const productosParaConsulta = carrito.filter(item =>
+                item.ean && item.unidades > 0 && eansNuevos.includes(item.ean)
+            );
 
             if (soloDeposito) {
                 // 🔥 MODO SOLO DEPÓSITO: No consultar droguerías para ahorrar créditos
-                console.log("🏪 Modo Solo Depósito activado - saltando consultas a droguerías");
+                console.log("🏪 Modo Solo Depósito activado - consultando solo stock para productos nuevos");
 
-                const stockDisponible = await getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders });
+                const stockNuevo = await getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders });
 
-                // Limpiar precios de droguerías y setear solo stock
-                setPM([]);
-                setPS([]);
-                setPC([]);
-                setSD(stockDisponible);
+                // Combinar con stock existente (mantener datos previos)
+                setSD(prev => {
+                    const combined = [...prev];
+                    stockNuevo.forEach(nuevoItem => {
+                        const existingIndex = combined.findIndex(item => item.ean === nuevoItem.ean);
+                        if (existingIndex >= 0) {
+                            combined[existingIndex] = nuevoItem;
+                        } else {
+                            combined.push(nuevoItem);
+                        }
+                    });
+                    return combined;
+                });
             } else {
-                // 🌐 MODO NORMAL: Consultar todas las droguerías
+                // 🌐 MODO NORMAL: Consultar todas las droguerías solo para productos nuevos
                 const headersConRol = {
                     ...authHeaders,
                     'x-user-rol': usuario?.rol || 'sucursal'
@@ -77,16 +102,21 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                     getPreciosCofarsur(productosParaConsulta, sucursal, { fetch: authFetch, headers: headersConRol }),
                     getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                 ]);
-                setPM(m); setPS(s); setPC(c); setSD(d);
+
+                // Combinar nuevos precios con existentes (mantener datos previos)
+                setPM(prev => [...prev, ...m]);
+                setPS(prev => [...prev, ...s]);
+                setPC(prev => [...prev, ...c]);
+                setSD(prev => [...prev, ...d]);
             }
 
-            // Actualizar referencia con la nueva firma estable
-            eanListRef.current = eansEsenciales;
+            // Actualizar referencia con los EANs actuales
+            eanListRef.current = eansActuales;
             setLoading(false);
 
-            // Limpiar flags de ZIP después de la consulta (opcional, para optimización futura)
-            if (hayProductosZip) {
-                console.log('✅ Consulta de productos ZIP completada');
+            // Limpiar flags de ZIP después de la consulta
+            if (hayProductosZipNuevos) {
+                console.log('✅ Consulta de productos ZIP nuevos completada');
             }
         })();
     }, [carritoEsencial, sucursal, authFetch, authHeaders, usuario?.rol, soloDeposito]);
