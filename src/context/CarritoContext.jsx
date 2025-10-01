@@ -130,11 +130,18 @@ export const CarritoProvider = ({ children }) => {
     // --- Helpers de negocio
     const agregarAlCarrito = (producto, cantidad) => {
         setCarrito(prev => {
+            // 🔍 LOG: Debug del producto que se está agregando
+            console.log('🔍 [CARRITO] Agregando producto:', {
+                ean: producto.ean,
+                idQuantio: producto.idQuantio,
+                idProducto: producto.idProducto,
+                nombre: producto.nombre || producto.descripcion
+            });
 
             // Normalizar idQuantio a string
             const idQuantio = String(producto.idQuantio || producto.idProducto);
-            if (!idQuantio) {
-                console.warn("⚠️ Producto sin identificador único (idQuantio o idProducto):", producto);
+            if (!idQuantio || idQuantio === 'undefined' || idQuantio === 'null') {
+                console.warn("⚠️ [CARRITO] Producto sin identificador único (idQuantio o idProducto):", producto);
                 return prev; // No agregar productos sin identificador único
             }
 
@@ -172,6 +179,24 @@ export const CarritoProvider = ({ children }) => {
 
 
     function replaceCarrito(items) {
+        // 🔍 LOG: Debug de productos que se están reemplazando
+        console.log('🔍 [CARRITO] Reemplazando carrito con', items.length, 'productos');
+
+        const productosConId = items.filter(item => item.idQuantio);
+        const productosSinId = items.filter(item => !item.idQuantio);
+
+        console.log('✅ [CARRITO] Productos con idQuantio:', productosConId.length);
+        console.log('❌ [CARRITO] Productos SIN idQuantio:', productosSinId.length);
+
+        if (productosSinId.length > 0) {
+            console.log('❌ [CARRITO] Productos SIN ID detalle:', productosSinId.slice(0, 5).map(p => ({
+                ean: p.ean,
+                nombre: p.nombre || p.descripcion,
+                idQuantio: p.idQuantio,
+                origen: p.origen
+            })));
+        }
+
         setCarrito(items);
     }
 
@@ -271,14 +296,14 @@ export const CarritoProvider = ({ children }) => {
     };
 
 
-    // Ahora usa idQuantio (CodPlex) para identificar el producto
-    const actualizarUnidades = (idQuantio, nuevasUnidades) => {
+    // Actualizar unidades usando identificador único (idQuantio o EAN)
+    const actualizarUnidades = (identificador, nuevasUnidades) => {
         setCarrito((prev) => {
             if (nuevasUnidades <= 0) {
-                return prev.filter((it) => it.idQuantio !== idQuantio);
+                return prev.filter((it) => (it.idQuantio || it.ean) !== identificador);
             }
             return prev.map((it) =>
-                it.idQuantio === idQuantio ? { ...it, unidades: nuevasUnidades } : it
+                (it.idQuantio || it.ean) === identificador ? { ...it, unidades: nuevasUnidades } : it
             );
         });
     };

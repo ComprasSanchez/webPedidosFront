@@ -79,7 +79,11 @@ export default function FilaItem({
                 <QtyControl
                     value={item.unidades || 1}
                     disabled={!pedir}
-                    onChange={(v) => onChangeQty?.(item.idQuantio, v)}
+                    onChange={(v) => {
+                        // Usar la misma clave que se usa para la key de la tabla
+                        const claveUnica = item.idQuantio || item.ean;
+                        onChangeQty?.(claveUnica, v);
+                    }}
                 />
             </td>
 

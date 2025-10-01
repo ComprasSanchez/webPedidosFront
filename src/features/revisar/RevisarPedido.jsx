@@ -8,7 +8,7 @@ import { usePersistenciaCarrito } from "./hooks/usePersistenciaCarrito";
 import { mejorProveedor, precioValido } from "./logic/mejorProveedor";
 import { getStock } from "../utils/obtenerStock";
 import TablaRevisar from "./components/TablaRevisar";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import { API_URL } from "../../config/api";
@@ -181,8 +181,8 @@ export default function RevisarPedido() {
 
     const { reglas, ready, matchConvenio } = useConvenios({ sucursal: sucursalActual });
 
-    // Crear una versión de getStock que ya tenga la sucursal aplicada
-    const getStockConSucursal = (idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual);
+    // Crear una versión de getStock que ya tenga la sucursal aplicada (memorizada)
+    const getStockConSucursal = useCallback((idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual), [sucursalActual]);
 
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
         carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual

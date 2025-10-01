@@ -89,22 +89,48 @@ const BuscadorProductos = () => {
                     return;
                 }
 
+                // 🔍 LOG: Debug de productos para reservas
+                console.log('🔍 [RESERVAS SOFT] Productos en carrito:', carrito.length);
+                const productosConId = carrito.filter(item => item.idQuantio);
+                const productosSinId = carrito.filter(item => !item.idQuantio);
+
+                console.log('✅ [RESERVAS SOFT] Productos con idQuantio:', productosConId.length);
+                console.log('❌ [RESERVAS SOFT] Productos SIN idQuantio:', productosSinId.length);
+
+                if (productosSinId.length > 0) {
+                    console.log('❌ [RESERVAS SOFT] Productos SIN ID:', productosSinId.map(p => ({
+                        ean: p.ean,
+                        nombre: p.nombre || p.descripcion,
+                        idQuantio: p.idQuantio
+                    })));
+                }
+
+                if (productosConId.length === 0) {
+                    console.warn('⚠️ [RESERVAS SOFT] No hay productos con idQuantio válido, saltando reservas');
+                    return;
+                }
+
                 // 🎯 Crear reservas SOFT (el backend validará por stock automáticamente)
-                await fetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
+                const response = await fetch(`${API_URL}/api/pedidos/reservas-soft/soft`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'x-sucursal': sucursalActual
                     },
                     body: JSON.stringify({
-                        items: carrito
-                            .filter(item => item.idQuantio) // Solo productos con ID válido
-                            .map(item => ({
-                                idproducto: item.idQuantio,
-                                cantidad: item.unidades || 1
-                            }))
+                        items: productosConId.map(item => ({
+                            idproducto: item.idQuantio,
+                            cantidad: item.unidades || 1
+                        }))
                     })
                 });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ [RESERVAS SOFT] Error del backend:', response.status, errorText);
+                } else {
+                    console.log('✅ [RESERVAS SOFT] Creadas exitosamente');
+                }
             } catch (error) {
                 console.warn('Reserva SOFT fallida, se continúa sin frenar:', error.message);
                 // No se muestra nada al usuario
