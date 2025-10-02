@@ -39,7 +39,10 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                 sucursalId: sucursalId
             };
 
-            const response = await fetch('/api/generar-excel-keller', {
+            // Importar API_URL para usar la URL correcta del backend
+            const { API_URL } = await import('../../config/api.js');
+
+            const response = await fetch(`${API_URL}/api/generar-excel-keller`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
