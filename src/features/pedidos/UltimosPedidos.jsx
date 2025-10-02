@@ -124,7 +124,7 @@ export default function UltimosPedidos() {
             });
             if (ean.trim()) qs.set("q", ean.trim());
             if (nombre.trim()) qs.set("q", nombre.trim());
-            
+
             // 🔧 NUEVO: Usuarios de compras pueden especificar sucursal, otros usan la propia
             if (usuario?.rol === 'compras' && usuario?.sucursal_codigo) {
                 qs.set("sucursal", usuario.sucursal_codigo);
