@@ -768,6 +768,7 @@ export default function RevisarPedido() {
                     onClose={() => setMostrarResumen(false)}
                     onEnviar={handleEnviarPedido}
                     isSending={isSending}
+                    sucursalActual={sucursalActual}
                 />
             )}
 

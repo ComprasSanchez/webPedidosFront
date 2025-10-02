@@ -179,3 +179,29 @@
         font-size: 1rem;
     }
 }
+
+/* Badge para Excel de Kellerhoff */
+.keller_excel_badge {
+    display: inline-flex;
+    align-items: center;
+    background: #e6f3ff;
+    border: 1px solid #4a90e2;
+    color: #2c5aa0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+
+    &:hover {
+        background: #d1e7ff;
+        border-color: #357abd;
+        color: #1a4480;
+        transform: translateY(-1px);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+}
