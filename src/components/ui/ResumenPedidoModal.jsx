@@ -4,6 +4,14 @@ import React from "react";
 const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending }) => {
     if (!resumen || Object.keys(resumen).length === 0) return null;
 
+    // 💰 Formateador de montos estilo argentino (puntos para miles, comas para decimales)
+    const formatearMonto = (monto) => {
+        return monto.toLocaleString('es-AR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
     const proveedores = Object.entries(resumen).map(([proveedor, items]) => {
         if (!Array.isArray(items)) {
             console.warn(`⚠️ El resumen de ${proveedor} no es un array:`, items);
@@ -33,7 +41,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending }) => {
                             <tr key={prov.proveedor}>
                                 <td>{prov.proveedor.toUpperCase()}</td>
                                 <td>{prov.totalUnidades}</td>
-                                <td>$ {prov.totalMonto.toFixed(2)}</td>
+                                <td>$ {formatearMonto(prov.totalMonto)}</td>
                             </tr>
                         ))}
                     </tbody>
