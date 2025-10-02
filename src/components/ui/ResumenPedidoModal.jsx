@@ -54,40 +54,67 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                 throw new Error('Error al generar el Excel de Kellerhoff');
             }
 
-            // Descargar el archivo - usar sucursal de prop (más confiable)
+            // Descargar el archivo - estrategia mejorada para producción
+            console.log('📥 FRONTEND: Response recibido:', {
+                ok: response.ok,
+                status: response.status,
+                headers: [...response.headers.entries()],
+                contentType: response.headers.get('content-type')
+            });
+
             const blob = await response.blob();
+            console.log('📦 FRONTEND: Blob creado:', {
+                size: blob.size,
+                type: blob.type
+            });
+
+            // Verificar que el blob no esté vacío
+            if (blob.size === 0) {
+                throw new Error('El archivo recibido está vacío');
+            }
 
             // Usar la sucursal actual de prop (ya sincronizada)
             const sucursalParaArchivo = sucursalActual || sessionStorage.getItem("sucursalReponer") || "0";
             const fileName = `Pedido_Keller_${sucursalParaArchivo}.xlsx`;
 
-            // 🔍 LOG: Información de descarga
             console.log('📥 FRONTEND: Preparando descarga:', {
-                sucursalProp: sucursalActual,
-                sucursalParaArchivo: sucursalParaArchivo,
                 fileName: fileName,
-                sessionStorageActual: sessionStorage.getItem("sucursalReponer"),
-                blobSize: blob.size
+                blobSize: blob.size,
+                blobType: blob.type
             });
 
-            // Crear URL único para evitar caché (sin cambiar el nombre del archivo)
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url + '?t=' + Date.now(); // Timestamp en la URL, no en el nombre
-            a.download = fileName;
+            // Estrategia robusta para descarga
+            try {
+                // Crear URL del blob
+                const url = window.URL.createObjectURL(blob);
 
-            // 🔍 LOG: Elemento de descarga creado
-            console.log('🔗 FRONTEND: Elemento <a> creado:', {
-                href: a.href,
-                download: a.download,
-                fileName: fileName
-            });
+                // Crear elemento de descarga
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.style.display = 'none';
 
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+                console.log('🔗 FRONTEND: Iniciando descarga con:', {
+                    url: url,
+                    download: a.download,
+                    href: a.href
+                });
+
+                // Agregar al DOM, hacer click y limpiar
+                document.body.appendChild(a);
+                a.click();
+
+                // Limpiar después de un pequeño delay
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    console.log('🧹 FRONTEND: Limpieza de descarga completada');
+                }, 100);
+
+            } catch (downloadError) {
+                console.error('❌ FRONTEND: Error en descarga:', downloadError);
+                throw new Error('Error al procesar la descarga del archivo');
+            }
 
             console.log(`✅ FRONTEND: Descarga iniciada con nombre: ${fileName}`);
 
