@@ -13,7 +13,7 @@ import { FaChevronRight } from "react-icons/fa";
 const PAGE_SIZE = 25;
 
 export default function UltimosPedidos() {
-    const { usuario } = useAuth();
+    const { usuario, authFetch } = useAuth();
     const [open, setOpen] = useState(false);
 
     // filtros
@@ -107,7 +107,8 @@ export default function UltimosPedidos() {
 
 
     const fetchPedidos = async (targetPage = 1, idsFiltro = idsFiltrados, startParam = start, endParam = end) => {
-        if (!usuario?.sucursal_codigo) return;
+        // 🔧 NUEVO: Diferentes validaciones según rol
+        if (usuario?.rol === 'sucursal' && !usuario?.sucursal_codigo) return;
         if (!startParam || !endParam) return;
 
         try {
@@ -123,11 +124,13 @@ export default function UltimosPedidos() {
             });
             if (ean.trim()) qs.set("q", ean.trim());
             if (nombre.trim()) qs.set("q", nombre.trim());
+            
+            // 🔧 NUEVO: Usuarios de compras pueden especificar sucursal, otros usan la propia
+            if (usuario?.rol === 'compras' && usuario?.sucursal_codigo) {
+                qs.set("sucursal", usuario.sucursal_codigo);
+            }
 
-            const res = await fetch(`${API_URL}/api/ver-pedidos?${qs.toString()}`, {
-                headers: { "X-Sucursal": usuario.sucursal_codigo },
-                credentials: "include",
-            });
+            const res = await authFetch(`${API_URL}/api/ver-pedidos?${qs.toString()}`);
             const json = await res.json();
 
             if (!json.ok) throw new Error(json.error || "Error desconocido");

@@ -21,28 +21,23 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
     }, [carrito.map(item => `${item.ean}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}-${item.idQuantio || 'null'}`).join('|')]);
 
     useEffect(() => {
-        // Usar el carrito esencial ya filtrado y memorizado
-        const productosExistentes = carritoEsencial;
-
         // Detectar solo productos NUEVOS (que no estaban en la consulta anterior)
-        const eansActuales = productosExistentes.map(item => item.ean).sort();
+        const eansActuales = carritoEsencial.map(item => item.ean).sort();
         const eansPrevios = eanListRef.current || [];
         const eansNuevos = eansActuales.filter(ean => !eansPrevios.includes(ean));
         const eansEliminados = eansPrevios.filter(ean => !eansActuales.includes(ean));
 
         // Detectar productos del ZIP que necesitan consulta forzada
-        const productosZipNuevos = productosExistentes.filter(item =>
+        const productosZipNuevos = carritoEsencial.filter(item =>
             item.desde_zip === true && eansNuevos.includes(item.ean)
         );
         const hayProductosZipNuevos = productosZipNuevos.length > 0;
 
-        if (hayProductosZipNuevos) {
-            console.log('🔍 Detectados productos ZIP nuevos, forzando consulta:', productosZipNuevos.map(p => p.ean));
-        }
+        // Productos ZIP nuevos detectados si los hay
 
         // Limpiar precios de productos eliminados (sin hacer consultas)
         if (eansEliminados.length > 0) {
-            console.log('🧹 [PRECIOS] Limpiando precios de productos eliminados:', eansEliminados);
+            // Limpiar precios de productos eliminados
 
             setPM(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
             setPS(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
@@ -50,17 +45,16 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
             setSD(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
         }
 
-        // Solo consultar precios para productos realmente NUEVOS
-        const productosNuevosParaConsulta = productosExistentes.filter(item => eansNuevos.includes(item.ean));
+        // Productos nuevos identificados para consulta
 
         if (!sucursal || (eansNuevos.length === 0 && !hayProductosZipNuevos)) {
-            console.log('⏭️ [PRECIOS] No hay productos nuevos para consultar');
+            // No hay productos nuevos para consultar
             // Actualizar referencia aunque no consultemos
             eanListRef.current = eansActuales;
             return;
         }
 
-        console.log('🔄 [PRECIOS] Consultando solo productos NUEVOS:', eansNuevos);
+        // Consultando precios para productos nuevos
 
         (async () => {
             setLoading(true);
@@ -103,11 +97,55 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                     getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                 ]);
 
-                // Combinar nuevos precios con existentes (mantener datos previos)
-                setPM(prev => [...prev, ...m]);
-                setPS(prev => [...prev, ...s]);
-                setPC(prev => [...prev, ...c]);
-                setSD(prev => [...prev, ...d]);
+                // Combinar nuevos precios con existentes (evitar duplicados)
+                setPM(prev => {
+                    const combined = [...prev];
+                    m.forEach(nuevoItem => {
+                        const existingIndex = combined.findIndex(item => item.ean === nuevoItem.ean);
+                        if (existingIndex >= 0) {
+                            combined[existingIndex] = nuevoItem;
+                        } else {
+                            combined.push(nuevoItem);
+                        }
+                    });
+                    return combined;
+                });
+                setPS(prev => {
+                    const combined = [...prev];
+                    s.forEach(nuevoItem => {
+                        const existingIndex = combined.findIndex(item => item.ean === nuevoItem.ean);
+                        if (existingIndex >= 0) {
+                            combined[existingIndex] = nuevoItem;
+                        } else {
+                            combined.push(nuevoItem);
+                        }
+                    });
+                    return combined;
+                });
+                setPC(prev => {
+                    const combined = [...prev];
+                    c.forEach(nuevoItem => {
+                        const existingIndex = combined.findIndex(item => item.ean === nuevoItem.ean);
+                        if (existingIndex >= 0) {
+                            combined[existingIndex] = nuevoItem;
+                        } else {
+                            combined.push(nuevoItem);
+                        }
+                    });
+                    return combined;
+                });
+                setSD(prev => {
+                    const combined = [...prev];
+                    d.forEach(nuevoItem => {
+                        const existingIndex = combined.findIndex(item => item.ean === nuevoItem.ean);
+                        if (existingIndex >= 0) {
+                            combined[existingIndex] = nuevoItem;
+                        } else {
+                            combined.push(nuevoItem);
+                        }
+                    });
+                    return combined;
+                });
             }
 
             // Actualizar referencia con los EANs actuales
@@ -115,9 +153,7 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
             setLoading(false);
 
             // Limpiar flags de ZIP después de la consulta
-            if (hayProductosZipNuevos) {
-                console.log('✅ Consulta de productos ZIP nuevos completada');
-            }
+            // Consulta completada
         })();
     }, [carritoEsencial, sucursal, authFetch, authHeaders, usuario?.rol, soloDeposito]);
 
