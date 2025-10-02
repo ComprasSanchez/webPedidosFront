@@ -15,8 +15,6 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
     // 📋 Función para generar Excel de Kellerhoff
     const generarExcelKellerhoff = async (productosKeller) => {
         try {
-            // 🔍 LOG: Información inicial
-            console.log('🚀 FRONTEND: Iniciando descarga de Excel Kellerhoff');
 
             // Preparar datos en el formato que espera el backend
             const datosKeller = productosKeller.map(item => ({
@@ -27,13 +25,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
             // Usar la sucursal actual pasada como prop (más confiable que sessionStorage)
             const sucursalId = sucursalActual || sessionStorage.getItem("sucursalReponer") || "0";
 
-            // 🔍 LOG: Datos que se envían
-            console.log('📤 FRONTEND: Enviando al backend:', {
-                cantidadProductos: datosKeller.length,
-                sucursalId: sucursalId,
-                sucursalProp: sucursalActual,
-                sessionStorage: sessionStorage.getItem("sucursalReponer")
-            });            // Crear un "pseudo-archivo" con los datos de Keller
+            // Crear un "pseudo-archivo" con los datos de Keller
             const excelData = {
                 productos: datosKeller,
                 sucursalId: sucursalId
@@ -54,19 +46,8 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                 throw new Error('Error al generar el Excel de Kellerhoff');
             }
 
-            // Descargar el archivo - estrategia mejorada para producción
-            console.log('📥 FRONTEND: Response recibido:', {
-                ok: response.ok,
-                status: response.status,
-                headers: [...response.headers.entries()],
-                contentType: response.headers.get('content-type')
-            });
-
+            // Descargar el archivo
             const blob = await response.blob();
-            console.log('📦 FRONTEND: Blob creado:', {
-                size: blob.size,
-                type: blob.type
-            });
 
             // Verificar que el blob no esté vacío
             if (blob.size === 0) {
@@ -77,46 +58,22 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
             const sucursalParaArchivo = sucursalActual || sessionStorage.getItem("sucursalReponer") || "0";
             const fileName = `Pedido_Keller_${sucursalParaArchivo}.xlsx`;
 
-            console.log('📥 FRONTEND: Preparando descarga:', {
-                fileName: fileName,
-                blobSize: blob.size,
-                blobType: blob.type
-            });
+            // Crear descarga
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
 
-            // Estrategia robusta para descarga
-            try {
-                // Crear URL del blob
-                const url = window.URL.createObjectURL(blob);
+            // Ejecutar descarga
+            document.body.appendChild(a);
+            a.click();
 
-                // Crear elemento de descarga
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                a.style.display = 'none';
-
-                console.log('🔗 FRONTEND: Iniciando descarga con:', {
-                    url: url,
-                    download: a.download,
-                    href: a.href
-                });
-
-                // Agregar al DOM, hacer click y limpiar
-                document.body.appendChild(a);
-                a.click();
-
-                // Limpiar después de un pequeño delay
-                setTimeout(() => {
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    console.log('🧹 FRONTEND: Limpieza de descarga completada');
-                }, 100);
-
-            } catch (downloadError) {
-                console.error('❌ FRONTEND: Error en descarga:', downloadError);
-                throw new Error('Error al procesar la descarga del archivo');
-            }
-
-            console.log(`✅ FRONTEND: Descarga iniciada con nombre: ${fileName}`);
+            // Limpiar recursos
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
 
         } catch (error) {
             console.error('Error generando Excel de Kellerhoff:', error);
