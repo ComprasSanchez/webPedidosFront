@@ -172,8 +172,6 @@ export default function UltimosPedidos() {
         }
     };
 
-
-
     const totalPages = useMemo(
         () => Math.max(1, Math.ceil((result.total || 0) / PAGE_SIZE)),
         [result.total]
@@ -215,6 +213,12 @@ export default function UltimosPedidos() {
             <aside className={`ultpedidos_panel ${open ? "open" : ""}`} aria-hidden={!open}>
                 <div className="ultpedidos_header">
                     <h3>Últimos pedidos</h3>
+                    <h4>
+                        {usuario?.rol === 'compras'
+                            ? (sessionStorage.getItem("sucursalReponer") || "Seleccionar sucursal")
+                            : (usuario?.sucursal_codigo || "Sin sucursal")
+                        }
+                    </h4>
                     <button className="ultpedidos_close" onClick={() => setOpen(false)} aria-label="Cerrar">×</button>
                 </div>
 
