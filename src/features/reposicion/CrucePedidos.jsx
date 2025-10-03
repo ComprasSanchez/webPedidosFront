@@ -45,7 +45,7 @@ const CrucePedidos = () => {
             }
 
             const data = await response.json();
-            console.log('📊 Datos recibidos:', data);
+            // Procesar datos del cruce de pedidos
             setResultado(data.data || data);
 
         } catch (err) {

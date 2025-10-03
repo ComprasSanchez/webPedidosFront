@@ -32,19 +32,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                     }
                 });
 
-                // 🔍 LOG para debugging selecciones manuales
-                if (cambiosRegistrados.length > 0) {
-                    console.log('✋ MARCADO COMO MANUAL:', cambiosRegistrados);
-                    console.log('📝 TOTAL MANUALES:', Array.from(manualSelectionRef.current));
-
-                    // Mostrar qué tipo de productos fueron marcados como manuales
-                    cambiosRegistrados.forEach(key => {
-                        const producto = carrito.find(p => obtenerCarritoId(p) === String(key));
-                        if (producto) {
-                            console.log(`  ${key}: ${producto.descripcion || producto.nombre} ${!producto.idQuantio ? '(TXT)' : '(ID)'}`);
-                        }
-                    });
-                }
+                // Registrar cambios manuales (debug removido en producción)
             }, 0);
 
             return newSelection;
@@ -57,30 +45,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             (item.idQuantio || item.ean) && item.unidades > 0
         );
 
-        // 🔍 LOG para debugging productos TXT vs manuales y TIPOS DE DATOS
-        const productosTxt = productos.filter(p => !p.idQuantio && p.ean);
-        const productosConId = productos.filter(p => p.idQuantio);
-
-        if (productosTxt.length > 0) {
-            console.log('📋 PRODUCTOS TXT (sin idQuantio):', productosTxt.length);
-            console.log('📝 PRIMEROS 3 TXT:', productosTxt.slice(0, 3).map(p => ({
-                ean: p.ean,
-                descripcion: p.descripcion || p.nombre,
-                origen: p.origen,
-                desde_zip: p.desde_zip,
-                timestamp_zip: p.timestamp_zip
-            })));
-        }
-
-        if (productosConId.length > 0) {
-            console.log('🆔 PRODUCTOS CON ID:', productosConId.length);
-            console.log('🔍 TIPOS DE idQuantio:', productosConId.slice(0, 3).map(p => ({
-                idQuantio: p.idQuantio,
-                tipo: typeof p.idQuantio,
-                esString: typeof p.idQuantio === 'string',
-                esNumber: typeof p.idQuantio === 'number'
-            })));
-        } return productos;
+        // Validación de productos (debug removido) return productos;
     }, [carrito.map(item =>
         `${obtenerCarritoId(item)}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}`
     ).join('|'), obtenerCarritoId]);
@@ -188,7 +153,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     // auto-ajustes (depósito gana, motivo coherente, salir de "Falta" si aparece opción)
     // NOTA: Solo se ejecuta cuando cambian los EANs del carrito o precios/stock, NO cuando cambian las unidades
     useEffect(() => {
-        console.log('🔄 AUTO-AJUSTES useEffect ejecutándose...');
+        // Auto-ajustes ejecutándose
 
         // 🆔 Calcular firma estructural actual usando carritoId
         const firmaActual = JSON.stringify(
@@ -226,13 +191,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             }
         });
 
-        // 🔍 LOG para debugging productos TXT
-        if (productosEliminados.length > 0) {
-            console.log('🗑️ PRODUCTOS ELIMINADOS:', productosEliminados);
-            console.log('📋 IDs ACTUALES:', idsActuales);
-            console.log('🎯 SELECCIONES MANUALES RESTANTES:', Array.from(manualSelectionRef.current));
-            console.log('🔄 NUEVA SELECCIÓN DESPUÉS DE LIMPIAR:', nueva);
-        }
+        // Limpieza completada - productos eliminados del carrito
 
         if (!productosEsenciales.length) {
             if (Object.keys(nueva).length > 0) {
@@ -250,7 +209,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
             // 🔒 No modificar selecciones marcadas como manuales
             if (manualSelectionRef.current.has(clave)) {
-                console.log(`🔒 PROTEGIDO (manual): ${clave} - ${item.descripcion || item.ean}`);
+                // Producto protegido por selección manual
                 return;
             }
 

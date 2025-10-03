@@ -55,13 +55,7 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
                 ? `${API_URL}/api/reposicion/upload-zip`
                 : `${API_URL}/api/reposicion/upload-txt`;
 
-            // Log de debugging para autenticación
-            console.log('🔍 Upload debugging:', {
-                endpoint,
-                isZip,
-                hasAuthFetch: !!authFetch,
-                archivo: file.name
-            });
+            // Preparar upload con autenticación
 
             const res = await authFetch(endpoint, {
                 method: "POST",
@@ -101,7 +95,7 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
                 // Manejo específico para ZIP según el modo
                 if (data.modo === 'SOLO_DEPOSITO') {
                     // 🟢 MODO SOLO DEPO: Flujo directo completado
-                    console.log('🏠 ZIP procesado en modo Solo Depo - Pedidos generados automáticamente');
+                    // ZIP procesado en modo Solo Depo
 
                     // Calcular duplicados totales
                     const duplicadosTotales = data.resumen?.reduce((sum, item) => {
@@ -141,7 +135,7 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
 
                 } else {
                     // 🛒 MODO TRADICIONAL: Procesar carrito para revisión manual
-                    console.log('🛒 ZIP procesado en modo Tradicional - Enviando al carrito');
+                    // ZIP procesado en modo tradicional
 
                     if (procesarZipData) {
                         try {

@@ -89,24 +89,11 @@ const BuscadorProductos = () => {
                     return;
                 }
 
-                // 🔍 LOG: Debug de productos para reservas
-                console.log('🔍 [RESERVAS SOFT] Productos en carrito:', carrito.length);
+                // Verificar productos para reservas soft
                 const productosConId = carrito.filter(item => item.idQuantio);
-                const productosSinId = carrito.filter(item => !item.idQuantio);
-
-                console.log('✅ [RESERVAS SOFT] Productos con idQuantio:', productosConId.length);
-                console.log('❌ [RESERVAS SOFT] Productos SIN idQuantio:', productosSinId.length);
-
-                if (productosSinId.length > 0) {
-                    console.log('❌ [RESERVAS SOFT] Productos SIN ID:', productosSinId.map(p => ({
-                        ean: p.ean,
-                        nombre: p.nombre || p.descripcion,
-                        idQuantio: p.idQuantio
-                    })));
-                }
 
                 if (productosConId.length === 0) {
-                    console.warn('⚠️ [RESERVAS SOFT] No hay productos con idQuantio válido, saltando reservas');
+                    // No hay productos con idQuantio válido para reservar
                     return;
                 }
 
@@ -129,7 +116,7 @@ const BuscadorProductos = () => {
                     const errorText = await response.text();
                     console.error('❌ [RESERVAS SOFT] Error del backend:', response.status, errorText);
                 } else {
-                    console.log('✅ [RESERVAS SOFT] Creadas exitosamente');
+                    // Reservas soft creadas exitosamente
                 }
             } catch (error) {
                 console.warn('Reserva SOFT fallida, se continúa sin frenar:', error.message);

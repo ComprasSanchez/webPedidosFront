@@ -22,7 +22,7 @@ export class ZipProcessor {
 
         // Detectar si es modo Solo Depo
         const esSoloDepo = zipData.modo === 'SOLO_DEPOSITO';
-        console.log(`🔍 Procesando ZIP - Modo: ${esSoloDepo ? 'Solo Depo' : 'Tradicional'}`);
+        // Procesando ZIP
 
         // Empezar con carritos existentes (mantener productos para resumen en Solo Depo)
         const carritoConsolidado = { ...carritosBulkExistente };
@@ -125,7 +125,7 @@ export class ZipProcessor {
                 }
             } else if (esSoloDepo && item.productos_detalle) {
                 // 🏠 MODO SOLO DEPO: Procesar productos SOLO para mostrar resumen (NO van al carrito principal)
-                console.log(`🏠 ${sucursal}: Solo Depo - Procesando productos para resumen (no van al carrito principal)`);
+                // Solo Depo - Procesando productos para resumen
 
                 // Procesar productos normalmente para el resumen
                 const productosConArchivo = item.productos_detalle.map(producto => ({

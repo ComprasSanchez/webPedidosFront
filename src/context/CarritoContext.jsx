@@ -148,22 +148,14 @@ export const CarritoProvider = ({ children }) => {
     // --- Helpers de negocio
     const agregarAlCarrito = (producto, cantidad) => {
         setCarrito(prev => {
-            // 🔍 LOG: Debug del producto que se está agregando
-            console.log('🔍 [CARRITO] Agregando producto:', {
-                ean: producto.ean,
-                idQuantio: producto.idQuantio,
-                idProducto: producto.idProducto,
-                nombre: producto.nombre || producto.descripcion
-            });
-
-            // 🔧 Identificador único: usar idQuantio/idProducto, o EAN para productos no registrados
+            //  Identificador único: usar idQuantio/idProducto, o EAN para productos no registrados
             const esProductoNoRegistrado = (producto.nombre || producto.descripcion || '').includes('Producto no registrado');
             let identificadorUnico;
 
             if (esProductoNoRegistrado) {
                 // Para productos no registrados, usar EAN como identificador
                 identificadorUnico = `ean_${producto.ean}`;
-                console.log('📦 [CARRITO] Producto no registrado detectado, usando EAN como ID:', identificadorUnico);
+                // Producto no registrado detectado
             } else {
                 // Para productos normales, usar idQuantio/idProducto
                 identificadorUnico = String(producto.idQuantio || producto.idProducto);
@@ -206,7 +198,7 @@ export const CarritoProvider = ({ children }) => {
                 unidades: Number(cantidad || 0)
             };
 
-            console.log('✅ [CARRITO] Producto agregado con carritoId:', carritoId);
+
             return [...prev, nuevoProducto];
         });
     };
@@ -221,23 +213,9 @@ export const CarritoProvider = ({ children }) => {
 
 
     function replaceCarrito(items) {
-        // 🔍 LOG: Debug de productos que se están reemplazando
-        console.log('🔍 [CARRITO] Reemplazando carrito con', items.length, 'productos');
-
+        // Validación de productos
         const productosConId = items.filter(item => item.idQuantio);
         const productosSinId = items.filter(item => !item.idQuantio);
-
-        console.log('✅ [CARRITO] Productos con idQuantio:', productosConId.length);
-        console.log('❌ [CARRITO] Productos SIN idQuantio:', productosSinId.length);
-
-        if (productosSinId.length > 0) {
-            console.log('❌ [CARRITO] Productos SIN ID detalle:', productosSinId.slice(0, 5).map(p => ({
-                ean: p.ean,
-                nombre: p.nombre || p.descripcion,
-                idQuantio: p.idQuantio,
-                origen: p.origen
-            })));
-        }
 
         // 🆔 Asegurar que todos los items tengan carritoId
         const itemsConCarritoId = items.map(item => ({

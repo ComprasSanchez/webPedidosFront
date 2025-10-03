@@ -66,7 +66,7 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
 
             if (soloDeposito) {
                 // 🔥 MODO SOLO DEPÓSITO: No consultar droguerías para ahorrar créditos
-                console.log("🏪 Modo Solo Depósito activado - consultando solo stock para productos nuevos");
+                // Modo Solo Depósito activado
 
                 const stockNuevo = await getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders });
 

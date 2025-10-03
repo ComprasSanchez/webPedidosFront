@@ -27,7 +27,7 @@ const FaltantesDeposito = () => {
         setResultado(null);
 
         try {
-            console.log('🔄 Procesando faltantes del depósito...');
+            setSyncing(true);
 
             const response = await authFetch(`${API_URL}/api/reposicion/procesar-faltantes-deposito`, {
                 method: 'POST',
@@ -45,7 +45,7 @@ const FaltantesDeposito = () => {
             }
 
             const data = await response.json();
-            console.log('✅ Faltantes procesados:', data);
+            // Faltantes procesados
             setResultado(data);
 
         } catch (err) {

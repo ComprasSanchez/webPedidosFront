@@ -666,17 +666,17 @@ export default function RevisarPedido() {
             };
 
             const tiempoTotal = calcularTimeout();
-            console.log(`🔄 Timer REINICIADO: ${tiempoTotal} segundos total`);
+            // Timer reiniciado
 
             // Nuevo timer principal
             timeoutRef.current = setTimeout(() => {
-                console.log("🔔 Timer principal EXPIRÓ (después de reinicio) - Mostrando modal con período de gracia");
+                // Timer principal expirado
                 setShowModal(true);
                 setGraciaActiva(true);
 
                 // Nuevo timer de gracia (1 minuto)
                 graciaRef.current = setTimeout(() => {
-                    console.log("⏰ Período de gracia EXPIRÓ (después de reinicio) - Cancelando reserva soft");
+                    // Período de gracia expirado
                     setReservaVencida(true);
                     setGraciaActiva(false);
                     // Cancelar reserva soft
