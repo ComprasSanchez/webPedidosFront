@@ -2,9 +2,11 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { pickPorPrioridad } from "../logic/prioridad";
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
+import { useCarrito } from "../../../context/CarritoContext";
 
 
 export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock, sucursal }) {
+    const { obtenerCarritoId } = useCarrito();
     const [seleccion, setSeleccion] = useState({});
     const prevEansRef = useRef([]);
     const prevEansAutoAjustesRef = useRef([]);
@@ -37,7 +39,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
                     // Mostrar qué tipo de productos fueron marcados como manuales
                     cambiosRegistrados.forEach(key => {
-                        const producto = carrito.find(p => String(p.idQuantio || p.ean) === String(key));
+                        const producto = carrito.find(p => obtenerCarritoId(p) === String(key));
                         if (producto) {
                             console.log(`  ${key}: ${producto.descripcion || producto.nombre} ${!producto.idQuantio ? '(TXT)' : '(ID)'}`);
                         }
@@ -80,8 +82,8 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             })));
         } return productos;
     }, [carrito.map(item =>
-        `${item.idQuantio || 'null'}-${item.ean || 'null'}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}`
-    ).join('|')]);
+        `${obtenerCarritoId(item)}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}`
+    ).join('|'), obtenerCarritoId]);
 
     // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
@@ -97,17 +99,17 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
         // Usar productos esenciales memorizados
 
-        // Crear firma estructural (solo IDs, ignorar unidades y flags) - SIEMPRE STRINGS
-        const firmaActual = productosEsenciales.map(item => String(item.idQuantio || item.ean)).sort().join(',');
+        // 🆔 Crear firma estructural usando carritoId
+        const firmaActual = productosEsenciales.map(item => obtenerCarritoId(item)).sort().join(',');
         const firmaPrevia = prevEansRef.current.join(',');
 
         // Solo cambios estructurales (productos agregados/eliminados)
         const cambioEstructural = firmaActual !== firmaPrevia;
 
-        // Identificar productos ZIP que no han sido procesados
+        // 🆔 Identificar productos ZIP que no han sido procesados
         const productosZipNuevos = productosEsenciales.filter(item =>
             (item.desde_zip === true || item.timestamp_zip) &&
-            !zipProcessedRef.current.has(String(item.idQuantio || item.ean))
+            !zipProcessedRef.current.has(obtenerCarritoId(item))
         );
         const hayProductosZipNuevos = productosZipNuevos.length > 0;
         const esInicialCarga = prevEansRef.current.length === 0;
@@ -130,13 +132,13 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         if (esInicialCarga) {
             productosParaProcesar = productosEsenciales;
         } else {
-            // Procesar productos nuevos + productos ZIP nuevos - SIEMPRE STRINGS
-            const idsActuales = productosEsenciales.map(item => String(item.idQuantio || item.ean));
+            // 🆔 Procesar productos nuevos + productos ZIP nuevos usando carritoId
+            const idsActuales = productosEsenciales.map(item => obtenerCarritoId(item));
             const idsNuevos = idsActuales.filter(id => !prevEansRef.current.includes(id));
-            const productosNuevos = productosEsenciales.filter(item => idsNuevos.includes(String(item.idQuantio || item.ean)));
+            const productosNuevos = productosEsenciales.filter(item => idsNuevos.includes(obtenerCarritoId(item)));
             const todosLosPorProcesar = [...productosNuevos, ...productosZipNuevos];
             productosParaProcesar = todosLosPorProcesar.filter((item, index, arr) =>
-                arr.findIndex(p => String(p.idQuantio || p.ean) === String(item.idQuantio || item.ean)) === index // eliminar duplicados
+                arr.findIndex(p => obtenerCarritoId(p) === obtenerCarritoId(item)) === index // eliminar duplicados
             );
         }
 
@@ -144,8 +146,8 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         const nuevaSeleccion = esInicialCarga ? {} : { ...seleccion };
 
         productosParaProcesar.forEach((item) => {
-            // Usar EAN como clave cuando idQuantio es null (productos ZIP) - SIEMPRE STRING
-            const clave = String(item.idQuantio || item.ean);
+            // 🆔 Usar carritoId como clave única
+            const clave = obtenerCarritoId(item);
 
             // Usar idQuantio para consultar el stock del depósito
             const stockDepoItem = getStock(item.idQuantio, stockDisponible, sucursal);
@@ -172,46 +174,34 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
         setSeleccion(nuevaSeleccion);
 
-        // Marcar productos ZIP como procesados - SIEMPRE STRINGS
+        // 🆔 Marcar productos ZIP como procesados usando carritoId
         if (hayProductosZipNuevos) {
             productosZipNuevos.forEach(item => {
-                zipProcessedRef.current.add(String(item.idQuantio || item.ean));
+                zipProcessedRef.current.add(obtenerCarritoId(item));
             });
         }
 
-        // Actualizar la referencia con productos esenciales - SIEMPRE STRINGS
-        prevEansRef.current = productosEsenciales.map(item => String(item.idQuantio || item.ean)).sort();
-    }, [productosEsenciales, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock]);
+        // 🆔 Actualizar la referencia con carritoId
+        prevEansRef.current = productosEsenciales.map(item => obtenerCarritoId(item)).sort();
+    }, [productosEsenciales, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock, obtenerCarritoId]);
 
     // auto-ajustes (depósito gana, motivo coherente, salir de "Falta" si aparece opción)
     // NOTA: Solo se ejecuta cuando cambian los EANs del carrito o precios/stock, NO cuando cambian las unidades
     useEffect(() => {
         console.log('🔄 AUTO-AJUSTES useEffect ejecutándose...');
 
-        // Calcular firma estructural actual y previa para auto-ajustes
-        // Separar productos con/sin idQuantio para evitar inconsistencias
-        const firmaActual = JSON.stringify({
-            conQuantio: productosEsenciales
-                .filter(item => item.idQuantio)
-                .map(item => ({
-                    id: item.idQuantio,
-                    ean: item.ean,
-                    monroe: !!preciosMonroe[item.ean],
-                    suizo: !!preciosSuizo[item.ean],
-                    cofarsur: !!preciosCofarsur[item.ean],
-                    stock: !!stockDisponible[item.ean]
-                })).sort((a, b) => Number(a.id) - Number(b.id)),
-            sinQuantio: productosEsenciales
-                .filter(item => !item.idQuantio && item.ean)
-                .map(item => ({
-                    ean: item.ean,
-                    monroe: !!preciosMonroe[item.ean],
-                    suizo: !!preciosSuizo[item.ean],
-                    cofarsur: !!preciosCofarsur[item.ean],
-                    stock: !!stockDisponible[item.ean]
-                })).sort((a, b) => a.ean.localeCompare(b.ean))
-        });
-        const firmaPrevia = JSON.stringify(prevEansAutoAjustesRef.current || { conQuantio: [], sinQuantio: [] });
+        // 🆔 Calcular firma estructural actual usando carritoId
+        const firmaActual = JSON.stringify(
+            productosEsenciales.map(item => ({
+                carritoId: obtenerCarritoId(item),
+                ean: item.ean,
+                monroe: !!preciosMonroe[item.ean],
+                suizo: !!preciosSuizo[item.ean],
+                cofarsur: !!preciosCofarsur[item.ean],
+                stock: !!stockDisponible[item.ean]
+            })).sort((a, b) => a.carritoId.localeCompare(b.carritoId))
+        );
+        const firmaPrevia = JSON.stringify(prevEansAutoAjustesRef.current || []);
         const cambioEstructural = firmaActual !== firmaPrevia;
 
         // No actualizar la referencia aquí - se hace al final
@@ -221,16 +211,14 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             return;
         }
 
-        // Limpiar selecciones de productos eliminados
+        // 🆔 Limpiar selecciones de productos eliminados usando carritoId
         let nueva = { ...seleccion };
-        const idsActuales = productosEsenciales.map(item => String(item.idQuantio || item.ean));
+        const idsActuales = productosEsenciales.map(item => obtenerCarritoId(item));
 
-        // Eliminar selecciones de productos que ya no están en el carrito
+        // 🆔 Eliminar selecciones de productos que ya no están en el carrito
         const productosEliminados = [];
         Object.keys(nueva).forEach(id => {
-            // Asegurar que ambos sean strings para la comparación
-            const idString = String(id);
-            if (!idsActuales.includes(idString)) {
+            if (!idsActuales.includes(id)) {
                 productosEliminados.push(id);
                 delete nueva[id];
                 // TAMBIÉN limpiar del tracking de selecciones manuales
@@ -258,7 +246,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         let cambios = false;
 
         productosEsenciales.forEach((item) => {
-            const clave = String(item.idQuantio || item.ean);
+            const clave = obtenerCarritoId(item);
 
             // 🔒 No modificar selecciones marcadas como manuales
             if (manualSelectionRef.current.has(clave)) {
@@ -303,29 +291,16 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             setSeleccion(nueva);
         }
 
-        // Actualizar la referencia al final para la próxima comparación
-        prevEansAutoAjustesRef.current = {
-            conQuantio: productosEsenciales
-                .filter(item => item.idQuantio)
-                .map(item => ({
-                    id: item.idQuantio,
-                    ean: item.ean,
-                    monroe: !!preciosMonroe[item.ean],
-                    suizo: !!preciosSuizo[item.ean],
-                    cofarsur: !!preciosCofarsur[item.ean],
-                    stock: !!stockDisponible[item.ean]
-                })).sort((a, b) => Number(a.id) - Number(b.id)),
-            sinQuantio: productosEsenciales
-                .filter(item => !item.idQuantio && item.ean)
-                .map(item => ({
-                    ean: item.ean,
-                    monroe: !!preciosMonroe[item.ean],
-                    suizo: !!preciosSuizo[item.ean],
-                    cofarsur: !!preciosCofarsur[item.ean],
-                    stock: !!stockDisponible[item.ean]
-                })).sort((a, b) => a.ean.localeCompare(b.ean))
-        };
-    }, [productosEsenciales, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur]); // eslint-disable-line
+        // 🆔 Actualizar la referencia al final usando carritoId
+        prevEansAutoAjustesRef.current = productosEsenciales.map(item => ({
+            carritoId: obtenerCarritoId(item),
+            ean: item.ean,
+            monroe: !!preciosMonroe[item.ean],
+            suizo: !!preciosSuizo[item.ean],
+            cofarsur: !!preciosCofarsur[item.ean],
+            stock: !!stockDisponible[item.ean]
+        })).sort((a, b) => a.carritoId.localeCompare(b.carritoId));
+    }, [productosEsenciales, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur, obtenerCarritoId]); // eslint-disable-line
 
     return { seleccion, setSeleccion: setSeleccionManual };
 }

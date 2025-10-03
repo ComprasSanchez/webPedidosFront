@@ -7,6 +7,7 @@ const TablaCarrito = ({ eanRecienAgregado }) => {
         carrito,
         eliminarDelCarrito,
         actualizarUnidades,
+        actualizarCantidad,
         vaciarCarrito,
         modoBulk,
         carritosBulk,
@@ -35,6 +36,7 @@ const TablaCarrito = ({ eanRecienAgregado }) => {
             carrito={carrito}
             eliminarDelCarrito={eliminarDelCarrito}
             actualizarUnidades={actualizarUnidades}
+            actualizarCantidad={actualizarCantidad}
             vaciarCarrito={vaciarCarrito}
             eanRecienAgregado={eanRecienAgregado}
         />

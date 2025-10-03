@@ -1,13 +1,16 @@
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
+import { useCarrito } from "../../context/CarritoContext";
 
 const CarritoNormal = ({
     carrito,
     eliminarDelCarrito,
     actualizarUnidades,
+    actualizarCantidad,
     vaciarCarrito,
     eanRecienAgregado
 }) => {
+    const { obtenerCarritoId } = useCarrito();
     const [showConfirm, setShowConfirm] = useState(false);
 
     if (carrito.length === 0) {
@@ -82,9 +85,11 @@ const CarritoNormal = ({
                                 <div className="qty">
                                     <button
                                         className="qty__btn"
-                                        onClick={() =>
-                                            actualizarUnidades(item.idQuantio, Math.max(1, (item.unidades || 1) - 1))
-                                        }
+                                        onClick={() => {
+                                            // 🆔 Usar carritoId en lugar del sistema anterior
+                                            const carritoId = obtenerCarritoId(item);
+                                            actualizarCantidad(carritoId, Math.max(1, (item.unidades || 1) - 1));
+                                        }}
                                     >
                                         −
                                     </button>
@@ -93,9 +98,11 @@ const CarritoNormal = ({
 
                                     <button
                                         className="qty__btn"
-                                        onClick={() =>
-                                            actualizarUnidades(item.idQuantio, (item.unidades || 1) + 1)
-                                        }
+                                        onClick={() => {
+                                            // 🆔 Usar carritoId en lugar del sistema anterior
+                                            const carritoId = obtenerCarritoId(item);
+                                            actualizarCantidad(carritoId, (item.unidades || 1) + 1);
+                                        }}
                                     >
                                         +
                                     </button>
@@ -105,7 +112,11 @@ const CarritoNormal = ({
                             <td>
                                 <button
                                     className="carrito_icon_btn"
-                                    onClick={() => eliminarDelCarrito(item.idQuantio)}
+                                    onClick={() => {
+                                        // 🆔 Usar carritoId para eliminar
+                                        const carritoId = obtenerCarritoId(item);
+                                        eliminarDelCarrito(carritoId);
+                                    }}
                                     aria-label={`Eliminar ${item.descripcion}`}
                                     title="Eliminar"
                                 >

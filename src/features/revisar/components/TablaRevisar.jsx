@@ -1,5 +1,6 @@
 import React from "react";
 import FilaItem from "./FilaItem";
+import { useCarrito } from "../../../context/CarritoContext";
 
 // Opciones por defecto si no te llegan por props
 const DEFAULT_OPCIONES_MOTIVO = [
@@ -30,6 +31,8 @@ export default function TablaRevisar({
     precioValido,
     opcionesMotivo = DEFAULT_OPCIONES_MOTIVO,
 }) {
+    const { obtenerCarritoId } = useCarrito();
+
     return (
         <div className="tabla_scroll">
             <table className="revisar_tabla">
@@ -50,28 +53,33 @@ export default function TablaRevisar({
                 </thead>
 
                 <tbody>
-                    {carrito.map((item, index) => (
-                        <FilaItem
-                            key={`${item.idQuantio || item.ean}-${index}`}
-                            item={item}
-                            seleccion={seleccion[item.idQuantio || item.ean]}
-                            preciosMonroe={preciosMonroe}
-                            preciosSuizo={preciosSuizo}
-                            preciosCofarsur={preciosCofarsur}
-                            stockDisponible={stockDisponible}
-                            onElegirProveedor={onElegirProveedor}
-                            onMotivo={onMotivo}
-                            onEliminar={() => onEliminar(item.idQuantio)}
-                            onChangeQty={(idQuantio, unidades) => onChangeQty(item.idQuantio, unidades)}
-                            pedir={!noPedirMap[item.idQuantio || item.ean]}
-                            togglePedir={() =>
-                                onToggleNoPedir(item.idQuantio || item.ean, /* noPedirChecked */ !!(!noPedirMap[item.idQuantio || item.ean]))
-                            }
-                            getStock={getStock}
-                            precioValido={precioValido}
-                            opcionesMotivo={opcionesMotivo}
-                        />
-                    ))}
+                    {carrito.map((item, index) => {
+                        // 🆔 Usar carritoId como identificador único
+                        const itemId = obtenerCarritoId(item);
+
+                        return (
+                            <FilaItem
+                                key={`${itemId}-${index}`}
+                                item={item}
+                                seleccion={seleccion[itemId]}
+                                preciosMonroe={preciosMonroe}
+                                preciosSuizo={preciosSuizo}
+                                preciosCofarsur={preciosCofarsur}
+                                stockDisponible={stockDisponible}
+                                onElegirProveedor={onElegirProveedor}
+                                onMotivo={onMotivo}
+                                onEliminar={() => onEliminar(item)}
+                                onChangeQty={(carritoId, unidades) => onChangeQty(item, unidades)}
+                                pedir={!noPedirMap[itemId]}
+                                togglePedir={() =>
+                                    onToggleNoPedir(itemId, /* noPedirChecked */ !!(!noPedirMap[itemId]))
+                                }
+                                getStock={getStock}
+                                precioValido={precioValido}
+                                opcionesMotivo={opcionesMotivo}
+                            />
+                        );
+                    })}
                 </tbody>
             </table>
         </div>

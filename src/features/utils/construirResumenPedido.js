@@ -1,9 +1,11 @@
 // src/utils/construirResumenPedido.js
-export const construirResumenPedido = (carrito, seleccion) => {
+export const construirResumenPedido = (carrito, seleccion, obtenerCarritoId) => {
     const resumen = {};
 
     for (const item of carrito) {
-        const sel = seleccion[item.idQuantio] || seleccion[item.ean];
+        // 🆔 Usar carritoId para obtener la selección (consistente con obtenerCarritoId)
+        const carritoId = obtenerCarritoId ? obtenerCarritoId(item) : (item.carritoId || (item.esProductoNoRegistrado ? `ean_${item.ean}` : String(item.idQuantio)));
+        const sel = seleccion[carritoId];
         if (!sel || !sel.proveedor) continue;
 
         const prov = sel.proveedor; // "deposito" | "monroe" | "suizo" | "cofarsur" | "kellerhoff" | "Falta"

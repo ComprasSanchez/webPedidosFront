@@ -27,7 +27,7 @@ export default function RevisarPedido() {
     const [resumenFinal, setResumenFinal] = useState(null);
     const [isSending, setIsSending] = useState(false);
     const navigate = useNavigate();
-    const { carrito, eliminarDelCarrito, actualizarUnidades, replaceCarrito, soloDeposito } = useCarrito();
+    const { carrito, eliminarDelCarrito, actualizarUnidades, actualizarCantidad, replaceCarrito, soloDeposito, obtenerCarritoId } = useCarrito();
     const { authFetch, authHeaders, usuario } = useAuth();
     const [showModal, setShowModal] = useState(false);
     const [reservaVencida, setReservaVencida] = useState(false);
@@ -208,15 +208,17 @@ export default function RevisarPedido() {
         }
     }, [loading, datosCompletos]);
 
-    const handleMotivo = (idQuantio, motivo) => setSeleccion(prev => ({ ...prev, [idQuantio]: { ...prev[idQuantio], motivo } }));
+    // 🆔 Manejar motivo usando carritoId
+    const handleMotivo = (carritoId, motivo) => setSeleccion(prev => ({ ...prev, [carritoId]: { ...prev[carritoId], motivo } }));
 
-    // Permitir que handleElegirProveedor reciba idQuantio o ean (para Kellerhoff)
-    const handleElegirProveedor = (idQuantioOrEan, nuevoProveedor) => {
-        let item = carrito.find(x => x.idQuantio === idQuantioOrEan);
-        if (!item) {
-            // fallback para Kellerhoff, que pasa ean
-            item = carrito.find(x => x.ean === idQuantioOrEan);
-        }
+    // 🆔 Manejar selección de proveedor usando carritoId
+    const handleElegirProveedor = (carritoId, nuevoProveedor) => {
+        // Buscar producto por carritoId
+        const item = carrito.find(x => x.carritoId === carritoId ||
+            // Compatibilidad temporal con sistema anterior
+            (x.esProductoNoRegistrado ? `ean_${x.ean}` : String(x.idQuantio)) === String(carritoId)
+        );
+
         if (!item) return;
         const stockDepo = getStock(item.idQuantio, stockDisponible, sucursalActual);
         const match = matchConvenio(item, reglas);
@@ -230,8 +232,11 @@ export default function RevisarPedido() {
             }
         }
 
+        // 🆔 Usar carritoId como identificador
+        const itemId = item.carritoId || (item.esProductoNoRegistrado ? `ean_${item.ean}` : String(item.idQuantio));
+
         setSeleccion(prev => {
-            const actual = prev[item.idQuantio] ?? {};
+            const actual = prev[itemId] ?? {};
             let nuevoMotivo = actual.motivo;
 
             if (nuevoProveedor === "deposito" && stockDepo > 0) {
@@ -245,7 +250,7 @@ export default function RevisarPedido() {
                 nuevoMotivo = "";
             }
 
-            return { ...prev, [item.idQuantio]: { ...actual, proveedor: nuevoProveedor, motivo: nuevoMotivo } };
+            return { ...prev, [itemId]: { ...actual, proveedor: nuevoProveedor, motivo: nuevoMotivo } };
         });
     };
 
@@ -255,11 +260,17 @@ export default function RevisarPedido() {
         // 🔄 Para usuarios de reposición, omitir validación de motivos
         const esUsuarioReposicion = usuario?.rol === "compras";
 
+        // 🆔 Usar carritoId como identificador único
+
         if (!esUsuarioReposicion) {
             const hayFaltasDeMotivo = carrito
-                .filter(item => !noPedirMap[item.idQuantio])
+                .filter(item => {
+                    const carritoId = obtenerCarritoId(item);
+                    return !noPedirMap[carritoId];
+                })
                 .some((item) => {
-                    const motivo = seleccion[item.idQuantio]?.motivo;
+                    const carritoId = obtenerCarritoId(item);
+                    const motivo = seleccion[carritoId]?.motivo;
                     const req = requiereJustificacion(motivo);
                     return req;
                 });
@@ -272,11 +283,15 @@ export default function RevisarPedido() {
 
 
         const haySinPrecioValido = carrito
-            .filter(item => !noPedirMap[item.idQuantio])
+            .filter(item => {
+                const carritoId = obtenerCarritoId(item);
+                return !noPedirMap[carritoId];
+            })
             .some((item) => {
-                const motivo = seleccion[item.idQuantio]?.motivo;
+                const carritoId = obtenerCarritoId(item);
+                const motivo = seleccion[carritoId]?.motivo;
                 if (motivo === "Falta") return false;
-                const prov = seleccion[item.idQuantio]?.proveedor;
+                const prov = seleccion[carritoId]?.proveedor;
                 if (!prov || prov === "deposito" || prov === "kellerhoff") return false;
                 const fuente =
                     prov === "monroe" ? preciosMonroe :
@@ -296,7 +311,10 @@ export default function RevisarPedido() {
         }
 
 
-        const carritoFiltrado = carrito.filter(it => !noPedirMap[it.idQuantio]);
+        const carritoFiltrado = carrito.filter(it => {
+            const carritoId = obtenerCarritoId(it);
+            return !noPedirMap[carritoId];
+        });
         if (carritoFiltrado.length === 0) {
             toast("No hay líneas para enviar (todas marcadas como “No pedir”).");
             return;
@@ -313,7 +331,7 @@ export default function RevisarPedido() {
             };
         });
 
-        const resumenFinal = construirResumenPedido(carritoConPrecios, seleccion);
+        const resumenFinal = construirResumenPedido(carritoConPrecios, seleccion, obtenerCarritoId);
         setResumenFinal(resumenFinal);
         setMostrarResumen(true);
     };
@@ -325,10 +343,16 @@ export default function RevisarPedido() {
         const toastId = toast.loading("Enviando pedido...");
 
         const itemsParaEnviar = carrito
-            .filter(item => !noPedirMap[item.idQuantio])
+            .filter(item => {
+                // 🆔 Usar carritoId para filtrar noPedir
+                const carritoId = obtenerCarritoId(item);
+                return !noPedirMap[carritoId];
+            })
             .map(item => {
-                const provSel = seleccion[item.idQuantio]?.proveedor;
-                const motivo = seleccion[item.idQuantio]?.motivo;
+                // 🆔 Usar carritoId para obtener selección
+                const carritoId = obtenerCarritoId(item);
+                const provSel = seleccion[carritoId]?.proveedor;
+                const motivo = seleccion[carritoId]?.motivo;
 
                 let proveedor = provSel;
                 let precio = 0;
@@ -744,8 +768,16 @@ export default function RevisarPedido() {
                     seleccion={seleccion}
                     onElegirProveedor={handleElegirProveedor}
                     onMotivo={handleMotivo}
-                    onEliminar={(idQuantio) => eliminarDelCarrito(idQuantio)}
-                    onChangeQty={(idQuantio, unidades) => actualizarUnidades(idQuantio, unidades)}
+                    onEliminar={(item) => {
+                        // 🆔 Usar carritoId para eliminar
+                        const carritoId = obtenerCarritoId(item);
+                        eliminarDelCarrito(carritoId);
+                    }}
+                    onChangeQty={(item, unidades) => {
+                        // 🆔 Usar carritoId para actualizar cantidad
+                        const carritoId = obtenerCarritoId(item);
+                        actualizarCantidad(carritoId, unidades);
+                    }}
                     noPedirMap={noPedirMap}
                     onToggleNoPedir={toggleNoPedir}
                     getStock={getStockConSucursal}

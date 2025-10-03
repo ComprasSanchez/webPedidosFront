@@ -13,6 +13,15 @@ export const CarritoProvider = ({ children }) => {
     const [sincronizando, setSincronizando] = useState(false);
     const debounceRef = useRef(null);
 
+    // 🆔 Contador para generar IDs únicos de carrito
+    const carritoIdRef = useRef(0);
+
+    // 🆔 Función para generar ID único del carrito
+    const generarCarritoId = () => {
+        carritoIdRef.current += 1;
+        return `cart_${Date.now()}_${carritoIdRef.current}`;
+    };
+
     // Estado para la sucursal de reposición (para usuarios de compras)
     const [sucursalReponer, setSucursalReponer] = useState(
         sessionStorage.getItem("sucursalReponer") || ""
@@ -89,7 +98,16 @@ export const CarritoProvider = ({ children }) => {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    if (mounted) setCarrito(Array.isArray(data.items) ? data.items : []);
+                    if (mounted) {
+                        // 🆔 Migrar items sin carritoId al hidratar
+                        const itemsConCarritoId = Array.isArray(data.items)
+                            ? data.items.map(item => ({
+                                ...item,
+                                carritoId: item.carritoId || generarCarritoId()
+                            }))
+                            : [];
+                        setCarrito(itemsConCarritoId);
+                    }
                 }
             } catch (e) {
                 console.warn("No se pudo hidratar carrito:", e?.message || e);
@@ -138,43 +156,67 @@ export const CarritoProvider = ({ children }) => {
                 nombre: producto.nombre || producto.descripcion
             });
 
-            // Normalizar idQuantio a string
-            const idQuantio = String(producto.idQuantio || producto.idProducto);
-            if (!idQuantio || idQuantio === 'undefined' || idQuantio === 'null') {
-                console.warn("⚠️ [CARRITO] Producto sin identificador único (idQuantio o idProducto):", producto);
-                return prev; // No agregar productos sin identificador único
+            // 🔧 Identificador único: usar idQuantio/idProducto, o EAN para productos no registrados
+            const esProductoNoRegistrado = (producto.nombre || producto.descripcion || '').includes('Producto no registrado');
+            let identificadorUnico;
+
+            if (esProductoNoRegistrado) {
+                // Para productos no registrados, usar EAN como identificador
+                identificadorUnico = `ean_${producto.ean}`;
+                console.log('📦 [CARRITO] Producto no registrado detectado, usando EAN como ID:', identificadorUnico);
+            } else {
+                // Para productos normales, usar idQuantio/idProducto
+                identificadorUnico = String(producto.idQuantio || producto.idProducto);
+                if (!identificadorUnico || identificadorUnico === 'undefined' || identificadorUnico === 'null') {
+                    console.warn("⚠️ [CARRITO] Producto sin identificador único (idQuantio o idProducto):", producto);
+                    return prev; // No agregar productos normales sin identificador
+                }
             }
 
-            // Buscar producto existente por idQuantio (como string)
-            const idx = prev.findIndex(p => String(p.idQuantio) === idQuantio);
+            // Buscar producto existente por identificador único
+            const idx = prev.findIndex(p => {
+                const pId = p.esProductoNoRegistrado ? `ean_${p.ean}` : String(p.idQuantio);
+                return pId === identificadorUnico;
+            });
             if (idx >= 0) {
                 const copia = [...prev];
                 const unidadesPrev = Number(copia[idx].unidades || 0);
                 copia[idx] = {
                     ...copia[idx],
                     ...producto, // Actualizar datos del producto existente
-                    idQuantio, // Forzar string
+                    idQuantio: esProductoNoRegistrado ? null : identificadorUnico, // null para no registrados
+                    esProductoNoRegistrado: esProductoNoRegistrado, // Marcar como no registrado
                     unidades: unidadesPrev + Number(cantidad || 0) // Sumar unidades
+                    // carritoId se mantiene el existente
                 };
                 return copia;
             }
 
+            // 🆔 Generar carritoId único para el nuevo producto
+            const carritoId = generarCarritoId();
+
             // Normalizar el producto antes de agregarlo
             const nuevoProducto = {
                 ...producto, // Mantener otros atributos si existen
-                idQuantio, // Forzar string
+                carritoId, // 🆔 ID único del carrito
+                idQuantio: esProductoNoRegistrado ? null : identificadorUnico, // null para no registrados
+                esProductoNoRegistrado: esProductoNoRegistrado, // Marcar como no registrado
                 ean: producto.ean,
                 nombre: producto.nombre,
                 unidades: Number(cantidad || 0)
             };
+
+            console.log('✅ [CARRITO] Producto agregado con carritoId:', carritoId);
             return [...prev, nuevoProducto];
         });
     };
 
 
-    // Ahora usa idQuantio (CodPlex) para identificar el producto
-    const actualizarCantidad = (idQuantio, nuevaCantidad) => {
-        setCarrito(prev => prev.map(p => p.idQuantio === idQuantio ? { ...p, unidades: Number(nuevaCantidad || 0) } : p));
+    // 🆔 Actualizar cantidad usando carritoId
+    const actualizarCantidad = (carritoId, nuevaCantidad) => {
+        setCarrito(prev => prev.map(p =>
+            p.carritoId === carritoId ? { ...p, unidades: Number(nuevaCantidad || 0) } : p
+        ));
     };
 
 
@@ -197,7 +239,13 @@ export const CarritoProvider = ({ children }) => {
             })));
         }
 
-        setCarrito(items);
+        // 🆔 Asegurar que todos los items tengan carritoId
+        const itemsConCarritoId = items.map(item => ({
+            ...item,
+            carritoId: item.carritoId || generarCarritoId()
+        }));
+
+        setCarrito(itemsConCarritoId);
     }
 
     // Función para acumular productos (sumar cantidades de productos existentes)
@@ -220,8 +268,12 @@ export const CarritoProvider = ({ children }) => {
                     itemExistente.unidades = (itemExistente.unidades || 0) + (nuevoItem.unidades || 0);
                     actualizados++;
                 } else {
-                    // Producto nuevo: agregarlo al Map
-                    carritoMap.set(nuevoItem.ean, nuevoItem);
+                    // 🆔 Producto nuevo: asegurar que tenga carritoId
+                    const itemConCarritoId = {
+                        ...nuevoItem,
+                        carritoId: nuevoItem.carritoId || generarCarritoId()
+                    };
+                    carritoMap.set(nuevoItem.ean, itemConCarritoId);
                     agregados++;
                 }
             });
@@ -260,9 +312,23 @@ export const CarritoProvider = ({ children }) => {
     };
 
 
-    // Ahora usa idQuantio (CodPlex) para identificar el producto
-    const eliminarDelCarrito = (idQuantio) => {
-        setCarrito(prev => prev.filter(p => p.idQuantio !== idQuantio));
+    // 🆔 Eliminar producto usando carritoId
+    const eliminarDelCarrito = (carritoId) => {
+        setCarrito(prev => prev.filter(p => p.carritoId !== carritoId));
+    };
+
+    // 🆔 Función helper para obtener carritoId de un item
+    const obtenerCarritoId = (item) => {
+        // Si ya tiene carritoId, devolverlo
+        if (item.carritoId) return item.carritoId;
+
+        // 🚨 CRÍTICO: IDs consistentes para migración temporal
+        // Usar el mismo patrón que construirResumenPedido para evitar inconsistencias
+        if (item.esProductoNoRegistrado) {
+            return `ean_${item.ean}`;
+        } else {
+            return String(item.idQuantio);
+        }
     };
 
     const vaciarCarrito = async () => {
@@ -296,15 +362,19 @@ export const CarritoProvider = ({ children }) => {
     };
 
 
-    // Actualizar unidades usando identificador único (idQuantio o EAN)
+    // Actualizar unidades usando identificador único (idQuantio para normales, EAN para no registrados)
     const actualizarUnidades = (identificador, nuevasUnidades) => {
         setCarrito((prev) => {
             if (nuevasUnidades <= 0) {
-                return prev.filter((it) => (it.idQuantio || it.ean) !== identificador);
+                return prev.filter((it) => {
+                    const itId = it.esProductoNoRegistrado ? `ean_${it.ean}` : String(it.idQuantio);
+                    return itId !== String(identificador);
+                });
             }
-            return prev.map((it) =>
-                (it.idQuantio || it.ean) === identificador ? { ...it, unidades: nuevasUnidades } : it
-            );
+            return prev.map((it) => {
+                const itId = it.esProductoNoRegistrado ? `ean_${it.ean}` : String(it.idQuantio);
+                return itId === String(identificador) ? { ...it, unidades: nuevasUnidades } : it;
+            });
         });
     };
 
@@ -324,6 +394,7 @@ export const CarritoProvider = ({ children }) => {
                 actualizarUnidades,
                 replaceCarrito,
                 acumularProductosEnCarrito,
+                obtenerCarritoId, // 🆔 Helper para obtener carritoId
                 // Funciones para modo bulk
                 modoBulk,
                 setModoBulk,

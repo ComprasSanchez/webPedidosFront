@@ -2,7 +2,7 @@ import React from "react";
 import { FaTrash, FaCheckSquare, FaSquare } from "react-icons/fa";
 
 // Ajustá estos imports a donde los tengas actualmente
-
+import { useCarrito } from "../../../context/CarritoContext";
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 import PreciosMonroe from "../../proveedores/PreciosMonroe";
 import PreciosSuizo from "../../proveedores/PreciosSuizo";
@@ -36,15 +36,20 @@ export default function FilaItem({
     getStock,
     opcionesMotivo,
 }) {
+    const { obtenerCarritoId } = useCarrito();
+
+    // 🆔 Usar carritoId como identificador único
+    const itemId = obtenerCarritoId(item);
+
     const motivoActual = seleccion?.motivo;
     const proveedorActual = seleccion?.proveedor;
 
 
-    const hayDepo = hayStockDeposito(item.idQuantio, stockDisponible);
-    const stockDepo = getStock(item.idQuantio, stockDisponible); // seguimos mostrando el número
+    const hayDepo = hayStockDeposito(item.idQuantio || item.ean, stockDisponible);
+    const stockDepo = getStock(item.idQuantio || item.ean, stockDisponible); // seguimos mostrando el número
     const stockDepoValido = typeof stockDepo === "number" && stockDepo > 0;
     const hayAlgunaDrogConPrecio = hayDrogConPrecioValido(
-        item.idQuantio,
+        item.idQuantio || item.ean,
         { preciosMonroe, preciosSuizo, preciosCofarsur },
         precioValido
     );
@@ -80,9 +85,8 @@ export default function FilaItem({
                     value={item.unidades || 1}
                     disabled={!pedir}
                     onChange={(v) => {
-                        // Usar la misma clave que se usa para la key de la tabla
-                        const claveUnica = item.idQuantio || item.ean;
-                        onChangeQty?.(claveUnica, v);
+                        // 🆔 Usar carritoId como identificador único
+                        onChangeQty?.(itemId, v);
                     }}
                 />
             </td>
@@ -95,13 +99,13 @@ export default function FilaItem({
                 activo={proveedorActual === "deposito"}
                 disabled={!pedir || !stockDepoValido}
                 valorMostrado={stockDepo}
-                onSelect={() => onElegirProveedor(item.idQuantio, "deposito")}
+                onSelect={() => onElegirProveedor(itemId, "deposito")}
             />
 
             {/* Monroe */}
             <td className={proveedorActual === "monroe" ? "celda_activa" : ""}>
                 <PreciosMonroe
-                    idQuantio={item.idQuantio}
+                    idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosMonroe}
                     seleccionado={proveedorActual === "monroe"}
@@ -112,7 +116,7 @@ export default function FilaItem({
             {/* Suizo */}
             <td className={proveedorActual === "suizo" ? "celda_activa" : ""}>
                 <PreciosSuizo
-                    idQuantio={item.idQuantio}
+                    idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosSuizo}
                     seleccionado={proveedorActual === "suizo"}
@@ -123,7 +127,7 @@ export default function FilaItem({
             {/* Cofarsur */}
             <td className={proveedorActual === "cofarsur" ? "celda_activa" : ""}>
                 <PreciosCofarsur
-                    idQuantio={item.idQuantio}
+                    idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosCofarsur}
                     seleccionado={proveedorActual === "cofarsur"}
@@ -134,10 +138,10 @@ export default function FilaItem({
             {/* Kellerhoff (kellerhoff en slug si así lo usás en back/estado) */}
             <td className={"celda_kellerhoff" + (proveedorActual === "kellerhoff" ? " celda_activa" : "")}>
                 <PreciosKellerhoff
-                    idQuantio={item.idQuantio}
+                    idQuantio={itemId}
                     ean={item.ean}
                     seleccionado={proveedorActual === "kellerhoff"}
-                    onSelect={(idQuantio, proveedor) => onElegirProveedor(idQuantio, proveedor)}
+                    onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
                 />
             </td>
 
@@ -149,7 +153,7 @@ export default function FilaItem({
                     proveedorActual={proveedorActual}
                     stockDepo={stockDepo}
                     hayAlgoPedible={hayAlgoPedible}
-                    onChange={(v) => onMotivo(item.idQuantio, v)}
+                    onChange={(v) => onMotivo(itemId, v)}
                     opciones={opcionesMotivo}
                 />
 
