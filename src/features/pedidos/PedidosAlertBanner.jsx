@@ -3,7 +3,7 @@ import { API_URL } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 
 export default function PedidosAlertBanner() {
-    const { usuario } = useAuth();
+    const { usuario, authFetch } = useAuth();
     const [pendientes, setPendientes] = useState([]);
     const [oculto, setOculto] = useState(false);
 
@@ -13,9 +13,8 @@ export default function PedidosAlertBanner() {
 
         (async () => {
             try {
-                const res = await fetch(`${API_URL}/api/pedidos/pendientes`, {
-                    headers: { "X-Sucursal": usuario.sucursal_codigo },
-                    credentials: "include"
+                const res = await authFetch(`${API_URL}/api/pedidos/pendientes`, {
+                    headers: { "X-Sucursal": usuario.sucursal_codigo }
                 });
                 const json = await res.json();
                 if (json.ok && json.pendientes?.length > 0 && !cancelado) {
