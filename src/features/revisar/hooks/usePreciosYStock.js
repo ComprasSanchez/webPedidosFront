@@ -12,17 +12,18 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
 
     // Memorizar solo los datos esenciales del carrito (ignorando flags como noPedir y cantidad específica de unidades)
     const carritoEsencial = useMemo(() => {
+        if (!carrito || !Array.isArray(carrito)) return [];
         return carrito.map(item => ({
             ean: item.ean,
             existe: item.unidades > 0, // Solo importa si existe, no cuántas unidades
             desde_zip: item.desde_zip, // Solo este flag es relevante para precios
             idQuantio: item.idQuantio
         })).filter(item => item.ean && item.existe);
-    }, [carrito.map(item => `${item.ean}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}-${item.idQuantio || 'null'}`).join('|')]);
+    }, [carrito ? carrito.map(item => `${item.ean}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}-${item.idQuantio || 'null'}`).join('|') : 'empty']);
 
     useEffect(() => {
         // Detectar solo productos NUEVOS (que no estaban en la consulta anterior)
-        const eansActuales = carritoEsencial.map(item => item.ean).sort();
+        const eansActuales = carritoEsencial?.map(item => item.ean).sort() || [];
         const eansPrevios = eanListRef.current || [];
         const eansNuevos = eansActuales.filter(ean => !eansPrevios.includes(ean));
         const eansEliminados = eansPrevios.filter(ean => !eansActuales.includes(ean));

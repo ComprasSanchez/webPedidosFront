@@ -125,8 +125,14 @@ export default function UltimosPedidos() {
             if (ean.trim()) qs.set("q", ean.trim());
             if (nombre.trim()) qs.set("q", nombre.trim());
 
-            // 🔧 NUEVO: Usuarios de compras pueden especificar sucursal, otros usan la propia
-            if (usuario?.rol === 'compras' && usuario?.sucursal_codigo) {
+            // 🔧 NUEVO: Usuarios de compras usan sucursalReponer (si existe), otros usan la propia
+            if (usuario?.rol === 'compras') {
+                const sucursalReponer = sessionStorage.getItem("sucursalReponer");
+                if (sucursalReponer) {
+                    qs.set("sucursal", sucursalReponer);
+                }
+                // Si no hay sucursalReponer, no enviar filtro = ver todos los pedidos (modo ZIP masivo)
+            } else if (usuario?.sucursal_codigo) {
                 qs.set("sucursal", usuario.sucursal_codigo);
             }
 
@@ -320,7 +326,7 @@ export default function UltimosPedidos() {
                                                     : "—"}
                                             </td>
                                             <td>{it.cantidad}</td>
-                                            <td>{it.drogueria.toUpperCase()}</td>
+                                            <td>{(it.drogueria || "—").toUpperCase()}</td>
                                         </tr>
                                     ))}
                                 </tbody>

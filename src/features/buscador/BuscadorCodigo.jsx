@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL } from "../../config/api";
+import { buscarConVariantes } from "../../utils/eanVariants";
 
 const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) => {
     const { usuario } = useAuth();
@@ -27,25 +28,35 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
             setQueryCode("");
             setProductosEncontrados([]);
 
-            // Construir URL con parámetros
-            const params = new URLSearchParams();
-            if (sucursalId) params.append('sucursalId', sucursalId);
-            if (sucursalCodigo) params.append('sucursal', sucursalCodigo);
+            // Función para buscar un EAN específico
+            const buscarEan = async (ean) => {
+                const params = new URLSearchParams();
+                if (sucursalId) params.append('sucursalId', sucursalId);
+                if (sucursalCodigo) params.append('sucursal', sucursalCodigo);
 
-            const url = `${API_URL}/api/productos/buscar/${q}?${params.toString()}`;
+                const url = `${API_URL}/api/productos/buscar/${ean}?${params.toString()}`;
+                const res = await fetch(url);
+                return await res.json();
+            };
 
-            const res = await fetch(url);
-            const data = await res.json();
+            // Buscar con variantes de EAN
+            const resultado = await buscarConVariantes(q, buscarEan);
+            const data = resultado.data;
 
 
-            if (data.encontrado) {
+            if (data && data.encontrado) {
+                // Mostrar mensaje si se usó una variante
+                if (resultado.eanOriginal && resultado.ean !== resultado.eanOriginal) {
+                    console.log(`✅ Producto encontrado con EAN variante: ${resultado.eanOriginal} → ${resultado.ean}`);
+                }
+
                 if (Array.isArray(data.productos) && data.productos.length > 0) {
                     // Caso: múltiples productos encontrados
                     setProductosEncontrados(data.productos);
                 } else {
                     // Caso: un solo producto encontrado
                     const producto = {
-                        ean: data.ean || q,
+                        ean: data.ean || resultado.eanOriginal || q,
                         descripcion: data.descripcion,
                         stockSucursal: data.stockSucursal || 0,
                         precios: { deposito: 0 },
@@ -56,8 +67,8 @@ const BuscadorCodigo = ({ onProductoEncontrado, sucursalCodigo, sucursalId }) =>
                     onProductoEncontrado(producto);
                 }
             } else {
-
-                // No está en nuestra base → igual se puede pedir por EAN si lo escribieron
+                // No se encontró ni con el EAN original ni con variantes
+                console.log(`❌ No se encontró producto para: ${q} (se probaron variantes)`);
                 const producto = {
                     ean: q,
                     descripcion: `Producto no registrado`,

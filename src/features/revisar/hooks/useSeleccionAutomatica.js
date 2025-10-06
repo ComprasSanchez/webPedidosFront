@@ -1,9 +1,7 @@
-// hooks/useSeleccionAutomatica.js
-import { useEffect, useState, useRef, useMemo } from "react";
+﻿import { useEffect, useState, useRef, useMemo } from "react";
 import { pickPorPrioridad } from "../logic/prioridad";
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 import { useCarrito } from "../../../context/CarritoContext";
-
 
 export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock, sucursal }) {
     const { obtenerCarritoId } = useCarrito();
@@ -12,15 +10,13 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     const prevEansAutoAjustesRef = useRef([]);
     const reglasLoadedRef = useRef(false);
     const preciosLoadedRef = useRef(false);
-    const zipProcessedRef = useRef(new Set()); // Para evitar re-procesar productos ZIP
-    const manualSelectionRef = useRef(new Set()); // Rastrear selecciones manuales
+    const zipProcessedRef = useRef(new Set());
+    const manualSelectionRef = useRef(new Set());
 
-    // Wrapper para marcar selecciones como manuales - definido temprano para usarlo en useEffects
     const setSeleccionManual = (updater) => {
         setSeleccion(prev => {
             const newSelection = typeof updater === 'function' ? updater(prev) : updater;
 
-            // Marcar como manual cualquier clave que cambió (en el siguiente tick)
             setTimeout(() => {
                 const cambiosRegistrados = [];
                 Object.keys(newSelection).forEach(key => {
@@ -32,46 +28,76 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                     }
                 });
 
-                // Registrar cambios manuales (debug removido en producción)
+                if (cambiosRegistrados.length > 0) {
+                    console.log(' MARCADO COMO MANUAL:', cambiosRegistrados);
+                    console.log(' TOTAL MANUALES:', Array.from(manualSelectionRef.current));
+
+                    cambiosRegistrados.forEach(key => {
+                        const producto = (carrito || []).find(p => obtenerCarritoId(p) === String(key));
+                        if (producto) {
+                            console.log(`  ${key}: ${producto.descripcion || producto.nombre} ${!producto.idQuantio ? '(TXT)' : '(ID)'}`);
+                        }
+                    });
+                }
             }, 0);
 
             return newSelection;
         });
     };
 
-    // Memorizar productos esenciales para selección automática (ignorar cambios de unidades y flags)
     const productosEsenciales = useMemo(() => {
+        if (!carrito || !Array.isArray(carrito)) return [];
+
         const productos = carrito.filter(item =>
             (item.idQuantio || item.ean) && item.unidades > 0
         );
 
-        // Validación de productos (debug removido) return productos;
-    }, [carrito.map(item =>
+        const productosTxt = productos.filter(p => !p.idQuantio && p.ean);
+        const productosConId = productos.filter(p => p.idQuantio);
+
+        if (productosTxt.length > 0) {
+            console.log('📋 PRODUCTOS TXT (sin idQuantio):', productosTxt.length);
+            console.log('📝 PRIMEROS 3 TXT:', productosTxt.slice(0, 3).map(p => ({
+                ean: p.ean,
+                descripcion: p.descripcion || p.nombre,
+                origen: p.origen,
+                desde_zip: p.desde_zip,
+                timestamp_zip: p.timestamp_zip
+            })));
+        }
+
+        if (productosConId.length > 0) {
+            console.log('🆔 PRODUCTOS CON ID:', productosConId.length);
+            console.log('🔍 TIPOS DE idQuantio:', productosConId.slice(0, 3).map(p => ({
+                idQuantio: p.idQuantio,
+                tipo: typeof p.idQuantio,
+                esString: typeof p.idQuantio === 'string',
+                esNumber: typeof p.idQuantio === 'number'
+            })));
+        }
+
+        return productos;
+    }, [(carrito || []).map(item =>
         `${obtenerCarritoId(item)}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}`
     ).join('|'), obtenerCarritoId]);
 
-    // selección inicial - solo cuando se AGREGAN nuevos productos, no cuando se eliminan
     useEffect(() => {
-        if (!carrito.length || !reglas) {
+        if (!carrito || !carrito.length || !reglas) {
             return;
         }
 
-        // Verificar que tengamos al menos algunos precios disponibles
-        const hayPrecios = preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDisponible?.length;
+        const hayPrecios = (preciosMonroe && preciosMonroe.length) ||
+            (preciosSuizo && preciosSuizo.length) ||
+            (preciosCofarsur && preciosCofarsur.length) ||
+            (stockDisponible && stockDisponible.length);
         if (!hayPrecios) {
             return;
         }
 
-        // Usar productos esenciales memorizados
-
-        // 🆔 Crear firma estructural usando carritoId
         const firmaActual = productosEsenciales.map(item => obtenerCarritoId(item)).sort().join(',');
         const firmaPrevia = prevEansRef.current.join(',');
-
-        // Solo cambios estructurales (productos agregados/eliminados)
         const cambioEstructural = firmaActual !== firmaPrevia;
 
-        // 🆔 Identificar productos ZIP que no han sido procesados
         const productosZipNuevos = productosEsenciales.filter(item =>
             (item.desde_zip === true || item.timestamp_zip) &&
             !zipProcessedRef.current.has(obtenerCarritoId(item))
@@ -81,40 +107,32 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         const reglasRecienCargadas = reglas && !reglasLoadedRef.current;
         const preciosRecienCargados = hayPrecios && !preciosLoadedRef.current;
 
-        // Ejecutar si: es carga inicial, cambio estructural, recién llegaron las reglas/precios, o hay productos ZIP nuevos
         if (!esInicialCarga && !cambioEstructural && !reglasRecienCargadas && !preciosRecienCargados && !hayProductosZipNuevos) {
             return;
         }
 
-        // Marcar que las reglas y precios ya se cargaron
         reglasLoadedRef.current = true;
         preciosLoadedRef.current = true;
 
         const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, stockDeposito: stockDisponible };
 
-        // Determinar qué productos procesar
         let productosParaProcesar;
         if (esInicialCarga) {
             productosParaProcesar = productosEsenciales;
         } else {
-            // 🆔 Procesar productos nuevos + productos ZIP nuevos usando carritoId
             const idsActuales = productosEsenciales.map(item => obtenerCarritoId(item));
             const idsNuevos = idsActuales.filter(id => !prevEansRef.current.includes(id));
             const productosNuevos = productosEsenciales.filter(item => idsNuevos.includes(obtenerCarritoId(item)));
             const todosLosPorProcesar = [...productosNuevos, ...productosZipNuevos];
             productosParaProcesar = todosLosPorProcesar.filter((item, index, arr) =>
-                arr.findIndex(p => obtenerCarritoId(p) === obtenerCarritoId(item)) === index // eliminar duplicados
+                arr.findIndex(p => obtenerCarritoId(p) === obtenerCarritoId(item)) === index
             );
         }
 
-        // Solo modificar selección para productos nuevos, carga inicial, o productos ZIP nuevos
         const nuevaSeleccion = esInicialCarga ? {} : { ...seleccion };
 
         productosParaProcesar.forEach((item) => {
-            // 🆔 Usar carritoId como clave única
             const clave = obtenerCarritoId(item);
-
-            // Usar idQuantio para consultar el stock del depósito
             const stockDepoItem = getStock(item.idQuantio, stockDisponible, sucursal);
 
             if (typeof stockDepoItem === "number" && stockDepoItem > 0) {
@@ -139,65 +157,58 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
         setSeleccion(nuevaSeleccion);
 
-        // 🆔 Marcar productos ZIP como procesados usando carritoId
         if (hayProductosZipNuevos) {
             productosZipNuevos.forEach(item => {
                 zipProcessedRef.current.add(obtenerCarritoId(item));
             });
         }
 
-        // 🆔 Actualizar la referencia con carritoId
         prevEansRef.current = productosEsenciales.map(item => obtenerCarritoId(item)).sort();
     }, [productosEsenciales, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock, obtenerCarritoId]);
 
-    // auto-ajustes (depósito gana, motivo coherente, salir de "Falta" si aparece opción)
-    // NOTA: Solo se ejecuta cuando cambian los EANs del carrito o precios/stock, NO cuando cambian las unidades
     useEffect(() => {
-        // Auto-ajustes ejecutándose
+        console.log('🔄 AUTO-AJUSTES useEffect ejecutándose...');
 
-        // 🆔 Calcular firma estructural actual usando carritoId
         const firmaActual = JSON.stringify(
             productosEsenciales.map(item => ({
                 carritoId: obtenerCarritoId(item),
                 ean: item.ean,
-                monroe: !!preciosMonroe[item.ean],
-                suizo: !!preciosSuizo[item.ean],
-                cofarsur: !!preciosCofarsur[item.ean],
-                stock: !!stockDisponible[item.ean]
+                monroe: !!(preciosMonroe && preciosMonroe[item.ean]),
+                suizo: !!(preciosSuizo && preciosSuizo[item.ean]),
+                cofarsur: !!(preciosCofarsur && preciosCofarsur[item.ean]),
+                stock: !!(stockDisponible && stockDisponible[item.ean])
             })).sort((a, b) => a.carritoId.localeCompare(b.carritoId))
         );
         const firmaPrevia = JSON.stringify(prevEansAutoAjustesRef.current || []);
         const cambioEstructural = firmaActual !== firmaPrevia;
 
-        // No actualizar la referencia aquí - se hace al final
-
-        // Solo ejecutar si cambiaron los productos estructuralmente
         if (!cambioEstructural && productosEsenciales.length > 0) {
             return;
         }
 
-        // 🆔 Limpiar selecciones de productos eliminados usando carritoId
         let nueva = { ...seleccion };
         const idsActuales = productosEsenciales.map(item => obtenerCarritoId(item));
 
-        // 🆔 Eliminar selecciones de productos que ya no están en el carrito
         const productosEliminados = [];
         Object.keys(nueva).forEach(id => {
             if (!idsActuales.includes(id)) {
                 productosEliminados.push(id);
                 delete nueva[id];
-                // TAMBIÉN limpiar del tracking de selecciones manuales
                 manualSelectionRef.current.delete(id);
             }
         });
 
-        // Limpieza completada - productos eliminados del carrito
+        if (productosEliminados.length > 0) {
+            console.log('🗑️ PRODUCTOS ELIMINADOS:', productosEliminados);
+            console.log('📋 IDs ACTUALES:', idsActuales);
+            console.log('🎯 SELECCIONES MANUALES RESTANTES:', Array.from(manualSelectionRef.current));
+            console.log('🔄 NUEVA SELECCIÓN DESPUÉS DE LIMPIAR:', nueva);
+        }
 
         if (!productosEsenciales.length) {
             if (Object.keys(nueva).length > 0) {
                 setSeleccion({});
             }
-            // Limpiar también el tracking de selecciones manuales cuando no hay productos
             manualSelectionRef.current.clear();
             return;
         }
@@ -207,9 +218,8 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         productosEsenciales.forEach((item) => {
             const clave = obtenerCarritoId(item);
 
-            // 🔒 No modificar selecciones marcadas como manuales
             if (manualSelectionRef.current.has(clave)) {
-                // Producto protegido por selección manual
+                console.log(`🔒 PROTEGIDO (manual): ${clave} - ${item.descripcion || item.ean}`);
                 return;
             }
 
@@ -240,26 +250,21 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             }
         });
 
-        // Verificar si hubo cambios en la limpieza o en los ajustes
         const huboCambiosEnLimpieza = Object.keys(seleccion).length !== Object.keys(nueva).length;
 
         if (cambios || huboCambiosEnLimpieza) {
-            // USAR setSeleccion directamente pero SIN marcar como manual las selecciones automáticas
-            // El problema era que perdíamos las selecciones manuales, pero ahora las protegemos
-            // en el forEach anterior con manualSelectionRef.current.has(clave)
             setSeleccion(nueva);
         }
 
-        // 🆔 Actualizar la referencia al final usando carritoId
         prevEansAutoAjustesRef.current = productosEsenciales.map(item => ({
             carritoId: obtenerCarritoId(item),
             ean: item.ean,
-            monroe: !!preciosMonroe[item.ean],
-            suizo: !!preciosSuizo[item.ean],
-            cofarsur: !!preciosCofarsur[item.ean],
-            stock: !!stockDisponible[item.ean]
+            monroe: !!(preciosMonroe && preciosMonroe[item.ean]),
+            suizo: !!(preciosSuizo && preciosSuizo[item.ean]),
+            cofarsur: !!(preciosCofarsur && preciosCofarsur[item.ean]),
+            stock: !!(stockDisponible && stockDisponible[item.ean])
         })).sort((a, b) => a.carritoId.localeCompare(b.carritoId));
-    }, [productosEsenciales, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur, obtenerCarritoId]); // eslint-disable-line
+    }, [productosEsenciales, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur, obtenerCarritoId]);
 
     return { seleccion, setSeleccion: setSeleccionManual };
 }

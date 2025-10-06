@@ -320,7 +320,7 @@ export default function RevisarPedido() {
             return;
         }
 
-        const carritoConPrecios = carritoFiltrado.map((item) => {
+        const carritoConPrecios = (carritoFiltrado || []).map((item) => {
             const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
             const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...stockDisponible].find(p => (p.idProducto ?? p.idQuantio) === item.idQuantio);
             const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.idProducto ?? fuente?.id ?? null;
@@ -342,7 +342,7 @@ export default function RevisarPedido() {
 
         const toastId = toast.loading("Enviando pedido...");
 
-        const itemsParaEnviar = carrito
+        const itemsParaEnviar = (carrito || [])
             .filter(item => {
                 // 🆔 Usar carritoId para filtrar noPedir
                 const carritoId = obtenerCarritoId(item);
@@ -456,7 +456,7 @@ export default function RevisarPedido() {
                                 <div style={{ marginTop: '8px' }}>
                                     <strong>✅ Pedidos confirmados:</strong>
                                     <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
-                                        {data.resultados.exitos.map(r => (
+                                        {(data.resultados.exitos || []).map(r => (
                                             <li key={r.proveedor}>
                                                 {r.proveedor}: #{r.nroPedido} ({r.items} productos)
                                             </li>

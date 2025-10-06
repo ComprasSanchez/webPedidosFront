@@ -53,7 +53,7 @@ export default function TablaRevisar({
                 </thead>
 
                 <tbody>
-                    {carrito.map((item, index) => {
+                    {carrito && Array.isArray(carrito) ? carrito.map((item, index) => {
                         // 🆔 Usar carritoId como identificador único
                         const itemId = obtenerCarritoId(item);
 
@@ -79,7 +79,7 @@ export default function TablaRevisar({
                                 opcionesMotivo={opcionesMotivo}
                             />
                         );
-                    })}
+                    }) : null}
                 </tbody>
             </table>
         </div>
