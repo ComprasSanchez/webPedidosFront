@@ -32,8 +32,8 @@ export default function PedidosAlertBanner() {
     if (oculto || pendientes.length === 0) return null;
 
     const handleVer = () => {
-        // Abrimos el panel de Últimos pedidos con filtros usando id_pedido
-        const idPedidos = pendientes.map(p => p.id_pedido).filter(Boolean);
+        // Abrimos el panel de Últimos pedidos con filtros usando id
+        const ids = pendientes.map(p => p.id);
 
         const now = new Date();
         const desde = new Date(now);
@@ -41,12 +41,14 @@ export default function PedidosAlertBanner() {
 
         const format = d => d.toISOString().slice(0, 10);
 
+        const eventDetail = {
+            start: format(desde),
+            end: format(now),
+            idPedidos: ids
+        };
+
         window.dispatchEvent(new CustomEvent("ultped:open", {
-            detail: {
-                start: format(desde),
-                end: format(now),
-                idPedidos
-            }
+            detail: eventDetail
         }));
         setOculto(true); // oculta el banner después
     }; return (

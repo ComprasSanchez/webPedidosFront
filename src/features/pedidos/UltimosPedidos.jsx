@@ -52,6 +52,7 @@ export default function UltimosPedidos() {
 
     const handleAbrir = (e) => {
         const { start, end, idPedidos } = e.detail || {};
+
         if (start) setStart(start);
         if (end) setEnd(end);
         setIdsFiltrados(idPedidos?.length ? idPedidos : null);
@@ -60,9 +61,7 @@ export default function UltimosPedidos() {
         // fetch con filtros directamente
         const { start: s, end: e_ } = getDefaultRange();
         const desde = start || s;
-        const hasta = end || e_;
-
-        queueMicrotask(() => {
+        const hasta = end || e_; queueMicrotask(() => {
             fetchPedidos(1, idPedidos?.length ? idPedidos : null, desde, hasta);
         });
     };
@@ -116,60 +115,82 @@ export default function UltimosPedidos() {
             setError("");
             setPage(targetPage);
 
-            const qs = new URLSearchParams({
-                start: startParam,
-                end: endParam,
-                page: String(targetPage),
-                pageSize: idsFiltro?.length ? "1000" : String(PAGE_SIZE), // Más resultados cuando hay filtro
-            });
-            if (ean.trim()) qs.set("q", ean.trim());
-            if (nombre.trim()) qs.set("q", nombre.trim());
+            let res, json;
 
-            // 🔧 NUEVO: Usuarios de compras usan sucursalReponer (si existe), otros usan la propia
-            if (usuario?.rol === 'compras') {
-                const sucursalReponer = sessionStorage.getItem("sucursalReponer");
-                if (sucursalReponer) {
-                    qs.set("sucursal", sucursalReponer);
-                }
-                // Si no hay sucursalReponer, no enviar filtro = ver todos los pedidos (modo ZIP masivo)
-            } else if (usuario?.sucursal_codigo) {
-                qs.set("sucursal", usuario.sucursal_codigo);
-            }
-
-            const res = await authFetch(`${API_URL}/api/ver-pedidos?${qs.toString()}`);
-            const json = await res.json();
-
-            if (!json.ok) throw new Error(json.error || "Error desconocido");
-
-            let pedidosFiltrados = json.pedidos;
-
+            // 🎯 USAR ENDPOINT ESPECÍFICO SEGÚN EL CASO
             if (idsFiltro?.length) {
+                // 📋 CASO: Filtro de pedidos pendientes -> usar /api/pedidos/pendientes
+                console.log('🔍 USANDO /api/pedidos/pendientes para filtro específico');
+
+                let sucursalHeader = usuario?.sucursal_codigo;
+                if (usuario?.rol === 'compras') {
+                    const sucursalReponer = sessionStorage.getItem("sucursalReponer");
+                    if (sucursalReponer) sucursalHeader = sucursalReponer;
+                }
+
+                res = await authFetch(`${API_URL}/api/pedidos/pendientes`, {
+                    headers: sucursalHeader ? { "X-Sucursal": sucursalHeader } : {}
+                });
+                json = await res.json();
+
+                if (!json.ok) throw new Error(json.error || "Error desconocido");
+
+                // 🔍 FILTRAR por los IDs específicos
                 const idsSet = new Set(idsFiltro.map(id => String(id)));
-                // Filtrar por id_pedido y solo ítems pendientes (sin número válido)
-                const excluidas = ['kellerof', 'kellerhoff', 'falta', 'Faltante', 'Falta'];
-                pedidosFiltrados = pedidosFiltrados
-                    .flatMap(p => p.items.map(i => ({ ...i, pedidoFecha: p.fecha })))
-                    .filter(i => {
-                        const pendiente =
-                            i.nro_pedido_drogueria == null ||
-                            i.nro_pedido_drogueria === 'Sin nro de pedido' ||
-                            i.nro_pedido_drogueria === '0';
-                        const drogExcluida = excluidas.includes((i.drogueria_comprada || '').toLowerCase());
-                        return idsSet.has(String(i.id_pedido)) && pendiente && !drogExcluida;
-                    });
-                // Reconvertir a estructura de pedidos para la tabla
-                pedidosFiltrados = pedidosFiltrados.map(i => ({
-                    fecha: i.pedidoFecha,
-                    items: [i]
+                console.log('🔍 FILTRANDO pendientes por IDs:', Array.from(idsSet));
+
+                const pendientesFiltrados = (json.pendientes || []).filter(p => idsSet.has(String(p.id)));
+                console.log('🔍 PENDIENTES después de filtrar:', pendientesFiltrados.length);
+
+                // Convertir a formato esperado por la tabla
+                const pedidosFormateados = pendientesFiltrados.map(p => ({
+                    fecha: p.fecha,
+                    items: [p]  // Cada pendiente es un item
                 }));
+
+                setResult({
+                    ok: true,
+                    pedidos: pedidosFormateados,
+                    total: pedidosFormateados.length,
+                    page: 1,
+                    pageSize: PAGE_SIZE
+                });
+
+            } else {
+                // 📊 CASO: Búsqueda normal -> usar /api/ver-pedidos
+                console.log('🔍 USANDO /api/ver-pedidos para búsqueda normal');
+
+                const qs = new URLSearchParams({
+                    start: startParam,
+                    end: endParam,
+                    page: String(targetPage),
+                    pageSize: String(PAGE_SIZE)
+                });
+                if (ean.trim()) qs.set("q", ean.trim());
+                if (nombre.trim()) qs.set("q", nombre.trim());
+
+                // 🔧 NUEVO: Usuarios de compras usan sucursalReponer (si existe), otros usan la propia
+                if (usuario?.rol === 'compras') {
+                    const sucursalReponer = sessionStorage.getItem("sucursalReponer");
+                    if (sucursalReponer) {
+                        qs.set("sucursal", sucursalReponer);
+                    }
+                    // Si no hay sucursalReponer, no enviar filtro = ver todos los pedidos (modo ZIP masivo)
+                } else if (usuario?.sucursal_codigo) {
+                    qs.set("sucursal", usuario.sucursal_codigo);
+                }
+
+                res = await authFetch(`${API_URL}/api/ver-pedidos?${qs.toString()}`);
+                json = await res.json();
+
+                if (!json.ok) throw new Error(json.error || "Error desconocido");
+
+                setResult({
+                    ...json,
+                    page: targetPage,
+                });
             }
 
-            setResult({
-                ...json,
-                pedidos: pedidosFiltrados,
-                total: idsFiltro?.length ? pedidosFiltrados.length : json.total, // Solo cambiar total cuando hay filtro
-                page: 1,
-            });
         } catch (err) {
             setError(err.message || "Error cargando pedidos");
             setResult({ pedidos: [], total: 0, page: 1, pageSize: PAGE_SIZE });
