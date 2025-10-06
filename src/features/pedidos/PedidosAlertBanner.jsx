@@ -9,12 +9,27 @@ export default function PedidosAlertBanner() {
 
     useEffect(() => {
         let cancelado = false;
-        if (!usuario?.sucursal_codigo) return;
+
+        // 🔧 LÓGICA DE SUCURSAL SEGÚN ROL
+        let sucursalActiva = usuario?.sucursal_codigo;
+
+        if (usuario?.rol === 'compras') {
+            // Para usuarios de compras, usar la sucursal seleccionada para reposición
+            const sucursalReponer = sessionStorage.getItem("sucursalReponer");
+            if (sucursalReponer) {
+                sucursalActiva = sucursalReponer;
+            } else {
+                // Si no hay sucursal seleccionada, no mostrar pendientes
+                return;
+            }
+        }
+
+        if (!sucursalActiva) return;
 
         (async () => {
             try {
                 const res = await authFetch(`${API_URL}/api/pedidos/pendientes`, {
-                    headers: { "X-Sucursal": usuario.sucursal_codigo }
+                    headers: { "X-Sucursal": sucursalActiva }
                 });
                 const json = await res.json();
                 if (json.ok && json.pendientes?.length > 0 && !cancelado) {
@@ -27,6 +42,28 @@ export default function PedidosAlertBanner() {
 
         return () => { cancelado = true; };
     }, [usuario?.sucursal_codigo]);
+
+    // 🔧 EFECTO ADICIONAL PARA COMPRAS: Escuchar cambios en sucursal seleccionada
+    useEffect(() => {
+        if (usuario?.rol !== 'compras') return;
+
+        const handleStorageChange = () => {
+            // Re-ejecutar el primer useEffect cuando cambie la sucursal
+            const sucursalReponer = sessionStorage.getItem("sucursalReponer");
+            if (sucursalReponer && usuario?.sucursal_codigo) {
+                // Forzar re-render actualizando el estado
+                setPendientes([]); // Reset para mostrar loading
+            }
+        };
+
+        // Escuchar cambios en sessionStorage
+        window.addEventListener('storage', handleStorageChange);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [usuario?.rol, usuario?.sucursal_codigo]);
 
     if (oculto || pendientes.length === 0) return null;
 
