@@ -7,7 +7,6 @@ import BuscadorProductos from "../features/buscador/BuscadorProductos";
 import RevisarPedido from "../features/revisar/RevisarPedido";
 import PanelAdmin from "../features/admin/PanelAdmin";
 import PanelCredenciales from "../features/admin/PanelCredenciales";
-import ConvertidorCsvPage from "../features/convertidor/ConvertidorCsvPage";
 import Navbar from "../features/navbar/Navbar";
 
 // ✅ Ruta privada con control de login + roles
@@ -76,14 +75,6 @@ const AppRouter = () => {
                     element={
                         <PrivateRoute roles={["sucursal", "compras"]}>
                             <RevisarPedido />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/convertidor-csv"
-                    element={
-                        <PrivateRoute roles={["compras"]}>
-                            <ConvertidorCsvPage />
                         </PrivateRoute>
                     }
                 />
