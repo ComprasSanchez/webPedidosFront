@@ -262,3 +262,62 @@ td.celda_activa {
         background-color: #6c757d;
     }
 }
+
+/* 🆕 Estilos para el filtro de tipo de producto */
+.filtro_tipo_container {
+    margin: 1rem 0 2rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+
+    h3 {
+        margin: 0 0 0.75rem 0;
+        font-size: 1rem;
+        color: #495057;
+        font-weight: 600;
+    }
+}
+
+.filtro_tipo_buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.filtro_btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #dee2e6;
+    border-radius: 20px;
+    background: #fff;
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+
+    &:hover {
+        border-color: #007bff;
+        color: #007bff;
+        transform: translateY(-1px);
+    }
+
+    &.active {
+        background: #007bff;
+        border-color: #007bff;
+        color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    }
+}
+
+.filtro_info {
+    margin: 0;
+    padding: 0.5rem;
+    background: #e3f2fd;
+    border-radius: 4px;
+    color: #1565c0;
+    font-size: 0.875rem;
+    border-left: 3px solid #2196f3;
+}

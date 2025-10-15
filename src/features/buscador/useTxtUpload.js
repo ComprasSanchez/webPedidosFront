@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { API_URL } from "../../config/api";
 
-function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarrito, authFetch, toast, soloDeposito, setSoloDeposito, procesarZipData }) {
+function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarrito, authFetch, toast, soloDeposito, setSoloDeposito, esPerfumeria, setEsPerfumeria, procesarZipData }) {
     const [loadingTxt, setLoadingTxt] = useState(false);
     const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
     const [duplicateItems, setDuplicateItems] = useState([]);
@@ -46,6 +46,12 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
         }
         // Enviar el estado del switch "Solo Depo"
         formData.append("soloDeposito", soloDeposito ? "true" : "false");
+
+        // 🆕 Enviar el estado del switch "Perfumería"
+        formData.append("esPerfumeria", esPerfumeria ? "true" : "false");
+
+        // 🔍 DEBUG: Log flags antes de enviar
+        console.log(`🔍 [FRONTEND] Subiendo ${isZip ? 'ZIP' : 'TXT'}: soloDeposito=${soloDeposito}, esPerfumeria=${esPerfumeria}`);
 
         setLoadingTxt(true);
 
@@ -164,6 +170,8 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
                 const itemsParaCarrito = data.items.map(item => ({
                     ...item,
                     unidades: item.cantidad || 1,
+                    // 🆕 Agregar flag esPerfumeria para archivos TXT también
+                    esPerfumeria: esPerfumeria,
                 }));
 
                 // Setear flag soloDeposito en el contexto del carrito si está marcado

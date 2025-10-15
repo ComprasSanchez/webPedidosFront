@@ -35,6 +35,9 @@ export default function RevisarPedido() {
     const timeoutRef = useRef(null);
     const graciaRef = useRef(null);
 
+    // 🆕 Estado para filtro de tipo de producto (solo compras)
+    const [filtroTipo, setFiltroTipo] = useState('todos'); // 'todos' | 'medicamentos' | 'perfumeria'
+
     // Estado reactivo para la sucursal seleccionada (usuarios de compras)
     const [sucursalSeleccionada, setSucursalSeleccionada] = useState(() => {
         const stored = sessionStorage.getItem("sucursalReponer");
@@ -66,6 +69,28 @@ export default function RevisarPedido() {
 
     // Validación: sucursal debe ser una cadena no vacía
     const sucursalValida = sucursalActual && typeof sucursalActual === 'string' && sucursalActual.trim() !== '';
+
+    // 🆕 Función para filtrar carrito según tipo de producto (solo compras)
+    const obtenerCarritoFiltrado = () => {
+        if (usuario?.rol !== 'compras' || filtroTipo === 'todos') {
+            return carrito; // Sin filtro para no-compras o cuando se selecciona "todos"
+        }
+
+        return carrito.filter(item => {
+            const esPerfumeria = item.esPerfumeria === true;
+
+            if (filtroTipo === 'perfumeria') {
+                return esPerfumeria;
+            } else if (filtroTipo === 'medicamentos') {
+                return !esPerfumeria;
+            }
+
+            return true; // fallback
+        });
+    };
+
+    // Carrito filtrado para mostrar en la tabla
+    const carritoFiltrado = obtenerCarritoFiltrado();
 
     const cancelarReservaSoft = async () => {
 
@@ -109,7 +134,7 @@ export default function RevisarPedido() {
                     'x-sucursal': sucursalActual
                 },
                 body: JSON.stringify({
-                    items: carrito
+                    items: carritoFiltrado
                         .filter(item => item.idQuantio) // Solo productos con ID válido
                         .map(item => ({
                             idproducto: item.idQuantio,
@@ -263,7 +288,7 @@ export default function RevisarPedido() {
         // 🆔 Usar carritoId como identificador único
 
         if (!esUsuarioReposicion) {
-            const hayFaltasDeMotivo = carrito
+            const hayFaltasDeMotivo = carritoFiltrado
                 .filter(item => {
                     const carritoId = obtenerCarritoId(item);
                     return !noPedirMap[carritoId];
@@ -282,7 +307,7 @@ export default function RevisarPedido() {
         }
 
 
-        const haySinPrecioValido = carrito
+        const haySinPrecioValido = carritoFiltrado
             .filter(item => {
                 const carritoId = obtenerCarritoId(item);
                 return !noPedirMap[carritoId];
@@ -311,16 +336,16 @@ export default function RevisarPedido() {
         }
 
 
-        const carritoFiltrado = carrito.filter(it => {
+        const carritoSinNoPedir = carritoFiltrado.filter(it => {
             const carritoId = obtenerCarritoId(it);
             return !noPedirMap[carritoId];
         });
-        if (carritoFiltrado.length === 0) {
+        if (carritoSinNoPedir.length === 0) {
             toast("No hay líneas para enviar (todas marcadas como “No pedir”).");
             return;
         }
 
-        const carritoConPrecios = (carritoFiltrado || []).map((item) => {
+        const carritoConPrecios = (carritoSinNoPedir || []).map((item) => {
             const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
             const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...stockDisponible].find(p => (p.idProducto ?? p.idQuantio) === item.idQuantio);
             const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.idProducto ?? fuente?.id ?? null;
@@ -332,6 +357,17 @@ export default function RevisarPedido() {
         });
 
         const resumenFinal = construirResumenPedido(carritoConPrecios, seleccion, obtenerCarritoId);
+
+        // 🆕 Agregar información del filtro aplicado (solo compras)
+        if (usuario?.rol === 'compras' && filtroTipo !== 'todos') {
+            resumenFinal.filtroAplicado = {
+                tipo: filtroTipo,
+                totalOriginal: carrito.length,
+                totalFiltrado: carritoFiltrado.length,
+                mensaje: `Pedido de ${filtroTipo} (${carritoFiltrado.length} de ${carrito.length} productos)`
+            };
+        }
+
         setResumenFinal(resumenFinal);
         setMostrarResumen(true);
     };
@@ -342,7 +378,7 @@ export default function RevisarPedido() {
 
         const toastId = toast.loading("Enviando pedido...");
 
-        const itemsParaEnviar = (carrito || [])
+        const itemsParaEnviar = (carritoFiltrado || [])
             .filter(item => {
                 // 🆔 Usar carritoId para filtrar noPedir
                 const carritoId = obtenerCarritoId(item);
@@ -758,9 +794,42 @@ export default function RevisarPedido() {
                 </div>
             )}
 
+            {/* 🆕 Selector de filtro por tipo de producto (solo para compras) */}
+            {usuario?.rol === 'compras' && carrito.length > 0 && (
+                <div className="filtro_tipo_container">
+                    <h3>Filtrar productos:</h3>
+                    <div className="filtro_tipo_buttons">
+                        <button
+                            className={`filtro_btn ${filtroTipo === 'todos' ? 'active' : ''}`}
+                            onClick={() => setFiltroTipo('todos')}
+                        >
+                            📦 Todos ({carrito.length})
+                        </button>
+                        <button
+                            className={`filtro_btn ${filtroTipo === 'medicamentos' ? 'active' : ''}`}
+                            onClick={() => setFiltroTipo('medicamentos')}
+                        >
+                            💊 Medicamentos ({carrito.filter(item => !item.esPerfumeria).length})
+                        </button>
+                        <button
+                            className={`filtro_btn ${filtroTipo === 'perfumeria' ? 'active' : ''}`}
+                            onClick={() => setFiltroTipo('perfumeria')}
+                        >
+                            🧴 Perfumería ({carrito.filter(item => item.esPerfumeria === true).length})
+                        </button>
+                    </div>
+                    {filtroTipo !== 'todos' && (
+                        <p className="filtro_info">
+                            Mostrando solo productos de <strong>{filtroTipo}</strong>.
+                            Los demás quedan en el carrito para revisar después.
+                        </p>
+                    )}
+                </div>
+            )}
+
             {carrito.length === 0 ? <SinProductos /> : (
                 <TablaRevisar
-                    carrito={carrito}
+                    carrito={carritoFiltrado}
                     preciosMonroe={preciosMonroe}
                     preciosSuizo={preciosSuizo}
                     preciosCofarsur={preciosCofarsur}
@@ -786,10 +855,10 @@ export default function RevisarPedido() {
             )}
 
 
-            {carrito.length > 0 && (
+            {carritoFiltrado.length > 0 && (
                 <div className="revisar_footer">
                     <button className="revisar_btn_confirmar" onClick={handleConfirmar}>
-                        Confirmar pedido
+                        Confirmar pedido ({carritoFiltrado.length} productos)
                     </button>
                 </div>
             )}

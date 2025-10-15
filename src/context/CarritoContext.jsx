@@ -30,6 +30,9 @@ export const CarritoProvider = ({ children }) => {
     // Estado para el flag "Solo depósito" (solo para usuarios de compras)
     const [soloDeposito, setSoloDeposito] = useState(false);
 
+    // 🆕 Estado para el flag "Perfumería" (solo para usuarios de compras)
+    const [esPerfumeria, setEsPerfumeria] = useState(false);
+
     // Estado para modo bulk (carga masiva de ZIP)
     const [modoBulk, setModoBulk] = useState(false);
     const [carritosBulk, setCarritosBulk] = useState({}); // { sucursal1: [...items], sucursal2: [...items] }
@@ -364,6 +367,8 @@ export const CarritoProvider = ({ children }) => {
                 sincronizando,
                 soloDeposito,
                 setSoloDeposito,
+                esPerfumeria,
+                setEsPerfumeria,
                 agregarAlCarrito,
                 actualizarCantidad,
                 eliminarDelCarrito,

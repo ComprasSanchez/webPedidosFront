@@ -12,7 +12,7 @@ import useTxtUpload from "./useTxtUpload";
 
 const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCodigo, sucursalId }) => {
     const { usuario, authFetch } = useAuth();
-    const { replaceCarrito, acumularProductosEnCarrito, soloDeposito, setSoloDeposito, procesarZipData } = useCarrito();
+    const { replaceCarrito, acumularProductosEnCarrito, soloDeposito, setSoloDeposito, esPerfumeria, setEsPerfumeria, procesarZipData } = useCarrito();
 
     // Eliminamos la lógica complicada de modo ZIP masivo
     const [queryName, setQueryName] = useState("");
@@ -35,6 +35,8 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
         toast,
         soloDeposito,
         setSoloDeposito,
+        esPerfumeria,
+        setEsPerfumeria,
         procesarZipData
     });
     const nombreBoxRef = useRef(null);
@@ -184,6 +186,35 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                             </div>
                         </label>
                     </div>
+
+                    {/* 🆕 Toggle Perfumería (solo para usuarios de compras) */}
+                    {usuario?.rol === 'compras' && (
+                        <div className="solo_deposito_wrapper">
+                            <label
+                                htmlFor="esPerfumeria"
+                                className={`solo_deposito_toggle ${esPerfumeria ? 'active' : 'inactive'}`}
+                                title={esPerfumeria ? "Marcar productos como perfumería" : "Marcar productos como medicamentos"}
+                            >
+                                <input
+                                    id="esPerfumeria"
+                                    type="checkbox"
+                                    checked={esPerfumeria}
+                                    onChange={(e) => setEsPerfumeria(e.target.checked)}
+                                    disabled={loadingTxt}
+                                    style={{ display: 'none' }}
+                                />
+                                <span className="solo_deposito_label">📦 PERFU</span>
+                                <div className="modern_switch">
+                                    <div className="slider">
+                                        <div className="circle">
+                                            <span className="switch_no">NO</span>
+                                            <span className="switch_si">SI</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    )}
                 </>
             )}
 
