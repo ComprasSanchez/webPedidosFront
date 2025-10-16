@@ -858,7 +858,7 @@ export default function RevisarPedido() {
             {carritoFiltrado.length > 0 && (
                 <div className="revisar_footer">
                     <button className="revisar_btn_confirmar" onClick={handleConfirmar}>
-                        Confirmar pedido ({carritoFiltrado.length} productos)
+                        Confirmar pedido
                     </button>
                 </div>
             )}
