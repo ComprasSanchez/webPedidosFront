@@ -1,5 +1,5 @@
 import { FaTrash } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCarrito } from "../../context/CarritoContext";
 
 const CarritoNormal = ({
@@ -12,6 +12,15 @@ const CarritoNormal = ({
 }) => {
     const { obtenerCarritoId } = useCarrito();
     const [showConfirm, setShowConfirm] = useState(false);
+
+    // 🔤 Ordenar carrito alfabéticamente por nombre del producto
+    const carritoOrdenado = useMemo(() => {
+        return [...carrito].sort((a, b) => {
+            const nombreA = (a.descripcion || a.nombre || '').toLowerCase();
+            const nombreB = (b.descripcion || b.nombre || '').toLowerCase();
+            return nombreA.localeCompare(nombreB);
+        });
+    }, [carrito]);
 
     if (carrito.length === 0) {
         return (
@@ -38,9 +47,7 @@ const CarritoNormal = ({
                         <th>Descripción</th>
                         <th>Laboratorio</th>
                         <th>Stock sucursal</th>
-                        <th>
-                            Unidades
-                        </th>
+                        <th>Unidades</th>
                         <th style={{ cursor: "pointer", position: "relative" }}
                             onClick={() => setShowConfirm(true)}
                             title="Vaciar carrito"> <FaTrash />
@@ -72,7 +79,7 @@ const CarritoNormal = ({
                     </tr>
                 </thead>
                 <tbody>
-                    {carrito.map((item, i) => (
+                    {carritoOrdenado.map((item, i) => (
                         <tr
                             key={i}
                             className={`carrito_row ${eanRecienAgregado === item.ean ? "is-new" : ""}`}

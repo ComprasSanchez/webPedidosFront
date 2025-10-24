@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import FilaItem from "./FilaItem";
 import { useCarrito } from "../../../context/CarritoContext";
 import { useAuth } from "../../../context/AuthContext.jsx";
@@ -35,6 +35,15 @@ export default function TablaRevisar({
     const { obtenerCarritoId } = useCarrito();
     const { usuario } = useAuth();
 
+    // 🔤 Ordenar carrito alfabéticamente por nombre del producto
+    const carritoOrdenado = useMemo(() => {
+        return [...carrito].sort((a, b) => {
+            const nombreA = (a.descripcion || a.nombre || '').toLowerCase();
+            const nombreB = (b.descripcion || b.nombre || '').toLowerCase();
+            return nombreA.localeCompare(nombreB);
+        });
+    }, [carrito]);
+
     return (
         <div className="tabla_scroll">
             <table className="revisar_tabla">
@@ -56,7 +65,7 @@ export default function TablaRevisar({
                 </thead>
 
                 <tbody>
-                    {carrito && Array.isArray(carrito) ? carrito.map((item, index) => {
+                    {carrito && Array.isArray(carrito) ? carritoOrdenado.map((item, index) => {
                         // 🆔 Usar carritoId como identificador único
                         const itemId = obtenerCarritoId(item);
 
