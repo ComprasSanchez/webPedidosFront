@@ -12,9 +12,9 @@ export const construirResumenPedido = (carrito, seleccion, obtenerCarritoId) => 
         const precios = item.precios || {};
 
         const unidades = Number(item.unidades ?? 0) || 0;
-        // depósito / kellerhoff / Falta => 0
+        // depósito / kellerhoff / suizaTuc / Falta => 0
         const precioUnit =
-            prov === "deposito" || prov === "kellerhoff" || prov === "Falta"
+            prov === "deposito" || prov === "kellerhoff" || prov === "suizaTuc" || prov === "Falta"
                 ? 0
                 : Number(precios[prov] ?? 0) || 0;
 

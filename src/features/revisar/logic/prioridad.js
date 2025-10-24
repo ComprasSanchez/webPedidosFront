@@ -5,6 +5,7 @@ export function proveedorViable(slug, ean, ctx) {
         return s > 0;
     }
     if (slug === "kellerhoff") return true; // como antes
+    if (slug === "suizaTuc") return true; // siempre viable para perfumería
 
     const fuente = slug === "monroe" ? ctx.preciosMonroe
         : slug === "suizo" ? ctx.preciosSuizo
@@ -18,5 +19,8 @@ export function pickPorPrioridad(item, prioridad, ctx) {
     for (const slug of prioridad) {
         if (proveedorViable(slug, item.ean, ctx)) return slug;
     }
-    return prioridad[0] === "kellerhoff" ? "kellerhoff" : null;
+    // Fallback especial: kellerhoff o suizaTuc siempre están disponibles
+    if (prioridad.includes("kellerhoff")) return "kellerhoff";
+    if (prioridad.includes("suizaTuc")) return "suizaTuc";
+    return null;
 }

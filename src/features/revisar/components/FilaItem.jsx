@@ -1,13 +1,15 @@
 import React from "react";
 import { FaTrash, FaCheckSquare, FaSquare } from "react-icons/fa";
 
-// Ajustá estos imports a donde los tengas actualmente
 import { useCarrito } from "../../../context/CarritoContext";
+import { useAuth } from "../../../context/AuthContext.jsx";
+
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 import PreciosMonroe from "../../proveedores/PreciosMonroe";
 import PreciosSuizo from "../../proveedores/PreciosSuizo";
 import PreciosCofarsur from "../../proveedores/PreciosCofarsur";
 import PreciosKellerhoff from "../../proveedores/PreciosKellerhoff";
+import PreciosSuizaTuc from "../../proveedores/PreciosSuizaTuc.jsx";
 
 import QtyControl from "./QtyControl";
 import MotivoSelect from "./MotivoSelect";
@@ -37,6 +39,7 @@ export default function FilaItem({
     opcionesMotivo,
 }) {
     const { obtenerCarritoId } = useCarrito();
+    const { usuario } = useAuth();
 
     // 🆔 Usar carritoId como identificador único
     const itemId = obtenerCarritoId(item);
@@ -144,6 +147,18 @@ export default function FilaItem({
                     onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
                 />
             </td>
+
+            {/* suizaTuc (suizaTuc en slug si así lo usás en back/estado) */}
+            {usuario?.rol === 'compras' && (
+                <td className={"celda_suizaTuc" + (proveedorActual === "suizaTuc" ? " celda_activa" : "")}>
+                    <PreciosSuizaTuc
+                        idQuantio={itemId}
+                        ean={item.ean}
+                        seleccionado={proveedorActual === "suizaTuc"}
+                        onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
+                    />
+                </td>
+            )}
 
             {/* Motivo */}
             <td>

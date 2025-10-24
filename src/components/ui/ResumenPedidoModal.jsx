@@ -1,7 +1,8 @@
 // src/features/revisar/ResumenPedidoModal.jsx
 import React from "react";
+import { API_URL } from "../../config/api";
 
-const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalActual }) => {
+const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalActual, authFetch }) => {
     if (!resumen || Object.keys(resumen).length === 0) return null;
 
     // 💰 Formateador de montos estilo argentino (puntos para miles, comas para decimales)
@@ -15,7 +16,6 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
     // 📋 Función para generar Excel de Kellerhoff
     const generarExcelKellerhoff = async (productosKeller) => {
         try {
-
             // Preparar datos en el formato que espera el backend
             const datosKeller = productosKeller.map(item => ({
                 codebar: item.ean || item.codebar,
@@ -81,6 +81,64 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
         }
     };
 
+    // 📋 Función para generar TXT de Suiza Tuc
+    const generarExcelSuizaTuc = async (productosSuizaTuc) => {
+        try {
+            // Preparar datos en el formato que espera el backend
+            const productos = productosSuizaTuc.map(item => ({
+                cantidad: item.unidades,
+                codebar: item.ean
+            }));
+
+            console.log('📋 Enviando productos a Suiza Tucumán:', productos);
+
+            const response = await authFetch(`${API_URL}/api/generar-txt-suiza`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productos })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            // Obtener el archivo como blob (datos binarios)
+            const blob = await response.blob();
+
+            // Verificar que el archivo no esté vacío
+            if (blob.size === 0) {
+                throw new Error('El archivo recibido está vacío');
+            }
+
+            // Usar la sucursal actual para el nombre del archivo
+            const sucursalParaArchivo = sucursalActual || sessionStorage.getItem("sucursalReponer") || "0";
+            const fileName = `Pedido_Suiza_Tucuman_${sucursalParaArchivo}.txt`;
+
+            // Crear descarga automática
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
+
+            // Ejecutar descarga
+            document.body.appendChild(a);
+            a.click();
+
+            // Limpiar recursos para evitar memory leaks
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
+
+            console.log('✅ Archivo de Suiza Tucumán generado exitosamente:', fileName);
+
+        } catch (error) {
+            console.error('❌ Error generando TXT de Suiza Tucumán:', error);
+            alert(`Error al generar el archivo de Suiza Tucumán: ${error.message}`);
+        }
+    };
+
     const proveedores = Object.entries(resumen).map(([proveedor, items]) => {
         if (!Array.isArray(items)) {
             console.warn(`⚠️ El resumen de ${proveedor} no es un array:`, items);
@@ -118,6 +176,16 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                                             style={{ cursor: 'pointer', marginLeft: '8px' }}
                                         >
                                             📊 Excel
+                                        </span>
+                                    )}
+                                    {prov.proveedor === 'suizaTuc' && (
+                                        <span
+                                            className="keller_excel_badge"
+                                            title={`Generar archivo TXT para Suiza Tucumán con ${prov.totalUnidades} productos - Click para descargar`}
+                                            onClick={() => generarExcelSuizaTuc(prov.items)}
+                                            style={{ cursor: 'pointer', marginLeft: '8px' }}
+                                        >
+                                            📊 TXT
                                         </span>
                                     )}
                                 </td>

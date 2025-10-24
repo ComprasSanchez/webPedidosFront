@@ -1,6 +1,7 @@
 import React from "react";
 import FilaItem from "./FilaItem";
 import { useCarrito } from "../../../context/CarritoContext";
+import { useAuth } from "../../../context/AuthContext.jsx";
 
 // Opciones por defecto si no te llegan por props
 const DEFAULT_OPCIONES_MOTIVO = [
@@ -32,6 +33,7 @@ export default function TablaRevisar({
     opcionesMotivo = DEFAULT_OPCIONES_MOTIVO,
 }) {
     const { obtenerCarritoId } = useCarrito();
+    const { usuario } = useAuth();
 
     return (
         <div className="tabla_scroll">
@@ -46,6 +48,7 @@ export default function TablaRevisar({
                         <th>Suizo</th>
                         <th>Cofarsur</th>
                         <th>Kellerhoff</th>
+                        {usuario?.rol === 'compras' && (<th>Suiza Tuc</th>)}
                         <th>Motivo</th>
                         <th>Eliminar</th>
                         <th>Pedir</th>
@@ -72,7 +75,7 @@ export default function TablaRevisar({
                                 onChangeQty={(carritoId, unidades) => onChangeQty(item, unidades)}
                                 pedir={!noPedirMap[itemId]}
                                 togglePedir={() =>
-                                    onToggleNoPedir(itemId, /* noPedirChecked */ !!(!noPedirMap[itemId]))
+                                    onToggleNoPedir(itemId, !!(!noPedirMap[itemId]))
                                 }
                                 getStock={getStock}
                                 precioValido={precioValido}

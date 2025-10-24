@@ -317,7 +317,7 @@ export default function RevisarPedido() {
                 const motivo = seleccion[carritoId]?.motivo;
                 if (motivo === "Falta") return false;
                 const prov = seleccion[carritoId]?.proveedor;
-                if (!prov || prov === "deposito" || prov === "kellerhoff") return false;
+                if (!prov || prov === "deposito" || prov === "kellerhoff" || prov === "suizaTuc") return false;
                 const fuente =
                     prov === "monroe" ? preciosMonroe :
                         prov === "suizo" ? preciosSuizo :
@@ -407,6 +407,8 @@ export default function RevisarPedido() {
                     precio = getPrecioFinal(p, "cofarsur");
                 } else if (proveedor === "kellerhoff") {
                     precio = 0;
+                } else if (proveedor === "suizaTuc") {
+                    precio = 0; // Suiza Tucumán no tiene precio, solo genera TXT
                 }
 
                 return {
@@ -870,6 +872,7 @@ export default function RevisarPedido() {
                     onEnviar={handleEnviarPedido}
                     isSending={isSending}
                     sucursalActual={sucursalActual}
+                    authFetch={authFetch}
                 />
             )}
 
