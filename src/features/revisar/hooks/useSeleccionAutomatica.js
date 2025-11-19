@@ -29,14 +29,10 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 });
 
                 if (cambiosRegistrados.length > 0) {
-                    console.log(' MARCADO COMO MANUAL:', cambiosRegistrados);
-                    console.log(' TOTAL MANUALES:', Array.from(manualSelectionRef.current));
 
                     cambiosRegistrados.forEach(key => {
                         const producto = (carrito || []).find(p => obtenerCarritoId(p) === String(key));
-                        if (producto) {
-                            console.log(`  ${key}: ${producto.descripcion || producto.nombre} ${!producto.idQuantio ? '(TXT)' : '(ID)'}`);
-                        }
+
                     });
                 }
             }, 0);
@@ -51,73 +47,6 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         const productos = carrito.filter(item =>
             (item.idQuantio || item.ean) && item.unidades > 0
         );
-
-        const productosTxt = productos.filter(p => !p.idQuantio && p.ean);
-        const productosConId = productos.filter(p => p.idQuantio);
-
-        if (productosTxt.length > 0) {
-            console.log('📋 PRODUCTOS TXT (sin idQuantio):', productosTxt.length);
-            console.log('📝 PRIMEROS 3 TXT:', productosTxt.slice(0, 3).map(p => ({
-                ean: p.ean,
-                descripcion: p.descripcion || p.nombre,
-                origen: p.origen,
-                desde_zip: p.desde_zip,
-                timestamp_zip: p.timestamp_zip,
-                esPerfumeria: p.esPerfumeria // 🧴 DEBUG: Campo perfumería
-            })));
-        }
-
-        if (productosConId.length > 0) {
-            console.log('🆔 PRODUCTOS CON ID:', productosConId.length);
-            console.log('🔍 TIPOS DE idQuantio:', productosConId.slice(0, 3).map(p => ({
-                idQuantio: p.idQuantio,
-                tipo: typeof p.idQuantio,
-                esString: typeof p.idQuantio === 'string',
-                esNumber: typeof p.idQuantio === 'number',
-                esPerfumeria: p.esPerfumeria // 🧴 DEBUG: Campo perfumería
-            })));
-        }
-
-        // 🧴 DEBUG ESPECÍFICO: Contar productos de perfumería
-        const perfumeriaCount = productos.filter(p => p.esPerfumeria === true).length;
-        const medicamentosCount = productos.filter(p => p.esPerfumeria === false).length;
-        const sinDefinirCount = productos.filter(p => p.esPerfumeria === undefined || p.esPerfumeria === null).length;
-
-        if (productos.length > 0) {
-            console.log('🧴 DEBUG PERFUMERÍA:', {
-                total: productos.length,
-                perfumeria: perfumeriaCount,
-                medicamentos: medicamentosCount,
-                sinDefinir: sinDefinirCount
-            });
-
-            // Mostrar algunos ejemplos de cada tipo
-            const ejemploPerfumeria = productos.find(p => p.esPerfumeria === true);
-            const ejemploMedicamento = productos.find(p => p.esPerfumeria === false);
-            const ejemploSinDefinir = productos.find(p => p.esPerfumeria === undefined || p.esPerfumeria === null);
-
-            if (ejemploPerfumeria) {
-                console.log('🧴 EJEMPLO PERFUMERÍA:', {
-                    ean: ejemploPerfumeria.ean,
-                    descripcion: ejemploPerfumeria.descripcion,
-                    esPerfumeria: ejemploPerfumeria.esPerfumeria
-                });
-            }
-            if (ejemploMedicamento) {
-                console.log('💊 EJEMPLO MEDICAMENTO:', {
-                    ean: ejemploMedicamento.ean,
-                    descripcion: ejemploMedicamento.descripcion,
-                    esPerfumeria: ejemploMedicamento.esPerfumeria
-                });
-            }
-            if (ejemploSinDefinir) {
-                console.log('❓ EJEMPLO SIN DEFINIR:', {
-                    ean: ejemploSinDefinir.ean,
-                    descripcion: ejemploSinDefinir.descripcion,
-                    esPerfumeria: ejemploSinDefinir.esPerfumeria
-                });
-            }
-        }
 
         return productos;
     }, [(carrito || []).map(item =>
@@ -190,18 +119,9 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 if (elegido) {
                     nuevaSeleccion[clave] = { proveedor: elegido, motivo: "Condición / Acuerdo" };
                 } else {
-                    // Si no hay convenio viable, pero es perfumería, usar Suiza Tucumán
-                    console.log(`🔍 EVALUANDO CONVENIO SIN VIABLE:`, {
-                        producto: item.descripcion || item.ean,
-                        esPerfumeria: item.esPerfumeria,
-                        tipo: typeof item.esPerfumeria
-                    });
-
                     if (item.esPerfumeria === true) {
-                        console.log(`🧴 PERFUMERÍA → SUIZA TUC (convenio sin viable):`, item.descripcion || item.ean);
                         nuevaSeleccion[clave] = { proveedor: "suizaTuc", motivo: "Suiza Tucumán" };
                     } else {
-                        console.log(`💊 NO PERFUMERÍA → FALTA:`, item.descripcion || item.ean);
                         nuevaSeleccion[clave] = { proveedor: "Falta", motivo: "Falta" };
                     }
                 }
@@ -212,18 +132,9 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             if (ideal) {
                 nuevaSeleccion[clave] = { proveedor: ideal, motivo: "Mejor precio" };
             } else {
-                // Si no hay mejor proveedor, pero es perfumería, usar Suiza Tucumán
-                console.log(`🔍 EVALUANDO SIN MEJOR PROVEEDOR:`, {
-                    producto: item.descripcion || item.ean,
-                    esPerfumeria: item.esPerfumeria,
-                    tipo: typeof item.esPerfumeria
-                });
-
                 if (item.esPerfumeria === true) {
-                    console.log(`🧴 PERFUMERÍA → SUIZA TUC (sin mejor proveedor):`, item.descripcion || item.ean);
                     nuevaSeleccion[clave] = { proveedor: "suizaTuc", motivo: "Suiza Tucumán" };
                 } else {
-                    console.log(`💊 NO PERFUMERÍA → FALTA:`, item.descripcion || item.ean);
                     nuevaSeleccion[clave] = { proveedor: "Falta", motivo: "Falta" };
                 }
             }
@@ -241,7 +152,6 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     }, [productosEsenciales, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock, obtenerCarritoId]);
 
     useEffect(() => {
-        console.log('🔄 AUTO-AJUSTES useEffect ejecutándose...');
 
         const firmaActual = JSON.stringify(
             productosEsenciales.map(item => ({
@@ -272,12 +182,6 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             }
         });
 
-        if (productosEliminados.length > 0) {
-            console.log('🗑️ PRODUCTOS ELIMINADOS:', productosEliminados);
-            console.log('📋 IDs ACTUALES:', idsActuales);
-            console.log('🎯 SELECCIONES MANUALES RESTANTES:', Array.from(manualSelectionRef.current));
-            console.log('🔄 NUEVA SELECCIÓN DESPUÉS DE LIMPIAR:', nueva);
-        }
 
         if (!productosEsenciales.length) {
             if (Object.keys(nueva).length > 0) {
@@ -293,7 +197,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             const clave = obtenerCarritoId(item);
 
             if (manualSelectionRef.current.has(clave)) {
-                console.log(`🔒 PROTEGIDO (manual): ${clave} - ${item.descripcion || item.ean}`);
+
                 return;
             }
 
@@ -325,20 +229,11 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
 
             // 🆕 Auto-ajuste para productos de perfumería que están en "Falta"
             if (motivo === "Falta" && !stockDepo && !ideal && item.esPerfumeria === true) {
-                console.log(`🧴 AUTO-AJUSTE PERFUMERÍA → SUIZA TUC:`, item.descripcion || item.ean);
+
                 nueva[clave] = { proveedor: "suizaTuc", motivo: "Suiza Tucumán" };
                 cambios = true;
             }
 
-            // 🔍 DEBUG: Log productos que quedan en "Falta" siendo perfumería
-            if (motivo === "Falta" && item.esPerfumeria === true) {
-                console.log(`❓ PERFUMERÍA EN FALTA:`, {
-                    producto: item.descripcion || item.ean,
-                    stockDepo: stockDepo,
-                    ideal: ideal,
-                    condicionCompleta: (!stockDepo && !ideal)
-                });
-            }
         });
 
         const huboCambiosEnLimpieza = Object.keys(seleccion).length !== Object.keys(nueva).length;
