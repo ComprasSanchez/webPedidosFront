@@ -485,11 +485,25 @@ export default function RevisarPedido() {
                         r.proveedor === 'cofarsur' && r.creditoAgotado === true
                     );
 
-                    if (hayErroresCreditoCofarsur) {
-                        // Toast específico para pedido parcial con crédito agotado de Cofarsur
+                    // 🚨 Detectar warnings de crédito insuficiente en Monroe
+                    const hayWarningsCreditoMonroe = data.resultados.exitos.some(r =>
+                        r.proveedor === 'monroe' && r.creditoInsuficiente === true
+                    );
+
+                    if (hayErroresCreditoCofarsur || hayWarningsCreditoMonroe) {
+                        // Obtener información específica de cada proveedor con problemas de crédito
+                        const creditoCofarsur = data.resultados.errores.find(r => r.proveedor === 'cofarsur' && r.creditoAgotado === true);
+                        const creditoMonroe = data.resultados.exitos.find(r => r.proveedor === 'monroe' && r.creditoInsuficiente === true);
+
+                        const tituloToast = (hayErroresCreditoCofarsur && hayWarningsCreditoMonroe)
+                            ? "🚫 Pedido parcial: Problemas de crédito en Cofarsur y Monroe"
+                            : hayErroresCreditoCofarsur
+                                ? "🚫 Pedido parcial: Cofarsur sin crédito"
+                                : "🚫 Pedido parcial: Monroe con crédito insuficiente";
+
                         toast(
                             <div>
-                                <strong>🚫 Pedido parcial: Cofarsur sin crédito</strong>
+                                <strong>{tituloToast}</strong>
                                 <br />
                                 <div style={{ marginTop: '8px' }}>
                                     <strong>✅ Pedidos confirmados:</strong>
@@ -497,21 +511,42 @@ export default function RevisarPedido() {
                                         {(data.resultados.exitos || []).map(r => (
                                             <li key={r.proveedor}>
                                                 {r.proveedor}: #{r.nroPedido} ({r.items} productos)
+                                                {r.creditoInsuficiente && <span style={{ color: '#f59e0b', marginLeft: '8px' }}>⚠️ Con observaciones</span>}
                                             </li>
                                         ))}
                                     </ul>
-                                    <div style={{ marginTop: '12px', padding: '8px', background: '#fff5f5', borderRadius: '4px', borderLeft: '3px solid #dc3545' }}>
-                                        <strong>🚫 Cofarsur sin crédito disponible</strong>
-                                        <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
-                                            La cuenta no tiene crédito o está bloqueada para compras.
-                                            <br />
-                                            Productos afectados: {data.resultados.errores.find(r => r.proveedor === 'cofarsur')?.items || 0} productos
+
+                                    {/* Problemas de Cofarsur */}
+                                    {creditoCofarsur && (
+                                        <div style={{ marginTop: '12px', padding: '8px', background: '#fff5f5', borderRadius: '4px', borderLeft: '3px solid #dc3545' }}>
+                                            <strong>🚫 Cofarsur sin crédito disponible</strong>
+                                            <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                                La cuenta no tiene crédito o está bloqueada para compras.
+                                                <br />
+                                                Productos afectados: {creditoCofarsur.items} productos
+                                            </div>
+                                            <div style={{ fontSize: '0.85em', marginTop: '6px', fontStyle: 'italic' }}>
+                                                💡 Podés cambiar esos productos a otro proveedor o marcarlos como "Falta"
+                                            </div>
                                         </div>
-                                        <div style={{ fontSize: '0.85em', marginTop: '6px', fontStyle: 'italic' }}>
-                                            💡 Podés cambiar esos productos a otro proveedor o marcarlos como "Falta"
+                                    )}
+
+                                    {/* Problemas de Monroe */}
+                                    {creditoMonroe && (
+                                        <div style={{ marginTop: '12px', padding: '8px', background: '#fff9e6', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
+                                            <strong>⚠️ Monroe: Crédito insuficiente detectado</strong>
+                                            <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                                El pedido fue enviado pero Monroe reporta problemas de crédito.
+                                                <br />
+                                                Productos afectados: {creditoMonroe.detalleCredito?.productosAfectados || 0} de {creditoMonroe.items} productos
+                                            </div>
+                                            <div style={{ fontSize: '0.85em', marginTop: '6px', fontStyle: 'italic' }}>
+                                                💡 Contactá a Monroe para verificar el estado del crédito y confirmar el pedido
+                                            </div>
                                         </div>
-                                    </div>
-                                    {/* Otros errores (no Cofarsur) */}
+                                    )}
+
+                                    {/* Otros errores */}
                                     {data.resultados.errores.filter(r => r.proveedor !== 'cofarsur').length > 0 && (
                                         <>
                                             <strong style={{ marginTop: '8px', display: 'block' }}>❌ Otros errores:</strong>
@@ -528,9 +563,9 @@ export default function RevisarPedido() {
                             </div>,
                             {
                                 id: toastId,
-                                duration: 12000, // Más tiempo porque hay más información
+                                duration: 15000, // Más tiempo porque puede haber más información
                                 style: {
-                                    maxWidth: '600px',
+                                    maxWidth: '650px',
                                     background: '#fffbf0',
                                     borderLeft: '4px solid #f59e0b'
                                 }
@@ -569,7 +604,54 @@ export default function RevisarPedido() {
                         );
                     }
                 } else {
-                    toast.success("Pedido enviado correctamente", { id: toastId });
+                    // 🚨 Verificar si hay warnings de crédito en Monroe en pedidos exitosos
+                    const hayWarningsCreditoMonroe = data.resultados.exitos?.some(r =>
+                        r.proveedor === 'monroe' && r.creditoInsuficiente === true
+                    );
+
+                    if (hayWarningsCreditoMonroe) {
+                        const creditoMonroe = data.resultados.exitos.find(r => r.proveedor === 'monroe' && r.creditoInsuficiente === true);
+
+                        toast(
+                            <div>
+                                <strong>✅ Pedido enviado con observación</strong>
+                                <br />
+                                <div style={{ marginTop: '8px' }}>
+                                    <strong>✅ Pedidos confirmados:</strong>
+                                    <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                        {(data.resultados.exitos || []).map(r => (
+                                            <li key={r.proveedor}>
+                                                {r.proveedor}: #{r.nroPedido} ({r.items} productos)
+                                                {r.creditoInsuficiente && <span style={{ color: '#f59e0b', marginLeft: '8px' }}>⚠️ Con observaciones</span>}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <div style={{ marginTop: '12px', padding: '8px', background: '#fff9e6', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
+                                        <strong>⚠️ Monroe: Crédito insuficiente detectado</strong>
+                                        <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                            El pedido fue enviado pero Monroe reporta problemas de crédito.
+                                            <br />
+                                            Productos afectados: {creditoMonroe.detalleCredito?.productosAfectados || 0} de {creditoMonroe.items} productos
+                                        </div>
+                                        <div style={{ fontSize: '0.85em', marginTop: '6px', fontStyle: 'italic' }}>
+                                            💡 Contactá a Monroe para verificar el estado del crédito y confirmar el pedido
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>,
+                            {
+                                id: toastId,
+                                duration: 12000,
+                                style: {
+                                    maxWidth: '600px',
+                                    background: '#fff9e6',
+                                    borderLeft: '3px solid #f59e0b'
+                                }
+                            }
+                        );
+                    } else {
+                        toast.success("Pedido enviado correctamente", { id: toastId });
+                    }
                 }
             } else if (data.resultados?.errores.length > 0) {
                 // Si todos los errores son de proveedor "Falta", mostrar info en vez de error
