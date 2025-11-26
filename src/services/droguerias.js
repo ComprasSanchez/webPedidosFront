@@ -63,28 +63,6 @@ export async function getStockDisponible(carrito, sucursal, { fetch, headers }) 
 
 
 export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
-    // 🚫 TEMPORALMENTE DESHABILITADO - No gastar consultas de Monroe
-    console.log('[Monroe] Consultas deshabilitadas temporalmente');
-
-    const items = (carrito || [])
-        .filter(it => it?.ean)
-        .map(it => ({ ean: it.ean, cantidad: it.cantidad || it.unidades || 1 }));
-
-    return items.map(it => ({
-        ean: it.ean,
-        stock: false,
-        priceList: null,
-        offerPrice: null,
-        finalPrice: null,
-        effectiveDiscountPct: null,
-        minimo_unids: null,
-        offers: [],
-        noDisponible: false,
-        error: null,
-        _status: 0
-    }));
-
-    /* // 🔽 DESCOMENTAR PARA REACTIVAR MONROE
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
     const timeoutMs = opts.timeoutMs ?? 15000;
@@ -174,8 +152,8 @@ export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
             _status: 0
         }));
     }
-    */ // 🔼 FIN CÓDIGO COMENTADO MONROE
 }
+
 
 
 export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
