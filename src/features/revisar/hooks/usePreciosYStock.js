@@ -22,6 +22,9 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
     }, [carrito ? carrito.map(item => `${item.ean}-${item.unidades > 0 ? '1' : '0'}-${item.desde_zip ? '1' : '0'}-${item.idQuantio || 'null'}`).join('|') : 'empty']);
 
     useEffect(() => {
+        // 🛡️ Protección contra double-invoke de React Strict Mode
+        let cancelled = false;
+
         // Detectar solo productos NUEVOS (que no estaban en la consulta anterior)
         const eansActuales = carritoEsencial?.map(item => item.ean).sort() || [];
         const eansPrevios = eanListRef.current || [];
@@ -71,6 +74,9 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
 
                 const stockNuevo = await getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders });
 
+                // Si fue cancelado, no actualizar estado
+                if (cancelled) return;
+
                 // Combinar con stock existente (mantener datos previos)
                 setSD(prev => {
                     const combined = [...prev];
@@ -97,6 +103,9 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                     getPreciosCofarsur(productosParaConsulta, sucursal, { fetch: authFetch, headers: headersConRol }),
                     getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                 ]);
+
+                // Si fue cancelado, no actualizar estado
+                if (cancelled) return;
 
                 // Combinar nuevos precios con existentes (evitar duplicados)
                 setPM(prev => {
@@ -156,6 +165,11 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
             // Limpiar flags de ZIP después de la consulta
             // Consulta completada
         })();
+
+        // Cleanup function para cancelar actualizaciones si el componente se desmonta
+        return () => {
+            cancelled = true;
+        };
     }, [carritoEsencial, sucursal, authFetch, authHeaders, usuario?.rol, soloDeposito]);
 
     return { preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, loading };

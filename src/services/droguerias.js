@@ -63,6 +63,28 @@ export async function getStockDisponible(carrito, sucursal, { fetch, headers }) 
 
 
 export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
+    // 🚫 TEMPORALMENTE DESHABILITADO - No gastar consultas de Monroe
+    console.log('[Monroe] Consultas deshabilitadas temporalmente');
+
+    const items = (carrito || [])
+        .filter(it => it?.ean)
+        .map(it => ({ ean: it.ean, cantidad: it.cantidad || it.unidades || 1 }));
+
+    return items.map(it => ({
+        ean: it.ean,
+        stock: false,
+        priceList: null,
+        offerPrice: null,
+        finalPrice: null,
+        effectiveDiscountPct: null,
+        minimo_unids: null,
+        offers: [],
+        noDisponible: false,
+        error: null,
+        _status: 0
+    }));
+
+    /* // 🔽 DESCOMENTAR PARA REACTIVAR MONROE
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
     const timeoutMs = opts.timeoutMs ?? 15000;
@@ -134,7 +156,7 @@ export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
                 error: r.error || null,
                 _status: res.status
             };
-        }); x
+        });
 
     } catch (err) {
         // Error de red/timeout -> mostrar error directo
@@ -152,6 +174,7 @@ export async function getPreciosMonroe(carrito, sucursal, opts = {}) {
             _status: 0
         }));
     }
+    */ // 🔼 FIN CÓDIGO COMENTADO MONROE
 }
 
 
@@ -279,7 +302,7 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
 export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
-    const timeoutMs = opts.timeoutMs ?? 20000; // ⬆️ Aumentado a 20s para manejar mejor lotes grandes
+    const timeoutMs = opts.timeoutMs ?? 60000; // ⬆️ Aumentado a 60s para consultas largas de Cofarsur
 
     // Si no hay EANs o sucursal, devolver vacío
     const items = (carrito || [])
@@ -297,9 +320,10 @@ export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
 async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs }) {
     console.log(`[Front Cofarsur] Consultando ${items.length} productos con control de concurrencia`);
 
-    // 🔧 Límite REAL del navegador: máximo 6 conexiones HTTP simultáneas por dominio
-    // Si ponemos más, el navegador las encola o cancela con ERR_NETWORK_CHANGED
-    const MAX_CONCURRENT = 6;
+    // 🚀 Aumentado significativamente - el backend SOAP es rápido
+    // Mientras respete el límite del navegador (~10-12 conexiones abiertas simultáneamente)
+    // podemos procesar muchos más si las respuestas son rápidas
+    const MAX_CONCURRENT = 100;
     const results = new Array(items.length); // Pre-allocar array para mantener orden
     let completados = 0;
 
@@ -367,7 +391,15 @@ async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, t
                 }
 
             } catch (e) {
-                console.warn(`[Front Cofarsur] ${item.ean} → Error: ${e?.message || 'timeout'}`);
+                // Determinar tipo de error
+                let errorMsg = 'Error desconocido';
+                if (e.name === 'AbortError' || e?.message?.includes('aborted')) {
+                    errorMsg = 'Timeout';
+                } else if (e?.message) {
+                    errorMsg = e.message;
+                }
+
+                console.warn(`[Front Cofarsur] ${item.ean} → Error: ${errorMsg}`);
                 results[currentIndex] = {
                     ean: item.ean,
                     stock: null,
@@ -375,7 +407,7 @@ async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, t
                     offerPrice: null,
                     offers: [],
                     minimo_unids: null,
-                    error: e?.message || 'timeout',
+                    error: errorMsg,
                     _status: 0
                 };
             } finally {
