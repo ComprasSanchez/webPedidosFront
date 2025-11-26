@@ -311,132 +311,15 @@ export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
 
     if (!items.length || !sucursal) return [];
 
-    // ✅ SIEMPRE USAR CONSULTAS INDIVIDUALES CON CONTROL DE CONCURRENCIA
-    // El SOAP de Cofarsur es más estable que el REST
-    return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+    // ✅ USAR REST BATCH - Más eficiente que SOAP individual
+    return await getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeoutMs });
 }
 
-// Función auxiliar para consultas individuales (SOAP) con control de concurrencia
-async function getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs }) {
-    console.log(`[Front Cofarsur] Consultando ${items.length} productos con control de concurrencia`);
-
-    // 🚀 Aumentado significativamente - el backend SOAP es rápido
-    // Mientras respete el límite del navegador (~10-12 conexiones abiertas simultáneamente)
-    // podemos procesar muchos más si las respuestas son rápidas
-    const MAX_CONCURRENT = 100;
-    const results = new Array(items.length); // Pre-allocar array para mantener orden
-    let completados = 0;
-
-    // Semáforo: controla cuántas requests están activas en paralelo
-    let enProceso = 0;
-    let nextIndex = 0;
-
-    return new Promise((resolve) => {
-        const procesarSiguiente = async () => {
-            // Si ya procesamos todos, terminar
-            if (nextIndex >= items.length) {
-                if (completados === items.length) {
-                    console.log(`[Front Cofarsur] Completado: ${completados}/${items.length} productos`);
-                    resolve(results.filter(r => r !== undefined));
-                }
-                return;
-            }
-
-            // Tomar el siguiente item
-            const currentIndex = nextIndex++;
-            const item = items[currentIndex];
-            enProceso++;
-
-            const url = `${API_URL}/api/droguerias/cofarsur/${encodeURIComponent(item.ean)}?sucursal=${encodeURIComponent(sucursal)}`;
-            const controller = new AbortController();
-
-            try {
-                const res = await withTimeout(
-                    f(url, { headers: { ...baseHeaders }, signal: controller.signal }),
-                    timeoutMs,
-                    controller
-                );
-
-                if (!res.ok) {
-                    console.warn(`[Front Cofarsur] ${item.ean} → HTTP ${res.status}`);
-                    results[currentIndex] = {
-                        ean: item.ean,
-                        stock: null,
-                        priceList: null,
-                        offerPrice: null,
-                        offers: [],
-                        minimo_unids: null,
-                        error: `HTTP ${res.status}`,
-                        _status: res.status
-                    };
-                } else {
-                    const data = await res.json();
-                    const stock = data?.stock === true;
-                    const priceList = typeof data?.priceList === 'number' ? data.priceList : null;
-                    const offerPrice = typeof data?.offerPrice === 'number' ? data.offerPrice : null;
-                    const offers = Array.isArray(data?.offers) ? data.offers : [];
-                    const error = typeof data?.error === 'string' ? data.error : null;
-                    const minimo_unids = typeof data?.cantidadMinima === 'number' ? data.cantidadMinima : null;
-
-                    results[currentIndex] = {
-                        ean: item.ean,
-                        stock,
-                        priceList,
-                        offerPrice,
-                        offers,
-                        error,
-                        minimo_unids,
-                        _status: res.status
-                    };
-                }
-
-            } catch (e) {
-                // Determinar tipo de error
-                let errorMsg = 'Error desconocido';
-                if (e.name === 'AbortError' || e?.message?.includes('aborted')) {
-                    errorMsg = 'Timeout';
-                } else if (e?.message) {
-                    errorMsg = e.message;
-                }
-
-                console.warn(`[Front Cofarsur] ${item.ean} → Error: ${errorMsg}`);
-                results[currentIndex] = {
-                    ean: item.ean,
-                    stock: null,
-                    priceList: null,
-                    offerPrice: null,
-                    offers: [],
-                    minimo_unids: null,
-                    error: errorMsg,
-                    _status: 0
-                };
-            } finally {
-                enProceso--;
-                completados++;
-
-                // Log de progreso cada 10 productos o al final
-                if (completados % 10 === 0 || completados === items.length) {
-                    console.log(`[Front Cofarsur] Progreso: ${completados}/${items.length} completados`);
-                }
-
-                // Procesar el siguiente inmediatamente
-                procesarSiguiente();
-            }
-        };
-
-        // Iniciar MAX_CONCURRENT workers en paralelo
-        for (let i = 0; i < Math.min(MAX_CONCURRENT, items.length); i++) {
-            procesarSiguiente();
-        }
-    });
-}
-
-/* 
-// Función auxiliar para consultas batch (REST) - DESHABILITADA temporalmente
-// El endpoint REST de Cofarsur está inestable, por ahora usamos solo SOAP individual con control de concurrencia
-// Si el REST vuelve a funcionar correctamente, descomentar esta función y el código de decisión en getPreciosCofarsur
-
+// ============================================================================
+// 🟢 Función auxiliar para consultas batch REST - Activa
+// ============================================================================
 async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeoutMs }) {
+    console.log(`[Front Cofarsur REST] Consultando ${items.length} productos en batch`);
 
     const controller = new AbortController();
 
@@ -503,7 +386,101 @@ async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeou
         return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
     }
 }
-*/
+
+// ============================================================================
+// 🔵 BACKUP: Función individual con semáforo (SOAP) 
+// ============================================================================
+// Dejada como backup por si el REST vuelve a fallar
+// Para usarla, cambiar getPreciosCofarsur para que llame a esta función
+/* BACKUP_INDIVIDUAL_SOAP
+async function getPreciosCofarsurIndividual_BACKUP(items, sucursal, { f, baseHeaders, timeoutMs }) {
+    const MAX_CONCURRENT = 100;
+    const results = new Array(items.length);
+    let completados = 0;
+    let enProceso = 0;
+    let nextIndex = 0;
+
+    return new Promise((resolve) => {
+        const procesarSiguiente = async () => {
+            if (nextIndex >= items.length) {
+                if (completados === items.length) {
+                    resolve(results.filter(r => r !== undefined));
+                }
+                return;
+            }
+
+            const currentIndex = nextIndex++;
+            const item = items[currentIndex];
+            enProceso++;
+
+            const url = `${API_URL}/api/droguerias/cofarsur/${encodeURIComponent(item.ean)}?sucursal=${encodeURIComponent(sucursal)}`;
+            const controller = new AbortController();
+
+            try {
+                const res = await withTimeout(
+                    f(url, { headers: { ...baseHeaders }, signal: controller.signal }),
+                    timeoutMs,
+                    controller
+                );
+
+                if (!res.ok) {
+                    results[currentIndex] = {
+                        ean: item.ean,
+                        stock: null,
+                        priceList: null,
+                        offerPrice: null,
+                        offers: [],
+                        minimo_unids: null,
+                        error: `HTTP ${res.status}`,
+                        _status: res.status
+                    };
+                } else {
+                    const data = await res.json();
+                    results[currentIndex] = {
+                        ean: item.ean,
+                        stock: data?.stock === true,
+                        priceList: typeof data?.priceList === 'number' ? data.priceList : null,
+                        offerPrice: typeof data?.offerPrice === 'number' ? data.offerPrice : null,
+                        offers: Array.isArray(data?.offers) ? data.offers : [],
+                        error: typeof data?.error === 'string' ? data.error : null,
+                        minimo_unids: typeof data?.cantidadMinima === 'number' ? data.cantidadMinima : null,
+                        _status: res.status
+                    };
+                }
+            } catch (e) {
+                let errorMsg = 'Error desconocido';
+                if (e.name === 'AbortError' || e?.message?.includes('aborted')) {
+                    errorMsg = 'Timeout';
+                } else if (e?.message) {
+                    errorMsg = e.message;
+                }
+
+                results[currentIndex] = {
+                    ean: item.ean,
+                    stock: null,
+                    priceList: null,
+                    offerPrice: null,
+                    offers: [],
+                    minimo_unids: null,
+                    error: errorMsg,
+                    _status: 0
+                };
+            } finally {
+                enProceso--;
+                completados++;
+                if (completados % 10 === 0 || completados === items.length) {
+                    console.log(`[SOAP Backup] Progreso: ${completados}/${items.length}`);
+                }
+                procesarSiguiente();
+            }
+        };
+
+        for (let i = 0; i < Math.min(MAX_CONCURRENT, items.length); i++) {
+            procesarSiguiente();
+        }
+    });
+}
+END_BACKUP_INDIVIDUAL_SOAP */
 
 // Simula delay de red
 const delay = (ms = 300) =>
