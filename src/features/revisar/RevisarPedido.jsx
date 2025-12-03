@@ -650,7 +650,58 @@ export default function RevisarPedido() {
                             }
                         );
                     } else {
-                        toast.success("Pedido enviado correctamente", { id: toastId });
+                        // Verificar si hay duplicados detectados
+                        const hayDuplicados = data.resultados.exitos?.some(r => r.duplicado === true);
+
+                        if (hayDuplicados) {
+                            const duplicados = data.resultados.exitos.filter(r => r.duplicado === true);
+                            const nuevos = data.resultados.exitos.filter(r => !r.duplicado);
+
+                            toast(
+                                <div>
+                                    <strong>✅ Pedido procesado</strong>
+                                    <br />
+                                    <div style={{ marginTop: '8px' }}>
+                                        {nuevos.length > 0 && (
+                                            <>
+                                                <strong>📤 Enviados:</strong>
+                                                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                                    {nuevos.map(r => (
+                                                        <li key={r.proveedor}>
+                                                            {r.proveedor}: #{r.nroPedido} ({r.items} productos)
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </>
+                                        )}
+                                        {duplicados.length > 0 && (
+                                            <>
+                                                <strong style={{ color: '#f59e0b', marginTop: '8px', display: 'block' }}>🔄 Duplicados detectados (no reenviados):</strong>
+                                                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                                    {duplicados.map(r => (
+                                                        <li key={r.proveedor} style={{ color: '#856404' }}>
+                                                            {r.proveedor}: #{r.nroPedido} ({r.items} productos)
+                                                            {r.mensaje && <div style={{ fontSize: '0.85em', fontStyle: 'italic' }}>{r.mensaje}</div>}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>,
+                                {
+                                    id: toastId,
+                                    duration: 10000,
+                                    style: {
+                                        maxWidth: '550px',
+                                        background: '#fff9e6',
+                                        borderLeft: '4px solid #10b981'
+                                    }
+                                }
+                            );
+                        } else {
+                            toast.success("Pedido enviado correctamente", { id: toastId });
+                        }
                     }
                 }
             } else if (data.resultados?.errores.length > 0) {
