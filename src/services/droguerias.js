@@ -280,7 +280,11 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
 export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
-    const timeoutMs = opts.timeoutMs ?? 90000; // ⬆️ Aumentado a 90s para producción con latencia
+    // Timeout dinámico: 2 minutos base + 2s por producto (para SOAP en producción)
+    const baseTimeout = 120000; // 2 minutos base
+    const perItemTimeout = 2000; // 2s por producto
+    const itemCount = (carrito || []).filter(it => it?.ean).length;
+    const timeoutMs = opts.timeoutMs ?? Math.max(baseTimeout, baseTimeout + (itemCount * perItemTimeout));
 
     // Si no hay EANs o sucursal, devolver vacío
     const items = (carrito || [])
@@ -299,7 +303,7 @@ export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
 async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeoutMs }) {
     console.log(`[Front Cofarsur REST] Consultando ${items.length} productos en batch para sucursal: ${sucursal}`);
     console.log(`[Front Cofarsur REST] API_URL: ${API_URL}`);
-    console.log(`[Front Cofarsur REST] Timeout: ${timeoutMs}ms`);
+    console.log(`[Front Cofarsur REST] Timeout: ${Math.round(timeoutMs / 1000)}s (${timeoutMs}ms)`);
 
     const controller = new AbortController();
 
