@@ -280,11 +280,6 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
 export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
-    // Timeout dinámico: 2 minutos base + 2s por producto (para SOAP en producción)
-    const baseTimeout = 120000; // 2 minutos base
-    const perItemTimeout = 2000; // 2s por producto
-    const itemCount = (carrito || []).filter(it => it?.ean).length;
-    const timeoutMs = opts.timeoutMs ?? Math.max(baseTimeout, baseTimeout + (itemCount * perItemTimeout));
 
     // Si no hay EANs o sucursal, devolver vacío
     const items = (carrito || [])
@@ -293,7 +288,62 @@ export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
 
     if (!items.length || !sucursal) return [];
 
-    // ✅ USAR REST BATCH - Más eficiente que SOAP individual
+    // 🔥 LÍMITE: Railway/servidores cortan conexión después de ~5 minutos
+    // Con SOAP: ~50-100 productos máximo por request
+    // Dividir en múltiples requests si es necesario
+    const MAX_ITEMS_PER_REQUEST = 80; // Límite seguro para SOAP en producción
+
+    if (items.length > MAX_ITEMS_PER_REQUEST) {
+        console.log(`[Front Cofarsur] 📦 Dividiendo ${items.length} productos en chunks de ${MAX_ITEMS_PER_REQUEST}`);
+
+        // Dividir en chunks
+        const chunks = [];
+        for (let i = 0; i < items.length; i += MAX_ITEMS_PER_REQUEST) {
+            chunks.push(items.slice(i, i + MAX_ITEMS_PER_REQUEST));
+        }
+
+        // Procesar chunks secuencialmente para no saturar servidor
+        const allResults = [];
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            console.log(`[Front Cofarsur] 🔄 Procesando chunk ${i + 1}/${chunks.length} (${chunk.length} productos)`);
+
+            // Timeout por chunk (2.5 min base + 2s por producto)
+            const chunkTimeout = 150000 + (chunk.length * 2000);
+
+            try {
+                const chunkResults = await getPreciosCofarsurBatch(chunk, sucursal, {
+                    f,
+                    baseHeaders,
+                    timeoutMs: chunkTimeout
+                });
+                allResults.push(...chunkResults);
+
+                console.log(`[Front Cofarsur] ✅ Chunk ${i + 1}/${chunks.length} completado (${allResults.length}/${items.length} total)`);
+            } catch (error) {
+                console.error(`[Front Cofarsur] ❌ Error en chunk ${i + 1}:`, error.message);
+                // En caso de error, agregar items con error
+                chunk.forEach(item => {
+                    allResults.push({
+                        ean: item.ean,
+                        stock: null,
+                        priceList: null,
+                        offerPrice: null,
+                        offers: [],
+                        error: `Error en chunk: ${error.message}`,
+                        minimo_unids: null,
+                        _status: 0
+                    });
+                });
+            }
+        }
+
+        console.log(`[Front Cofarsur] 🎉 Procesamiento completo: ${allResults.length} productos`);
+        return allResults;
+    }
+
+    // Si es menos de MAX_ITEMS_PER_REQUEST, procesar normal
+    const timeoutMs = 150000 + (items.length * 2000); // 2.5 min + 2s por item
     return await getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeoutMs });
 }
 
