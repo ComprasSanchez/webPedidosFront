@@ -280,7 +280,7 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
 export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
-    const timeoutMs = opts.timeoutMs ?? 60000; // ⬆️ Aumentado a 60s para consultas largas de Cofarsur
+    const timeoutMs = opts.timeoutMs ?? 90000; // ⬆️ Aumentado a 90s para producción con latencia
 
     // Si no hay EANs o sucursal, devolver vacío
     const items = (carrito || [])
@@ -297,11 +297,14 @@ export async function getPreciosCofarsur(carrito, sucursal, opts = {}) {
 // 🟢 Función auxiliar para consultas batch REST - Activa
 // ============================================================================
 async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeoutMs }) {
-    console.log(`[Front Cofarsur REST] Consultando ${items.length} productos en batch`);
+    console.log(`[Front Cofarsur REST] Consultando ${items.length} productos en batch para sucursal: ${sucursal}`);
+    console.log(`[Front Cofarsur REST] API_URL: ${API_URL}`);
+    console.log(`[Front Cofarsur REST] Timeout: ${timeoutMs}ms`);
 
     const controller = new AbortController();
 
     try {
+        const startTime = Date.now();
         // Llamada batch REST
         const res = await withTimeout(
             f(`${API_URL}/api/droguerias/cofarsur/batch`, {
@@ -314,9 +317,11 @@ async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeou
             timeoutMs,
             controller
         );
+        const elapsed = Date.now() - startTime;
+        console.log(`[Front Cofarsur REST] Respuesta recibida en ${elapsed}ms, status: ${res.status}`);
 
         if (!res.ok) {
-            console.error('Cofarsur batch HTTP error:', res.status);
+            console.error('Cofarsur batch HTTP error:', res.status, res.statusText);
             // Retornar items con error en lugar de fallar
             return items.map(it => ({
                 ean: it.ean,
