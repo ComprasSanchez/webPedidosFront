@@ -316,21 +316,49 @@ async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeou
         );
 
         if (!res.ok) {
-            console.warn('Cofarsur batch no-OK, fallback a individual', res.status);
-            return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+            console.error('Cofarsur batch HTTP error:', res.status);
+            // Retornar items con error en lugar de fallar
+            return items.map(it => ({
+                ean: it.ean,
+                stock: null,
+                priceList: null,
+                offerPrice: null,
+                offers: [],
+                error: `HTTP ${res.status}`,
+                minimo_unids: null,
+                _status: res.status
+            }));
         }
 
         let data;
         try {
             data = await res.json();
         } catch (jsonError) {
-            console.warn('Cofarsur devolvió HTML en lugar de JSON, fallback a individual');
-            return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+            console.error('Cofarsur devolvió respuesta inválida (no JSON)');
+            return items.map(it => ({
+                ean: it.ean,
+                stock: null,
+                priceList: null,
+                offerPrice: null,
+                offers: [],
+                error: 'Respuesta inválida del servidor',
+                minimo_unids: null,
+                _status: res.status
+            }));
         }
 
         if (data.error) {
-            console.warn('Cofarsur batch error, fallback a individual:', data.error);
-            return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+            console.error('Cofarsur batch devolvió error:', data.error);
+            return items.map(it => ({
+                ean: it.ean,
+                stock: null,
+                priceList: null,
+                offerPrice: null,
+                offers: [],
+                error: data.error,
+                minimo_unids: null,
+                _status: res.status
+            }));
         }
 
         const resultados = data.resultados || {};
@@ -360,8 +388,18 @@ async function getPreciosCofarsurBatch(items, sucursal, { f, baseHeaders, timeou
         });
 
     } catch (err) {
-        console.warn('Error en getPreciosCofarsurBatch, fallback a individual:', err?.message || err);
-        return await getPreciosCofarsurIndividual(items, sucursal, { f, baseHeaders, timeoutMs });
+        console.error('Error de red consultando Cofarsur batch:', err?.message || err);
+        // Retornar items con error de conexión
+        return items.map(it => ({
+            ean: it.ean,
+            stock: null,
+            priceList: null,
+            offerPrice: null,
+            offers: [],
+            error: err?.message?.includes('aborted') ? 'Timeout' : 'Error de conexión',
+            minimo_unids: null,
+            _status: 0
+        }));
     }
 }
 
