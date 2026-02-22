@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/logo.png";
-import { FaSearch, FaShoppingCart, FaSignOutAlt, FaUserShield, FaKey, FaStore, FaUsers, FaWarehouse, FaFileImport } from "react-icons/fa";
+import { FaSearch, FaShoppingCart, FaSignOutAlt, FaUserShield, FaKey, FaStore, FaUsers, FaWarehouse, FaFileImport, FaClipboardList } from "react-icons/fa";
 import ModalSeleccionSucursal from "../../components/ui/ModalSeleccionSucursal";
 
 export default function Navbar() {
@@ -26,7 +26,8 @@ export default function Navbar() {
         if (usuario?.rol === "compras") {
             return [
                 { to: "/buscador", label: "Buscador", icon: FaSearch },
-                { to: "/revisar", label: "Carrito", icon: FaShoppingCart }
+                { to: "/revisar", label: "Carrito", icon: FaShoppingCart },
+                { to: "/reposicion/resumen", label: "Resumen", icon: FaClipboardList }
             ];
         }
 

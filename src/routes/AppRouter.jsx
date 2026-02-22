@@ -7,6 +7,7 @@ import BuscadorProductos from "../features/buscador/BuscadorProductos";
 import RevisarPedido from "../features/revisar/RevisarPedido";
 import PanelAdmin from "../features/admin/PanelAdmin";
 import PanelCredenciales from "../features/admin/PanelCredenciales";
+import ResumenPedidos from "../features/reposicion/ResumenPedidos";
 import Navbar from "../features/navbar/Navbar";
 
 // ✅ Ruta privada con control de login + roles
@@ -75,6 +76,16 @@ const AppRouter = () => {
                     element={
                         <PrivateRoute roles={["sucursal", "compras"]}>
                             <RevisarPedido />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Reposición - Resumen de pedidos */}
+                <Route
+                    path="/reposicion/resumen"
+                    element={
+                        <PrivateRoute roles={["compras", "admin"]}>
+                            <ResumenPedidos />
                         </PrivateRoute>
                     }
                 />
