@@ -75,7 +75,11 @@ export default function PedidosAlertBanner() {
         const desde = new Date(now);
         desde.setDate(now.getDate() - 3); // Aumentamos a 3 días para estar seguros
 
-        const format = d => d.toISOString().slice(0, 10);
+        // toISOString() da fecha UTC, que a las 23hs AR puede ser el día siguiente
+        const format = d => {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        };
 
         const eventDetail = {
             start: format(desde),

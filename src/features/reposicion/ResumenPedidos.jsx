@@ -16,29 +16,12 @@ function hoy() {
 
 function formatFecha(raw) {
     if (!raw) return "—";
-    // La DB guarda hora Buenos Aires (UTC-3).
-    // mysql2 puede devolver "2026-02-22 20:18:23" o "2026-02-22T23:18:23.000Z" (UTC).
-    // En el segundo caso hay que restar 3 horas para recuperar la hora real.
-    let date, datePart, h, m;
-
-    if (typeof raw === "string" && raw.includes("T")) {
-        // ISO con Z → interpretar como UTC y restar 3 hs (Buenos Aires)
-        const ms = new Date(raw).getTime() - 3 * 60 * 60 * 1000;
-        const d = new Date(ms);
-        datePart = `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`;
-        h = pad(d.getUTCHours());
-        m = pad(d.getUTCMinutes());
-    } else {
-        // "YYYY-MM-DD HH:mm:ss" → ya está en hora Buenos Aires, sólo reformatear
-        const [dp, tp = ""] = String(raw).split(" ");
-        const [year, month, day] = dp.split("-");
-        [h, m] = tp.split(":");
-        datePart = `${day}/${month}`;
-        h = h || "00";
-        m = m || "00";
-    }
-
-    return `${datePart} ${h}:${m}`;
+    // Con dateStrings:true en mysql2, las fechas siempre llegan como "YYYY-MM-DD HH:mm:ss"
+    // ya en hora Buenos Aires. Solo reformateamos.
+    const [dp, tp = ""] = String(raw).split(" ");
+    const [, month, day] = dp.split("-");
+    const [h = "00", m = "00"] = tp.split(":");
+    return `${day}/${month} ${h}:${m}`;
 }
 
 function formatMonto(val) {
