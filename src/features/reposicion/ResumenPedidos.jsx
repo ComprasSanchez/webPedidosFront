@@ -1,5 +1,6 @@
 // front/src/features/reposicion/ResumenPedidos.jsx
 import { useEffect, useState, useCallback } from "react";
+import { FaDownload } from "react-icons/fa";
 import { API_URL } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/resumenPedidos.scss";
@@ -15,20 +16,34 @@ function hoy() {
 
 function formatFecha(raw) {
     if (!raw) return "—";
-    // raw viene como "2026-02-22 19:52:41" (hora Buenos Aires desde la DB)
-    const [datePart, timePart] = raw.split(" ");
-    if (!timePart) return datePart;
-    const [h, m] = timePart.split(":");
+    // La DB guarda hora Buenos Aires (UTC-3).
+    // mysql2 puede devolver "2026-02-22 20:18:23" o "2026-02-22T23:18:23.000Z" (UTC).
+    // En el segundo caso hay que restar 3 horas para recuperar la hora real.
+    let date, datePart, h, m;
+
+    if (typeof raw === "string" && raw.includes("T")) {
+        // ISO con Z → interpretar como UTC y restar 3 hs (Buenos Aires)
+        const ms = new Date(raw).getTime() - 3 * 60 * 60 * 1000;
+        const d = new Date(ms);
+        datePart = `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`;
+        h = pad(d.getUTCHours());
+        m = pad(d.getUTCMinutes());
+    } else {
+        // "YYYY-MM-DD HH:mm:ss" → ya está en hora Buenos Aires, sólo reformatear
+        const [dp, tp = ""] = String(raw).split(" ");
+        const [year, month, day] = dp.split("-");
+        [h, m] = tp.split(":");
+        datePart = `${day}/${month}`;
+        h = h || "00";
+        m = m || "00";
+    }
+
     return `${datePart} ${h}:${m}`;
 }
 
 function formatMonto(val) {
     if (val === null || val === undefined || val === "" || Number(val) === 0) return "—";
-    return new Intl.NumberFormat("es-AR", {
-        style: "currency",
-        currency: "ARS",
-        maximumFractionDigits: 2
-    }).format(Number(val));
+    return Number(val).toFixed(2).replace(".", ",");
 }
 
 const ESTADO_CLASE = {
@@ -81,6 +96,9 @@ export default function ResumenPedidos() {
     const [estado, setEstado] = useState("");
     const [sucursal, setSucursal] = useState("");
 
+    const [soloReposicion, setSoloReposicion] = useState(true);
+    const [descargando, setDescargando] = useState(null); // id del registro en descarga
+
     const [page, setPage] = useState(1);
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
@@ -95,8 +113,9 @@ export default function ResumenPedidos() {
         if (proveedor) p.set("proveedor", proveedor);
         if (estado) p.set("estado", estado);
         if (sucursal) p.set("sucursal", sucursal);
+        p.set("soloReposicion", soloReposicion ? "true" : "false");
         return p;
-    }, [start, end, proveedor, estado, sucursal]);
+    }, [start, end, proveedor, estado, sucursal, soloReposicion]);
 
     const fetchData = useCallback(async (p = 1) => {
         setLoading(true);
@@ -126,6 +145,37 @@ export default function ResumenPedidos() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const handleDescargar = async (row) => {
+        if (descargando) return;
+        setDescargando(row.id);
+        try {
+            const res = await authFetch(`${API_URL}/api/resumen-pedidos/${row.id}/descargar`);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || `Error ${res.status} al descargar`);
+                return;
+            }
+            const blob = await res.blob();
+            const ext = row.proveedor === "kellerhoff" ? "xlsx" : "txt";
+            const fileName = row.proveedor === "kellerhoff"
+                ? `Pedido_Keller_${row.sucursal}.xlsx`
+                : `Pedido_Suiza_Tucuman_${row.sucursal}.txt`;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error("Error descargando:", e);
+            alert("Error al descargar el archivo.");
+        } finally {
+            setDescargando(null);
+        }
+    };
+
     const handleBuscar = () => fetchData(1);
 
     const handleLimpiar = () => {
@@ -134,6 +184,7 @@ export default function ResumenPedidos() {
         setProveedor("");
         setEstado("");
         setSucursal("");
+        setSoloReposicion(true);
         // el fetchData se dispara en el siguiente render NO automáticamente,
         // lo forzamos a mano después del reset
         setTimeout(() => fetchData(1), 50);
@@ -190,6 +241,16 @@ export default function ResumenPedidos() {
                         style={{ width: 90 }}
                     />
                 </label>
+                <label>
+                    Reposición
+                    <div className="rped_check_wrap">
+                        <input
+                            type="checkbox"
+                            checked={soloReposicion}
+                            onChange={e => setSoloReposicion(e.target.checked)}
+                        />
+                    </div>
+                </label>
                 <button className="rped_btn rped_btn--buscar" onClick={handleBuscar}>
                     Buscar
                 </button>
@@ -238,6 +299,7 @@ export default function ResumenPedidos() {
                                 <th>Monto</th>
                                 <th>Estado</th>
                                 <th>Mensaje</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -275,6 +337,20 @@ export default function ResumenPedidos() {
                                         </td>
                                         <td style={{ maxWidth: 260, wordBreak: "break-word", fontSize: "0.8rem", color: "#555" }}>
                                             {row.mensaje_proveedor || "—"}
+                                        </td>
+                                        <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                                            {(row.proveedor === "kellerhoff" || row.proveedor === "suizaTuc") && row.estado_pedido === "SKIP" && (
+                                                <button
+                                                    className="rped_btn_descarga"
+                                                    onClick={() => handleDescargar(row)}
+                                                    disabled={descargando === row.id}
+                                                    title="Descargar archivo"
+                                                >
+                                                    {descargando === row.id
+                                                        ? <span style={{ fontSize: "0.75rem" }}>...</span>
+                                                        : <FaDownload />}
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 );
