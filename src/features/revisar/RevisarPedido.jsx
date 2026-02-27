@@ -38,6 +38,9 @@ export default function RevisarPedido() {
     // 🆕 Estado para filtro de tipo de producto (solo compras)
     const [filtroTipo, setFiltroTipo] = useState('todos'); // 'todos' | 'medicamentos' | 'perfumeria'
 
+    // 🏪 Estado para filtro por stock en depósito
+    const [filtroDeposito, setFiltroDeposito] = useState('todos'); // 'todos' | 'conStock'
+
     // Estado reactivo para la sucursal seleccionada (usuarios de compras)
     const [sucursalSeleccionada, setSucursalSeleccionada] = useState(() => {
         const stored = sessionStorage.getItem("sucursalReponer");
@@ -218,6 +221,26 @@ export default function RevisarPedido() {
     const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || stockDisponible?.length);
     const loading = loadingPS || !ready;
 
+    // 🏪 Conteos para filtro depósito
+    const cantConStockDepo = carritoFiltrado.filter(item => {
+        const stock = getStockConSucursal(item.idQuantio, stockDisponible);
+        return typeof stock === 'number' && stock > 0;
+    }).length;
+
+    const cantConDepoActivo = carritoFiltrado.filter(item => {
+        const stock = getStockConSucursal(item.idQuantio, stockDisponible);
+        const cId = obtenerCarritoId(item);
+        return typeof stock === 'number' && stock > 0 && seleccion[cId]?.proveedor === 'deposito';
+    }).length;
+
+    // Carrito que se pasa a la tabla (filtro tipo + filtro depósito)
+    const carritoParaTabla = filtroDeposito === 'conStock'
+        ? carritoFiltrado.filter(item => {
+            const stock = getStockConSucursal(item.idQuantio, stockDisponible);
+            return typeof stock === 'number' && stock > 0;
+        })
+        : carritoFiltrado;
+
     // Mostrar toast cuando termine el loading y haya flag de actualización
     useEffect(() => {
         const flag = localStorage.getItem('preciosActualizados');
@@ -235,6 +258,21 @@ export default function RevisarPedido() {
 
     // 🆔 Manejar motivo usando carritoId
     const handleMotivo = (carritoId, motivo) => setSeleccion(prev => ({ ...prev, [carritoId]: { ...prev[carritoId], motivo } }));
+
+    // 🏪 Pasar a mejor precio los ítems con stock depo autoseleccionados como depósito
+    const handlePasarAMejorPrecioDepo = () => {
+        carritoFiltrado
+            .filter(item => {
+                const stock = getStockConSucursal(item.idQuantio, stockDisponible);
+                const cId = obtenerCarritoId(item);
+                return typeof stock === 'number' && stock > 0 && seleccion[cId]?.proveedor === 'deposito';
+            })
+            .forEach(item => {
+                const cId = obtenerCarritoId(item);
+                const mejor = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
+                if (mejor) handleElegirProveedor(cId, mejor);
+            });
+    };
 
     // 🆔 Manejar selección de proveedor usando carritoId
     const handleElegirProveedor = (carritoId, nuevoProveedor) => {
@@ -929,42 +967,52 @@ export default function RevisarPedido() {
                 </div>
             )}
 
-            {/* 🆕 Selector de filtro por tipo de producto (solo para compras) */}
-            {usuario?.rol === 'compras' && carrito.length > 0 && (
-                <div className="filtro_tipo_container">
-                    <h3>Filtrar productos:</h3>
-                    <div className="filtro_tipo_buttons">
-                        <button
-                            className={`filtro_btn ${filtroTipo === 'todos' ? 'active' : ''}`}
-                            onClick={() => setFiltroTipo('todos')}
-                        >
-                            📦 Todos ({carrito.length})
+            {/* 🆕 Barra de filtros combinada */}
+            {carrito.length > 0 && usuario?.rol === 'compras' && (
+                <div className="filtros_barra">
+                    {/* Grupo tipo de producto: solo compras */}
+
+                    <>
+                        <div className="filtro_grupo">
+                            <span className="filtro_label">Tipo</span>
+                            <button className={`filtro_btn ${filtroTipo === 'todos' ? 'active' : ''}`} onClick={() => setFiltroTipo('todos')}>
+                                📦 Todos ({carrito.length})
+                            </button>
+                            <button className={`filtro_btn ${filtroTipo === 'medicamentos' ? 'active' : ''}`} onClick={() => setFiltroTipo('medicamentos')}>
+                                💊 Medicamentos ({carrito.filter(item => !item.esPerfumeria).length})
+                            </button>
+                            <button className={`filtro_btn ${filtroTipo === 'perfumeria' ? 'active' : ''}`} onClick={() => setFiltroTipo('perfumeria')}>
+                                🧴 Perfumería ({carrito.filter(item => item.esPerfumeria === true).length})
+                            </button>
+                        </div>
+                        <div className="filtro_separador" />
+                    </>
+
+                    {/* Grupo stock depósito */}
+                    <div className="filtro_grupo">
+                        <span className="filtro_label">Depósito</span>
+                        <button className={`filtro_btn ${filtroDeposito === 'todos' ? 'active' : ''}`} onClick={() => setFiltroDeposito('todos')}>
+                            📦 Todos ({carritoFiltrado.length})
                         </button>
-                        <button
-                            className={`filtro_btn ${filtroTipo === 'medicamentos' ? 'active' : ''}`}
-                            onClick={() => setFiltroTipo('medicamentos')}
-                        >
-                            💊 Medicamentos ({carrito.filter(item => !item.esPerfumeria).length})
+                        <button className={`filtro_btn ${filtroDeposito === 'conStock' ? 'active' : ''}`} onClick={() => setFiltroDeposito('conStock')}>
+                            🏪 Con stock ({cantConStockDepo})
                         </button>
-                        <button
-                            className={`filtro_btn ${filtroTipo === 'perfumeria' ? 'active' : ''}`}
-                            onClick={() => setFiltroTipo('perfumeria')}
-                        >
-                            🧴 Perfumería ({carrito.filter(item => item.esPerfumeria === true).length})
-                        </button>
+                        {filtroDeposito === 'conStock' && cantConDepoActivo > 0 && (
+                            <button
+                                className="filtro_btn"
+                                style={{ background: '#f59e0b', color: '#fff', borderColor: '#f59e0b' }}
+                                onClick={handlePasarAMejorPrecioDepo}
+                            >
+                                ⚡ Pasar {cantConDepoActivo} a mejor precio
+                            </button>
+                        )}
                     </div>
-                    {filtroTipo !== 'todos' && (
-                        <p className="filtro_info">
-                            Mostrando solo productos de <strong>{filtroTipo}</strong>.
-                            Los demás quedan en el carrito para revisar después.
-                        </p>
-                    )}
                 </div>
             )}
 
             {carrito.length === 0 ? <SinProductos /> : (
                 <TablaRevisar
-                    carrito={carritoFiltrado}
+                    carrito={carritoParaTabla}
                     preciosMonroe={preciosMonroe}
                     preciosSuizo={preciosSuizo}
                     preciosCofarsur={preciosCofarsur}
