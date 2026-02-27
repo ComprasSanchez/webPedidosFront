@@ -89,6 +89,19 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
                         }
                     );
                     return;
+                } else if (res.status === 409) {
+                    toast.error(
+                        errorData.mensaje || 'El archivo ZIP ya fue procesado recientemente. Para volver a subirlo intencionalmente, debe cambiar el nombre del archivo ZIP.',
+                        {
+                            duration: 8000,
+                            style: {
+                                background: '#fef3c7',
+                                color: '#92400e',
+                                border: '1px solid #fcd34d',
+                            }
+                        }
+                    );
+                    return;
                 } else {
                     toast.error(errorData.error || "Error al procesar el archivo");
                     return;
