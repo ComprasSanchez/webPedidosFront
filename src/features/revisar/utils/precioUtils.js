@@ -27,15 +27,17 @@ export function precioValido(producto, proveedor = null) {
 /**
  * Obtiene precios para el resumen (usado en RevisarPedido)
  */
-export function getPreciosItem(ean, { preciosMonroe, preciosSuizo, preciosCofarsur }) {
+export function getPreciosItem(ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud }) {
     const monroe = preciosMonroe.find(p => p.ean === ean);
     const suizo = preciosSuizo.find(p => p.ean === ean);
     const cofarsur = preciosCofarsur.find(p => p.ean === ean);
+    const delsud = preciosDelSud?.find(p => p.ean === ean);
 
     return {
         deposito: 0,
         monroe: getPrecioFinal(monroe, "monroe"),
         suizo: getPrecioFinal(suizo, "suizo"),
         cofarsur: getPrecioFinal(cofarsur, "cofarsur"),
+        delsud: getPrecioFinal(delsud, "delsud"),
     };
 }

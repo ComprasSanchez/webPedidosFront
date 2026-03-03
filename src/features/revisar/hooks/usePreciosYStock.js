@@ -1,11 +1,12 @@
 // hooks/usePreciosYStock.js
 import { useEffect, useState, useRef, useMemo } from "react";
-import { getPreciosMonroe, getPreciosSuizo, getPreciosCofarsur, getStockDisponible } from "../../../services/droguerias";
+import { getPreciosMonroe, getPreciosSuizo, getPreciosCofarsur, getPreciosDelSud, getStockDisponible } from "../../../services/droguerias";
 
 export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, usuario, soloDeposito = false }) {
     const [preciosMonroe, setPM] = useState([]);
     const [preciosSuizo, setPS] = useState([]);
     const [preciosCofarsur, setPC] = useState([]);
+    const [preciosDelSud, setPDS] = useState([]);
     const [stockDisponible, setSD] = useState([]);
     const [loading, setLoading] = useState(false);
     const eanListRef = useRef([]);
@@ -46,12 +47,7 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
             setPM(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
             setPS(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
             setPC(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
-            setSD(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
-        }
-
-        // Productos nuevos identificados para consulta
-
-        if (!sucursal || (eansNuevos.length === 0 && !hayProductosZipNuevos)) {
+            setPDS(prev => prev.filter(item => !eansEliminados.includes(item.ean)));
             // No hay productos nuevos para consultar
             // Actualizar referencia aunque no consultemos
             eanListRef.current = eansActuales;
@@ -97,10 +93,15 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                     'x-user-rol': usuario?.rol || 'sucursal'
                 };
 
-                const [m, s, c, d] = await Promise.all([
+                const esCompras = usuario?.rol === 'compras';
+
+                const [m, s, c, ds, d] = await Promise.all([
                     getPreciosMonroe(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getPreciosSuizo(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getPreciosCofarsur(productosParaConsulta, sucursal, { fetch: authFetch, headers: headersConRol }),
+                    esCompras
+                        ? getPreciosDelSud(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders })
+                        : Promise.resolve([]),
                     getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                 ]);
 
@@ -144,6 +145,18 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                     });
                     return combined;
                 });
+                setPDS(prev => {
+                    const combined = [...prev];
+                    ds.forEach(nuevoItem => {
+                        const existingIndex = combined.findIndex(item => item.ean === nuevoItem.ean);
+                        if (existingIndex >= 0) {
+                            combined[existingIndex] = nuevoItem;
+                        } else {
+                            combined.push(nuevoItem);
+                        }
+                    });
+                    return combined;
+                });
                 setSD(prev => {
                     const combined = [...prev];
                     d.forEach(nuevoItem => {
@@ -172,5 +185,5 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
         };
     }, [carritoEsencial, sucursal, authFetch, authHeaders, usuario?.rol, soloDeposito]);
 
-    return { preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, loading };
+    return { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, stockDisponible, loading };
 }

@@ -10,6 +10,7 @@ import PreciosSuizo from "../../proveedores/PreciosSuizo";
 import PreciosCofarsur from "../../proveedores/PreciosCofarsur";
 import PreciosKellerhoff from "../../proveedores/PreciosKellerhoff";
 import PreciosSuizaTuc from "../../proveedores/PreciosSuizaTuc.jsx";
+import PreciosDelSud from "../../proveedores/PreciosDelSud.jsx";
 
 import QtyControl from "./QtyControl";
 import MotivoSelect from "./MotivoSelect";
@@ -28,6 +29,7 @@ export default function FilaItem({
     preciosMonroe,
     preciosSuizo,
     preciosCofarsur,
+    preciosDelSud,
     stockDisponible,
     onElegirProveedor,
     onMotivo,
@@ -53,7 +55,7 @@ export default function FilaItem({
     const stockDepoValido = typeof stockDepo === "number" && stockDepo > 0;
     const hayAlgunaDrogConPrecio = hayDrogConPrecioValido(
         item.idQuantio || item.ean,
-        { preciosMonroe, preciosSuizo, preciosCofarsur },
+        { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud },
         precioValido
     );
     const hayAlgoPedible = hayDepo || hayAlgunaDrogConPrecio;
@@ -155,6 +157,19 @@ export default function FilaItem({
                         idQuantio={itemId}
                         ean={item.ean}
                         seleccionado={proveedorActual === "suizaTuc"}
+                        onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
+                    />
+                </td>
+            )}
+
+            {/* Del Sud — solo compras */}
+            {usuario?.rol === 'compras' && (
+                <td className={"celda_delsud" + (proveedorActual === "delsud" ? " celda_activa" : "")}>
+                    <PreciosDelSud
+                        idQuantio={itemId}
+                        ean={item.ean}
+                        precios={preciosDelSud}
+                        seleccionado={proveedorActual === "delsud"}
                         onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
                     />
                 </td>

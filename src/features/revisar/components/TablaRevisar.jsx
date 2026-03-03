@@ -20,6 +20,7 @@ export default function TablaRevisar({
     preciosMonroe,
     preciosSuizo,
     preciosCofarsur,
+    preciosDelSud,
     stockDisponible,
     seleccion,
     onElegirProveedor,
@@ -58,6 +59,7 @@ export default function TablaRevisar({
                         <th>Cofarsur</th>
                         <th>Kellerhoff</th>
                         {usuario?.rol === 'compras' && (<th>Suiza Tuc</th>)}
+                        {usuario?.rol === 'compras' && (<th>Del Sud</th>)}
                         <th>Motivo</th>
                         <th>Eliminar</th>
                         <th>Pedir</th>
@@ -77,6 +79,7 @@ export default function TablaRevisar({
                                 preciosMonroe={preciosMonroe}
                                 preciosSuizo={preciosSuizo}
                                 preciosCofarsur={preciosCofarsur}
+                                preciosDelSud={preciosDelSud}
                                 stockDisponible={stockDisponible}
                                 onElegirProveedor={onElegirProveedor}
                                 onMotivo={onMotivo}
