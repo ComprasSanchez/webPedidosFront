@@ -213,7 +213,7 @@ export default function RevisarPedido() {
     const getStockConSucursal = useCallback((idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual), [sucursalActual]);
 
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
-        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual
+        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual
     });
 
     const { noPedirMap, toggleNoPedir, persistirCarrito } = usePersistenciaCarrito({ carrito, usuario, replaceCarrito });

@@ -9,7 +9,8 @@ export function proveedorViable(slug, ean, ctx) {
 
     const fuente = slug === "monroe" ? ctx.preciosMonroe
         : slug === "suizo" ? ctx.preciosSuizo
-            : slug === "cofarsur" ? ctx.preciosCofarsur : [];
+            : slug === "cofarsur" ? ctx.preciosCofarsur
+                : slug === "delsud" ? (ctx.preciosDelSud ?? []) : [];
     const p = fuente.find(x => x.ean === ean);
     const val = p?.offerPrice ?? p?.priceList;
     return p?.stock > 0 && typeof val === "number" && val > 0;
