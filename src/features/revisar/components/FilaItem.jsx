@@ -162,18 +162,16 @@ export default function FilaItem({
                 </td>
             )}
 
-            {/* Del Sud — solo compras */}
-            {usuario?.rol === 'compras' && (
-                <td className={"celda_delsud" + (proveedorActual === "delsud" ? " celda_activa" : "")}>
-                    <PreciosDelSud
-                        idQuantio={itemId}
-                        ean={item.ean}
-                        precios={preciosDelSud}
-                        seleccionado={proveedorActual === "delsud"}
-                        onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
-                    />
-                </td>
-            )}
+            {/* Del Sud */}
+            <td className={"celda_delsud" + (proveedorActual === "delsud" ? " celda_activa" : "")}>
+                <PreciosDelSud
+                    idQuantio={itemId}
+                    ean={item.ean}
+                    precios={preciosDelSud}
+                    seleccionado={proveedorActual === "delsud"}
+                    onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
+                />
+            </td>
 
             {/* Motivo */}
             <td>

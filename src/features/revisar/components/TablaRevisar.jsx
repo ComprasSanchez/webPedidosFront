@@ -59,7 +59,7 @@ export default function TablaRevisar({
                         <th>Cofarsur</th>
                         <th>Kellerhoff</th>
                         {usuario?.rol === 'compras' && (<th>Suiza Tuc</th>)}
-                        {usuario?.rol === 'compras' && (<th>Del Sud</th>)}
+                        <th>Del Sud</th>
                         <th>Motivo</th>
                         <th>Eliminar</th>
                         <th>Pedir</th>

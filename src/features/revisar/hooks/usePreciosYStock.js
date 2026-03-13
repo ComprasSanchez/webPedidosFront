@@ -93,15 +93,11 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                     'x-user-rol': usuario?.rol || 'sucursal'
                 };
 
-                const esCompras = usuario?.rol === 'compras';
-
                 const [m, s, c, ds, d] = await Promise.all([
                     getPreciosMonroe(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getPreciosSuizo(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getPreciosCofarsur(productosParaConsulta, sucursal, { fetch: authFetch, headers: headersConRol }),
-                    esCompras
-                        ? getPreciosDelSud(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders })
-                        : Promise.resolve([]),
+                    getPreciosDelSud(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                 ]);
 
