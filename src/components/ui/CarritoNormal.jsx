@@ -1,5 +1,6 @@
 import { FaTrash } from "react-icons/fa";
 import { useState, useMemo } from "react";
+import { toast } from "react-hot-toast";
 import { useCarrito } from "../../context/CarritoContext";
 
 const CarritoNormal = ({
@@ -123,6 +124,10 @@ const CarritoNormal = ({
                                         // 🆔 Usar carritoId para eliminar
                                         const carritoId = obtenerCarritoId(item);
                                         eliminarDelCarrito(carritoId);
+                                        toast(`${item.descripcion} eliminado del carrito.`, {
+                                            icon: '⚠️',
+                                            duration: 2800
+                                        });
                                     }}
                                     aria-label={`Eliminar ${item.descripcion}`}
                                     title="Eliminar"

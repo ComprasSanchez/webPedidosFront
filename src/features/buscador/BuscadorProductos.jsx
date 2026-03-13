@@ -1,6 +1,7 @@
 // front/src/features/buscador/BuscadorProductos.jsx
 
 import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import { useCarrito } from "../../context/CarritoContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -15,8 +16,6 @@ import TablaCarrito from "./TablaCarrito";
 
 const BuscadorProductos = () => {
     const { usuario } = useAuth();
-    const [cantidad, setCantidad] = useState(1);
-    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const { carrito, agregarAlCarrito } = useCarrito();
     const navigate = useNavigate();
     const [eanRecienAgregado, setEanRecienAgregado] = useState(null);
@@ -54,24 +53,17 @@ const BuscadorProductos = () => {
     const idSucursalParaBusqueda = usuario?.rol === "compras" ? null : usuario?.id;
 
     const handleProductoEncontrado = (producto) => {
-        setProductoSeleccionado(producto);
-    };
-
-    const handleLimpiarResultados = () => {
-        setProductoSeleccionado(null);
-    };
-
-    const handleAgregar = () => {
-        setEanRecienAgregado(productoSeleccionado.ean);
-        setTimeout(() => setEanRecienAgregado(null), 400);
-        if (!productoSeleccionado?.ean) {
+        if (!producto?.ean) {
             alert("Para agregar, el producto debe tener código de barras. Si no existe en la base, ingresá el EAN.");
             return;
         }
-        agregarAlCarrito(productoSeleccionado, cantidad);
-        setCantidad(1);
-        setProductoSeleccionado(null);
+        setEanRecienAgregado(producto.ean);
+        setTimeout(() => setEanRecienAgregado(null), 400);
+        agregarAlCarrito(producto, 1);
+        toast.success("Producto agregado. Podes editar la cantidad desde el carrito.", { duration: 2500 });
     };
+
+    const handleLimpiarResultados = () => { };
 
     const handleRealizarPedido = () => {
         // Navegar inmediatamente para mejor UX
@@ -150,29 +142,6 @@ const BuscadorProductos = () => {
                     />
                 </div>
             </div>
-
-            {/* Selección + agregar */}
-            {productoSeleccionado && (
-                <div className="buscador_seleccionado">
-                    <span>
-                        {productoSeleccionado.descripcion}
-                        {!productoSeleccionado.ean && (
-                            <em style={{ marginLeft: 8, color: "#c00" }}>
-                                (Debe tener EAN para poder agregar)
-                            </em>
-                        )}
-                    </span>
-                    <div className="qty">
-                        <button className="qty__btn" onClick={() => setCantidad(Math.max(1, cantidad - 1))}>−</button>
-                        <span className="qty__num">{cantidad}</span>
-                        <button className="qty__btn" onClick={() => setCantidad(cantidad + 1)}>+</button>
-                    </div>
-
-                    <button className="buscador_agregar" onClick={handleAgregar}>
-                        AGREGAR
-                    </button>
-                </div>
-            )}
 
             <TablaCarrito eanRecienAgregado={eanRecienAgregado} />
             {carrito.length > 0 && (
