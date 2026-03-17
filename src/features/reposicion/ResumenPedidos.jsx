@@ -1,6 +1,6 @@
 // front/src/features/reposicion/ResumenPedidos.jsx
 import { useEffect, useState, useCallback } from "react";
-import { FaDownload } from "react-icons/fa";
+import { FaDownload, FaCartPlus } from "react-icons/fa";
 import { API_URL } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/resumenPedidos.scss";
@@ -81,6 +81,7 @@ export default function ResumenPedidos() {
 
     const [soloReposicion, setSoloReposicion] = useState(true);
     const [descargando, setDescargando] = useState(null); // id del registro en descarga
+    const [cargandoRecarrito, setCargandoRecarrito] = useState(null); // id del registro cargando al carrito
 
     const [page, setPage] = useState(1);
     const [data, setData] = useState([]);
@@ -156,6 +157,45 @@ export default function ResumenPedidos() {
             alert("Error al descargar el archivo.");
         } finally {
             setDescargando(null);
+        }
+    };
+
+    const handleRecarrito = async (row) => {
+        if (cargandoRecarrito) return;
+        const confirmar = window.confirm(
+            `¿Cargar los productos del pedido de "${row.proveedor}" al carrito?\n` +
+            `(${row.cantidad_productos ?? '?'} productos – ${row.total_unidades ?? '?'} unidades)\n\n` +
+            `Esto reemplazará el contenido actual del carrito.`
+        );
+        if (!confirmar) return;
+        setCargandoRecarrito(row.id);
+        try {
+            const res = await authFetch(`${API_URL}/api/resumen-pedidos/${row.id}/items`);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || `Error ${res.status} al obtener los productos`);
+                return;
+            }
+            const { items } = await res.json();
+            if (!items || items.length === 0) {
+                alert('No se encontraron productos para este pedido.');
+                return;
+            }
+            const cartRes = await authFetch(`${API_URL}/api/cart`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items }),
+            });
+            if (!cartRes.ok) {
+                alert('Error al cargar los productos al carrito.');
+                return;
+            }
+            alert(`✓ ${items.length} producto(s) cargados al carrito.`);
+        } catch (e) {
+            console.error('Error en recarrito:', e);
+            alert('Error al cargar los productos al carrito.');
+        } finally {
+            setCargandoRecarrito(null);
         }
     };
 
@@ -282,7 +322,7 @@ export default function ResumenPedidos() {
                                 <th>Monto</th>
                                 <th>Estado</th>
                                 <th>Mensaje</th>
-                                <th></th>
+                                <th>Accion</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -332,6 +372,18 @@ export default function ResumenPedidos() {
                                                     {descargando === row.id
                                                         ? <span style={{ fontSize: "0.75rem" }}>...</span>
                                                         : <FaDownload />}
+                                                </button>
+                                            )}
+                                            {row.proveedor !== "kellerhoff" && row.proveedor !== "suizaTuc" && (
+                                                <button
+                                                    className="rped_btn_recarrito"
+                                                    onClick={() => handleRecarrito(row)}
+                                                    disabled={cargandoRecarrito === row.id}
+                                                    title="Cargar al carrito"
+                                                >
+                                                    {cargandoRecarrito === row.id
+                                                        ? <span style={{ fontSize: "0.75rem" }}>...</span>
+                                                        : <FaCartPlus />}
                                                 </button>
                                             )}
                                         </td>
