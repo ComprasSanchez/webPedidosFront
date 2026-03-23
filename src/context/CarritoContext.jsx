@@ -365,6 +365,8 @@ export const CarritoProvider = ({ children }) => {
                 carrito,
                 cargandoCarrito,
                 sincronizando,
+                sucursalActual,
+                orderType,
                 soloDeposito,
                 setSoloDeposito,
                 esPerfumeria,

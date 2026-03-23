@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { FaDownload, FaCartPlus } from "react-icons/fa";
 import { API_URL } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
+import { useCarrito } from "../../context/CarritoContext";
 import "../../styles/resumenPedidos.scss";
 
 const PAGE_SIZE = 50;
@@ -71,7 +72,8 @@ const ESTADOS = [
 ];
 
 export default function ResumenPedidos() {
-    const { authFetch } = useAuth();
+    const { authFetch, authHeaders } = useAuth();
+    const { replaceCarrito, sucursalActual, orderType } = useCarrito();
 
     const [start, setStart] = useState(hoy());
     const [end, setEnd] = useState(hoy());
@@ -181,15 +183,19 @@ export default function ResumenPedidos() {
                 alert('No se encontraron productos para este pedido.');
                 return;
             }
-            const cartRes = await authFetch(`${API_URL}/api/cart`, {
+            replaceCarrito(items);
+            const sucursalTarget = sucursalActual || row.sucursal;
+            await fetch(`${API_URL}/api/cart`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: {
+                    ...authHeaders,
+                    'Content-Type': 'application/json',
+                    'x-sucursal': sucursalTarget,
+                    'x-order-type': orderType,
+                },
                 body: JSON.stringify({ items }),
             });
-            if (!cartRes.ok) {
-                alert('Error al cargar los productos al carrito.');
-                return;
-            }
             alert(`✓ ${items.length} producto(s) cargados al carrito.`);
         } catch (e) {
             console.error('Error en recarrito:', e);
