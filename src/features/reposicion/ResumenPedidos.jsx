@@ -73,7 +73,7 @@ const ESTADOS = [
 
 export default function ResumenPedidos() {
     const { authFetch, authHeaders } = useAuth();
-    const { replaceCarrito, sucursalActual, orderType } = useCarrito();
+    const { acumularProductosEnCarrito, carrito, sucursalActual, orderType } = useCarrito();
 
     const [start, setStart] = useState(hoy());
     const [end, setEnd] = useState(hoy());
@@ -165,9 +165,9 @@ export default function ResumenPedidos() {
     const handleRecarrito = async (row) => {
         if (cargandoRecarrito) return;
         const confirmar = window.confirm(
-            `¿Cargar los productos del pedido de "${row.proveedor}" al carrito?\n` +
+            `¿Agregar los productos del pedido de "${row.proveedor}" al carrito?\n` +
             `(${row.cantidad_productos ?? '?'} productos – ${row.total_unidades ?? '?'} unidades)\n\n` +
-            `Esto reemplazará el contenido actual del carrito.`
+            `Los productos se sumarán al carrito actual.`
         );
         if (!confirmar) return;
         setCargandoRecarrito(row.id);
@@ -183,7 +183,20 @@ export default function ResumenPedidos() {
                 alert('No se encontraron productos para este pedido.');
                 return;
             }
-            replaceCarrito(items);
+            // Calcular el carrito fusionado ANTES de actualizar el estado,
+            // para poder enviarlo completo en el PUT (evitar sobreescribir Redis con solo los nuevos)
+            const carritoMap = new Map(carrito.map(p => [p.ean, { ...p }]));
+            items.forEach(nuevoItem => {
+                if (carritoMap.has(nuevoItem.ean)) {
+                    const existing = carritoMap.get(nuevoItem.ean);
+                    carritoMap.set(nuevoItem.ean, { ...existing, unidades: (existing.unidades || 0) + (nuevoItem.unidades || 0) });
+                } else {
+                    carritoMap.set(nuevoItem.ean, nuevoItem);
+                }
+            });
+            const mergedItems = Array.from(carritoMap.values());
+
+            acumularProductosEnCarrito(items);
             const sucursalTarget = sucursalActual || row.sucursal;
             await fetch(`${API_URL}/api/cart`, {
                 method: 'PUT',
@@ -194,9 +207,9 @@ export default function ResumenPedidos() {
                     'x-sucursal': sucursalTarget,
                     'x-order-type': orderType,
                 },
-                body: JSON.stringify({ items }),
+                body: JSON.stringify({ items: mergedItems }),
             });
-            alert(`✓ ${items.length} producto(s) cargados al carrito.`);
+            alert(`✓ ${items.length} producto(s) agregados al carrito (total: ${mergedItems.length} productos).`);
         } catch (e) {
             console.error('Error en recarrito:', e);
             alert('Error al cargar los productos al carrito.');
