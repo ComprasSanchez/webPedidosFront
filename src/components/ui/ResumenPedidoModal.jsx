@@ -1,5 +1,5 @@
 // src/features/revisar/ResumenPedidoModal.jsx
-import React from "react";
+import React, { useState } from "react";
 import { API_URL } from "../../config/api";
 
 const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalActual, authFetch }) => {
@@ -151,6 +151,17 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
         return { proveedor, totalUnidades, totalMonto, items };
     }).filter(Boolean);
 
+    // Estado para seleccionar qué proveedores enviar (todos seleccionados por defecto)
+    const [seleccionados, setSeleccionados] = useState(() =>
+        Object.fromEntries(proveedores.map(p => [p.proveedor, true]))
+    );
+
+    const toggleProveedor = (prov) => {
+        setSeleccionados(prev => ({ ...prev, [prov]: !prev[prov] }));
+    };
+
+    const haySeleccionados = Object.values(seleccionados).some(Boolean);
+
     return (
         <div className="resumen_modal_overlay">
             <div className="resumen_modal">
@@ -158,6 +169,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                 <table>
                     <thead>
                         <tr>
+                            <th style={{ width: '30px' }}></th>
                             <th>Proveedor</th>
                             <th>Unidades</th>
                             <th>Total $</th>
@@ -165,7 +177,15 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                     </thead>
                     <tbody>
                         {proveedores.map((prov) => (
-                            <tr key={prov.proveedor}>
+                            <tr key={prov.proveedor} style={{ opacity: seleccionados[prov.proveedor] ? 1 : 0.4 }}>
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!seleccionados[prov.proveedor]}
+                                        onChange={() => toggleProveedor(prov.proveedor)}
+                                        style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                                    />
+                                </td>
                                 <td>
                                     {prov.proveedor.toUpperCase()}
                                     {prov.proveedor.toLowerCase() === 'kellerhoff' && (
@@ -198,12 +218,15 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                 <div className="resumen_modal_button">
                     <button onClick={onClose} className="resumen_modal_button_cerrar">Cerrar</button>
                     <button
-                        onClick={onEnviar}
+                        onClick={() => {
+                            const provs = Object.keys(seleccionados).filter(k => seleccionados[k]);
+                            onEnviar(provs);
+                        }}
                         className="resumen_modal_button_enviar"
-                        disabled={isSending}
+                        disabled={isSending || !haySeleccionados}
                         style={{
-                            opacity: isSending ? 0.6 : 1,
-                            cursor: isSending ? "not-allowed" : "pointer"
+                            opacity: (isSending || !haySeleccionados) ? 0.6 : 1,
+                            cursor: (isSending || !haySeleccionados) ? "not-allowed" : "pointer"
                         }}
                     >
                         {isSending ? "..." : "Enviar pedido"}

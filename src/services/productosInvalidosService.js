@@ -26,7 +26,14 @@ export class ProductosInvalidosService {
             // 2. EAN está vacío o es null/undefined
             // 3. EAN tiene menos de 3 caracteres (muy corto)
             // NOTA: Se permiten códigos alfanuméricos para códigos internos
-            if (this.esEanInvalido(ean)) {
+            //
+            // EXCEPCIÓN: productos provenientes de CSV tienen idQuantio como identificador
+            // primario y pueden no tener EAN (si Plex no lo devolvió). Si hay un idQuantio
+            // válido, el producto es válido aunque le falte EAN.
+            const idQuantio = String(producto.idQuantio || '').trim();
+            const tieneIdQuantioValido = idQuantio.length >= 3 && !/^0+$/.test(idQuantio);
+
+            if (this.esEanInvalido(ean) && !tieneIdQuantioValido) {
                 productosInvalidos.push({
                     ...producto,
                     razonInvalido: this.obtenerRazonInvalido(ean),

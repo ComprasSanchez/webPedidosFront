@@ -411,7 +411,7 @@ export default function RevisarPedido() {
         setMostrarResumen(true);
     };
 
-    const handleEnviarPedido = async () => {
+    const handleEnviarPedido = async (proveedoresSeleccionados) => {
         if (isSending) return;
         setIsSending(true);
 
@@ -421,7 +421,15 @@ export default function RevisarPedido() {
             .filter(item => {
                 // 🆔 Usar carritoId para filtrar noPedir
                 const carritoId = obtenerCarritoId(item);
-                return !noPedirMap[carritoId];
+                if (noPedirMap[carritoId]) return false;
+                // Filtrar por proveedores seleccionados en el modal
+                if (proveedoresSeleccionados) {
+                    const provSel = seleccion[carritoId]?.proveedor;
+                    const motivo = seleccion[carritoId]?.motivo;
+                    const provEfectivo = motivo === "Falta" ? "Falta" : provSel;
+                    if (!proveedoresSeleccionados.includes(provEfectivo)) return false;
+                }
+                return true;
             })
             .map(item => {
                 // 🆔 Usar carritoId para obtener selección

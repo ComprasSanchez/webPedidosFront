@@ -18,16 +18,23 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
         const fileName = file.name.toLowerCase();
         const isZip = fileName.endsWith('.zip');
         const isTxt = fileName.endsWith('.txt');
+        const isCsv = fileName.endsWith('.csv');
 
         // Validaciones según tipo de archivo
-        if (!isZip && !isTxt) {
-            toast.error("Solo se permiten archivos .txt o .zip");
+        if (!isZip && !isTxt && !isCsv) {
+            toast.error("Solo se permiten archivos .txt, .zip o .csv");
             e.target.value = "";
             return;
         }
 
         if (isZip && sucursalCodigo) {
             toast.error("Los archivos ZIP solo se pueden cargar sin sucursal seleccionada");
+            e.target.value = "";
+            return;
+        }
+
+        if (isCsv && sucursalCodigo) {
+            toast.error("Los archivos CSV solo se pueden cargar sin sucursal seleccionada (la distribución está en el archivo)");
             e.target.value = "";
             return;
         }
@@ -59,7 +66,9 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
             // Usar endpoint diferente según tipo de archivo
             const endpoint = isZip
                 ? `${API_URL}/api/reposicion/upload-zip`
-                : `${API_URL}/api/reposicion/upload-txt`;
+                : isCsv
+                    ? `${API_URL}/api/reposicion/upload-csv`
+                    : `${API_URL}/api/reposicion/upload-txt`;
 
             // Preparar upload con autenticación
 
@@ -91,7 +100,7 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
                     return;
                 } else if (res.status === 409) {
                     toast.error(
-                        errorData.mensaje || 'El archivo ZIP ya fue procesado recientemente. Para volver a subirlo intencionalmente, debe cambiar el nombre del archivo ZIP.',
+                        errorData.mensaje || 'El archivo ya fue procesado recientemente. Para volver a subirlo intencionalmente, debe cambiar el nombre del archivo.',
                         {
                             duration: 8000,
                             style: {
@@ -110,7 +119,7 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
 
             const data = await res.json();
 
-            if (isZip) {
+            if (isZip || isCsv) {
                 // Manejo específico para ZIP según el modo
                 if (data.modo === 'SOLO_DEPOSITO') {
                     // 🟢 MODO SOLO DEPO: Flujo directo completado
