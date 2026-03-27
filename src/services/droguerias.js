@@ -164,7 +164,7 @@ export async function getPreciosSuizo(carrito, sucursal, opts = {}) {
     // Si no hay EANs o sucursal, devolver vacío
     const items = (carrito || [])
         .filter(it => it?.ean)
-        .map(it => ({ ean: it.ean, cantidad: it.cantidad || 1 }));
+        .map(it => ({ ean: it.ean, cantidad: it.unidades || it.cantidad || 1 }));
 
     if (!items.length || !sucursal) return [];
 
