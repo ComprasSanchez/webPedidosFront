@@ -129,7 +129,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 return;
             }
 
-            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud });
+            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud }, item.unidades ?? 1);
             if (ideal) {
                 nuevaSeleccion[clave] = { proveedor: ideal, motivo: "Mejor precio" };
             } else {
@@ -207,7 +207,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             const prov = sel.proveedor;
             const motivo = sel.motivo;
             const stockDepo = getStock(item.ean, stockDisponible, sucursal);
-            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud });
+            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud }, item.unidades ?? 1);
 
             if (stockDepo > 0 && prov !== "deposito") {
                 nueva[clave] = { proveedor: "deposito", motivo: "Stock Depo" };

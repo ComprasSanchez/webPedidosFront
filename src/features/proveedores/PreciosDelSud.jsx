@@ -1,4 +1,6 @@
-const PreciosDelSud = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
+import { calcularPrecioEfectivo } from '../revisar/utils/precioTiers';
+
+const PreciosDelSud = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1 }) => {
     const p = precios?.find((m) => m.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
@@ -16,16 +18,20 @@ const PreciosDelSud = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
 
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
-    const precio = p.offerPrice ?? p.priceList;
+    const { precioEfectivo, tierActivo, siguienteTier } = calcularPrecioEfectivo(p.priceList, p.offers, cantidad);
+    const precio = precioEfectivo;
+
+    if (precio == null) return <div className={clase}>SIN PRECIO</div>;
 
     return (
         <div className={clase} onClick={handleClick}>
-            {p.offerPrice != null && p.priceList != null && (
+            {/* Tachado solo si hay un tier activo con descuento real */}
+            {tierActivo && p.priceList != null && precio < p.priceList && (
                 <div style={{ fontSize: "12px", color: "#555" }}>
                     <s>${p.priceList.toFixed(2)}</s>
                 </div>
             )}
-            <div style={{ fontWeight: "bold" }}>
+            <div style={{ fontWeight: tierActivo ? "bold" : "normal" }}>
                 ${precio?.toFixed(2)}
                 <span
                     style={{
@@ -37,11 +43,10 @@ const PreciosDelSud = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
                     ✔
                 </span>
             </div>
-            {p.offers?.length > 0 && (
-                <div style={{ marginTop: "4px", fontSize: "11px", color: "#333" }}>
-                    {p.offers.map((o, idx) => (
-                        <div key={idx}>{o.descripcion}</div>
-                    ))}
+            {/* Hint: próximo tier no alcanzado */}
+            {siguienteTier && (
+                <div style={{ marginTop: "3px", fontSize: "11px", color: "#e67e00", fontWeight: "500" }}>
+                    Con {siguienteTier.minimo_unids}u: ${siguienteTier.precioOferta.toFixed(2)}
                 </div>
             )}
         </div>

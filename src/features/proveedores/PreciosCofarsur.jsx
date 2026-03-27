@@ -1,4 +1,6 @@
-const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
+import { calcularPrecioEfectivo } from '../revisar/utils/precioTiers';
+
+const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1 }) => {
     const p = precios.find((c) => c.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
@@ -17,26 +19,24 @@ const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect }) =>
 
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
-    const precio = p.offerPrice ?? p.priceList;
+    const { precioEfectivo, tierActivo, siguienteTier } = calcularPrecioEfectivo(p.priceList, p.offers, cantidad);
+    const precio = precioEfectivo;
+
     if (!precio || precio === 0) return <div className={clase}>SIN PRECIO</div>;
 
-    // 🔧 EXTRAER CANTIDAD MÍNIMA
-    const minUnits = Number.isFinite(p.minimo_unids) ? p.minimo_unids : null;
-
     const handleClick = () => {
-        if (p && precio && precio > 0) {
-            onSelect(idQuantio, "cofarsur");
-        }
+        if (precio > 0) onSelect(idQuantio, "cofarsur");
     };
 
     return (
         <div className={clase} onClick={handleClick}>
-            {p.offerPrice != null && p.priceList != null && p.offerPrice < p.priceList && (
+            {/* Tachado solo si el tier activo da descuento real */}
+            {tierActivo && p.priceList != null && precio < p.priceList && (
                 <div style={{ fontSize: "12px", color: "#555" }}>
                     <s>${p.priceList.toFixed(2)}</s>
                 </div>
             )}
-            <div style={{ fontWeight: p.offerPrice < p.priceList ? "bold" : "normal" }}>
+            <div style={{ fontWeight: tierActivo ? "bold" : "normal" }}>
                 ${precio.toFixed(2)}
                 <span
                     style={{
@@ -48,20 +48,14 @@ const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect }) =>
                     ✔
                 </span>
             </div>
-            {/* ✅ MOSTRAR OFERTAS Y CANTIDAD MÍNIMA */}
-            {(p.offers?.length > 0 || minUnits > 1) && (
-                <div style={{ marginTop: "4px", fontSize: "11px", color: "#333" }}>
-                    {/* Mostrar cantidad mínima si es mayor a 1 */}
-                    {minUnits > 1 && <div>Min.: {minUnits}</div>}
-                    {/* Mostrar ofertas */}
-                    {p.offers?.map((o, idx) => (
-                        <div key={idx}>{o.descripcion}</div>
-                    ))}
+            {/* Hint: próximo tier no alcanzado */}
+            {siguienteTier && (
+                <div style={{ marginTop: "3px", fontSize: "11px", color: "#e67e00", fontWeight: "500" }}>
+                    Con {siguienteTier.minimo_unids}u: ${siguienteTier.precioOferta.toFixed(2)}
                 </div>
             )}
         </div>
     );
 };
-
 
 export default PreciosCofarsur;

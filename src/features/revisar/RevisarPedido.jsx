@@ -269,7 +269,7 @@ export default function RevisarPedido() {
             })
             .forEach(item => {
                 const cId = obtenerCarritoId(item);
-                const mejor = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
+                const mejor = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur }, item.unidades ?? 1);
                 if (mejor) handleElegirProveedor(cId, mejor);
             });
     };
@@ -285,7 +285,7 @@ export default function RevisarPedido() {
         if (!item) return;
         const stockDepo = getStock(item.idQuantio, stockDisponible, sucursalActual);
         const match = matchConvenio(item, reglas);
-        const proveedorIdeal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
+        const proveedorIdeal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur }, item.unidades ?? 1);
 
         // Validar que no se pueda seleccionar depósito si el stock no es válido
         if (nuevoProveedor === "deposito") {
@@ -363,7 +363,7 @@ export default function RevisarPedido() {
                                 prov === "delsud" ? preciosDelSud : [];
 
                 const p = fuente.find(x => x.ean === item.ean);
-                const precio = getPrecioFinal(p, prov);
+                const precio = getPrecioFinal(p, prov, item.unidades ?? 1);
                 const sinPrecio = !(typeof precio === "number" && precio > 0);
                 return sinPrecio;
             });
@@ -385,7 +385,7 @@ export default function RevisarPedido() {
         }
 
         const carritoConPrecios = (carritoSinNoPedir || []).map((item) => {
-            const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud });
+            const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud }, item.unidades ?? 1);
             const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...(preciosDelSud || []), ...stockDisponible].find(p => (p.idProducto ?? p.idQuantio) === item.idQuantio);
             const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.idProducto ?? fuente?.id ?? null;
             return {
@@ -445,16 +445,16 @@ export default function RevisarPedido() {
                     precio = 0;
                 } else if (proveedor === "monroe") {
                     const p = preciosMonroe.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "monroe");
+                    precio = getPrecioFinal(p, "monroe", item.unidades ?? 1);
                 } else if (proveedor === "suizo") {
                     const p = preciosSuizo.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "suizo");
+                    precio = getPrecioFinal(p, "suizo", item.unidades ?? 1);
                 } else if (proveedor === "cofarsur") {
                     const p = preciosCofarsur.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "cofarsur");
+                    precio = getPrecioFinal(p, "cofarsur", item.unidades ?? 1);
                 } else if (proveedor === "delsud") {
                     const p = preciosDelSud.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "delsud");
+                    precio = getPrecioFinal(p, "delsud", item.unidades ?? 1);
                 } else if (proveedor === "kellerhoff") {
                     precio = 0;
                 } else if (proveedor === "suizaTuc") {

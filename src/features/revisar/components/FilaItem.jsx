@@ -113,6 +113,7 @@ export default function FilaItem({
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosMonroe}
+                    cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "monroe"}
                     onSelect={onElegirProveedor}
                 />
@@ -124,6 +125,7 @@ export default function FilaItem({
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosSuizo}
+                    cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "suizo"}
                     onSelect={onElegirProveedor}
                 />
@@ -135,6 +137,7 @@ export default function FilaItem({
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosCofarsur}
+                    cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "cofarsur"}
                     onSelect={onElegirProveedor}
                 />
@@ -168,6 +171,7 @@ export default function FilaItem({
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosDelSud}
+                    cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "delsud"}
                     onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
                 />
