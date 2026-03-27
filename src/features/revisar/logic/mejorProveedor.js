@@ -8,10 +8,10 @@ export function precioValido(p, proveedor = null, cantidad = 1) {
 
 export function mejorProveedor(ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [] }, cantidad = 1) {
     const candidatos = [
-        { proveedor: "monroe",   data: preciosMonroe.find(p => p.ean === ean && p.stock > 0 && precioValido(p, "monroe",   cantidad)) },
-        { proveedor: "suizo",    data: preciosSuizo.find(p  => p.ean === ean && p.stock > 0 && precioValido(p, "suizo",    cantidad)) },
+        { proveedor: "monroe", data: preciosMonroe.find(p => p.ean === ean && p.stock > 0 && precioValido(p, "monroe", cantidad)) },
+        { proveedor: "suizo", data: preciosSuizo.find(p => p.ean === ean && p.stock > 0 && precioValido(p, "suizo", cantidad)) },
         { proveedor: "cofarsur", data: preciosCofarsur.find(p => p.ean === ean && p.stock > 0 && precioValido(p, "cofarsur", cantidad)) },
-        { proveedor: "delsud",   data: preciosDelSud.find(p  => p.ean === ean && p.stock > 0 && precioValido(p, "delsud",   cantidad)) },
+        { proveedor: "delsud", data: preciosDelSud.find(p => p.ean === ean && p.stock > 0 && precioValido(p, "delsud", cantidad)) },
     ].filter(p => p.data);
 
     if (!candidatos.length) return null;
