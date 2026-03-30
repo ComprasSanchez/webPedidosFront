@@ -566,6 +566,7 @@ export async function getPreciosKellerhoff(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};
     const timeoutMs = opts.timeoutMs ?? 15000;
+    const apiBase = opts.apiBase;
 
     const items = (carrito || [])
         .filter(it => it?.ean)
@@ -581,7 +582,7 @@ export async function getPreciosKellerhoff(carrito, sucursal, opts = {}) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...baseHeaders },
                 credentials: 'include',
-                body: JSON.stringify({ sucursal, items }),
+                body: JSON.stringify({ sucursal, items, apiBase }),
                 signal: controller.signal
             }),
             timeoutMs,
