@@ -1,4 +1,6 @@
 // logic/prioridad.js
+import { getPrecioFinal } from "../utils/precioUtils";
+
 export function proveedorViable(slug, ean, ctx) {
     if (slug === "deposito") {
         const s = ctx.stockDeposito.find(x => x.ean === ean)?.stock ?? 0;
@@ -12,7 +14,7 @@ export function proveedorViable(slug, ean, ctx) {
                 : slug === "delsud" ? (ctx.preciosDelSud ?? [])
                     : slug === "kellerhoff" ? (ctx.preciosKellerhoff ?? []) : [];
     const p = fuente.find(x => x.ean === ean);
-    const val = p?.offerPrice ?? p?.priceList;
+    const val = getPrecioFinal(p, slug, 1);
     return p?.stock > 0 && typeof val === "number" && val > 0;
 }
 

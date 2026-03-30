@@ -24,11 +24,12 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) 
     // 📦 Mostrar sin stock si vino explícito
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
-    const precio = p.offerPrice ?? p.priceList;
+    const precio = (typeof p.finalPrice === "number") ? p.finalPrice : (p.offerPrice ?? p.priceList);
+    const tieneDescuento = typeof p.priceList === "number" && typeof precio === "number" && precio < p.priceList;
 
     return (
         <div className={clase} onClick={handleClick}>
-            {p.offerPrice != null && p.priceList != null && p.offerPrice < p.priceList && (
+            {tieneDescuento && (
                 <div style={{ fontSize: "12px", color: "#555" }}>
                     <s>${p.priceList.toFixed(2)}</s>
                 </div>
