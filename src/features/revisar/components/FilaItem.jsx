@@ -30,6 +30,7 @@ export default function FilaItem({
     preciosSuizo,
     preciosCofarsur,
     preciosDelSud,
+    preciosKellerhoff,
     stockDisponible,
     onElegirProveedor,
     onMotivo,
@@ -55,7 +56,7 @@ export default function FilaItem({
     const stockDepoValido = typeof stockDepo === "number" && stockDepo > 0;
     const hayAlgunaDrogConPrecio = hayDrogConPrecioValido(
         item.idQuantio || item.ean,
-        { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud },
+        { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff },
         precioValido
     );
     const hayAlgoPedible = hayDepo || hayAlgunaDrogConPrecio;
@@ -144,12 +145,13 @@ export default function FilaItem({
             </td>
 
             {/* Kellerhoff (kellerhoff en slug si así lo usás en back/estado) */}
-            <td className={"celda_kellerhoff" + (proveedorActual === "kellerhoff" ? " celda_activa" : "")}>
+            <td className={proveedorActual === "kellerhoff" ? "celda_activa" : ""}>
                 <PreciosKellerhoff
                     idQuantio={itemId}
                     ean={item.ean}
+                    precios={preciosKellerhoff}
                     seleccionado={proveedorActual === "kellerhoff"}
-                    onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
+                    onSelect={onElegirProveedor}
                 />
             </td>
 

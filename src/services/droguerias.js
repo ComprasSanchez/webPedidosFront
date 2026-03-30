@@ -562,6 +562,65 @@ const delay = (ms = 300) =>
     new Promise((res) => setTimeout(res, ms));
 
 
+export async function getPreciosKellerhoff(carrito, sucursal, opts = {}) {
+    const f = opts.fetch || nativeFetch;
+    const baseHeaders = opts.headers || {};
+    const timeoutMs = opts.timeoutMs ?? 15000;
+
+    const items = (carrito || [])
+        .filter(it => it?.ean)
+        .map(it => ({ ean: it.ean, cantidad: it.cantidad || it.unidades || 1 }));
+
+    if (!items.length || !sucursal) return [];
+
+    const controller = new AbortController();
+
+    try {
+        const res = await withTimeout(
+            f(`${API_URL}/api/droguerias/kellerhoff/batch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...baseHeaders },
+                credentials: 'include',
+                body: JSON.stringify({ sucursal, items }),
+                signal: controller.signal
+            }),
+            timeoutMs,
+            controller
+        );
+
+        if (!res.ok) throw new Error('Error consultando Kellerhoff batch');
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const resultados = data.resultados || {};
+
+        return items.map(it => {
+            const r = resultados[it.ean];
+            if (!r) {
+                return { ean: it.ean, stock: false, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], _status: res.status };
+            }
+            const stock = r.stock === true;
+            const priceList = typeof r.priceList === 'number' ? r.priceList : null;
+            const offerPrice = typeof r.offerPrice === 'number' ? r.offerPrice : null;
+            const finalPrice = offerPrice ?? priceList ?? null;
+            const effectiveDiscountPct = (typeof priceList === 'number' && typeof finalPrice === 'number')
+                ? Number(((1 - (finalPrice / priceList)) * 100).toFixed(2))
+                : null;
+            const offers = Array.isArray(r.offers) ? r.offers : [];
+            return { ean: it.ean, stock, priceList, offerPrice, finalPrice, effectiveDiscountPct, offers, _status: res.status };
+        });
+
+    } catch (err) {
+        return items.map(it => ({
+            ean: it.ean, stock: null, priceList: null, offerPrice: null,
+            finalPrice: null, effectiveDiscountPct: null, offers: [],
+            error: err.message || 'Error de conexión', _status: 0
+        }));
+    }
+}
+
+
 export async function getPreciosDelSud(carrito, sucursal, opts = {}) {
     const f = opts.fetch || nativeFetch;
     const baseHeaders = opts.headers || {};

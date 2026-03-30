@@ -3,7 +3,7 @@ import { pickPorPrioridad } from "../logic/prioridad";
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 import { useCarrito } from "../../../context/CarritoContext";
 
-export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [], stockDisponible, matchConvenio, getStock, sucursal }) {
+export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [], preciosKellerhoff = [], stockDisponible, matchConvenio, getStock, sucursal }) {
     const { obtenerCarritoId } = useCarrito();
     const [seleccion, setSeleccion] = useState({});
     const prevEansRef = useRef([]);
@@ -62,6 +62,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             (preciosSuizo && preciosSuizo.length) ||
             (preciosCofarsur && preciosCofarsur.length) ||
             (preciosDelSud && preciosDelSud.length) ||
+            (preciosKellerhoff && preciosKellerhoff.length) ||
             (stockDisponible && stockDisponible.length);
         if (!hayPrecios) {
             return;
@@ -87,7 +88,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         reglasLoadedRef.current = true;
         preciosLoadedRef.current = true;
 
-        const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, stockDeposito: stockDisponible };
+        const ctx = { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDeposito: stockDisponible };
 
         let productosParaProcesar;
         if (esInicialCarga) {
@@ -129,7 +130,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 return;
             }
 
-            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud }, item.unidades ?? 1);
+            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1);
             if (ideal) {
                 nuevaSeleccion[clave] = { proveedor: ideal, motivo: "Mejor precio" };
             } else {
@@ -150,7 +151,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         }
 
         prevEansRef.current = productosEsenciales.map(item => obtenerCarritoId(item)).sort();
-    }, [productosEsenciales, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, stockDisponible, matchConvenio, getStock, obtenerCarritoId]);
+    }, [productosEsenciales, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock, obtenerCarritoId]);
 
     useEffect(() => {
 
@@ -162,6 +163,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 suizo: !!(preciosSuizo && preciosSuizo[item.ean]),
                 cofarsur: !!(preciosCofarsur && preciosCofarsur[item.ean]),
                 delsud: !!(preciosDelSud && preciosDelSud.find && preciosDelSud.find(p => p.ean === item.ean)),
+                kellerhoff: !!(preciosKellerhoff && preciosKellerhoff.find && preciosKellerhoff.find(p => p.ean === item.ean)),
                 stock: !!(stockDisponible && stockDisponible[item.ean])
             })).sort((a, b) => a.carritoId.localeCompare(b.carritoId))
         );
@@ -207,7 +209,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             const prov = sel.proveedor;
             const motivo = sel.motivo;
             const stockDepo = getStock(item.ean, stockDisponible, sucursal);
-            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud }, item.unidades ?? 1);
+            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1);
 
             if (stockDepo > 0 && prov !== "deposito") {
                 nueva[clave] = { proveedor: "deposito", motivo: "Stock Depo" };
@@ -251,9 +253,10 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             suizo: !!(preciosSuizo && preciosSuizo[item.ean]),
             cofarsur: !!(preciosCofarsur && preciosCofarsur[item.ean]),
             delsud: !!(preciosDelSud && preciosDelSud.find && preciosDelSud.find(p => p.ean === item.ean)),
+            kellerhoff: !!(preciosKellerhoff && preciosKellerhoff.find && preciosKellerhoff.find(p => p.ean === item.ean)),
             stock: !!(stockDisponible && stockDisponible[item.ean])
         })).sort((a, b) => a.carritoId.localeCompare(b.carritoId));
-    }, [productosEsenciales, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, obtenerCarritoId]);
+    }, [productosEsenciales, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, obtenerCarritoId]);
 
     return { seleccion, setSeleccion: setSeleccionManual };
 }

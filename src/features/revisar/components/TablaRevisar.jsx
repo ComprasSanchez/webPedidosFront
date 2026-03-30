@@ -21,6 +21,7 @@ export default function TablaRevisar({
     preciosSuizo,
     preciosCofarsur,
     preciosDelSud,
+    preciosKellerhoff,
     stockDisponible,
     seleccion,
     onElegirProveedor,
@@ -80,6 +81,7 @@ export default function TablaRevisar({
                                 preciosSuizo={preciosSuizo}
                                 preciosCofarsur={preciosCofarsur}
                                 preciosDelSud={preciosDelSud}
+                                preciosKellerhoff={preciosKellerhoff}
                                 stockDisponible={stockDisponible}
                                 onElegirProveedor={onElegirProveedor}
                                 onMotivo={onMotivo}

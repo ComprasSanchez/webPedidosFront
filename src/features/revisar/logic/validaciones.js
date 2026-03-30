@@ -7,12 +7,13 @@ export function hayStockDeposito(ean, stockDeposito = []) {
 }
 
 // ¿Alguna droguería tiene stock y precio válido?
-export function hayDrogConPrecioValido(ean, { preciosMonroe = [], preciosSuizo = [], preciosCofarsur = [], preciosDelSud = [] }, precioValidoFn) {
+export function hayDrogConPrecioValido(ean, { preciosMonroe = [], preciosSuizo = [], preciosCofarsur = [], preciosDelSud = [], preciosKellerhoff = [] }, precioValidoFn) {
     const m = preciosMonroe.find(p => p.ean === ean && p.stock > 0 && precioValidoFn(p));
     const s = preciosSuizo.find(p => p.ean === ean && p.stock > 0 && precioValidoFn(p));
     const c = preciosCofarsur.find(p => p.ean === ean && p.stock > 0 && precioValidoFn(p));
     const ds = preciosDelSud.find(p => p.ean === ean && p.stock > 0 && precioValidoFn(p));
-    return !!(m || s || c || ds);
+    const k = preciosKellerhoff.find(p => p.ean === ean && p.stock > 0 && precioValidoFn(p));
+    return !!(m || s || c || ds || k);
 }
 
 // ¿El motivo “Stock Depo” debe bloquearse (auto-fijado)?

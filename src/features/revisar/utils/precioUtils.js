@@ -36,11 +36,12 @@ export function precioValido(producto, proveedor = null, cantidad = 1) {
  * Obtiene precios para el resumen (usado en RevisarPedido).
  * Acepta `cantidad` para respetar los tiers de descuento por volumen.
  */
-export function getPreciosItem(ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud }, cantidad = 1) {
+export function getPreciosItem(ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, cantidad = 1) {
     const monroe = preciosMonroe.find(p => p.ean === ean);
     const suizo = preciosSuizo.find(p => p.ean === ean);
     const cofarsur = preciosCofarsur.find(p => p.ean === ean);
     const delsud = preciosDelSud?.find(p => p.ean === ean);
+    const kellerhoff = preciosKellerhoff?.find(p => p.ean === ean);
 
     return {
         deposito: 0,
@@ -48,5 +49,6 @@ export function getPreciosItem(ean, { preciosMonroe, preciosSuizo, preciosCofars
         suizo: getPrecioFinal(suizo, 'suizo', cantidad),
         cofarsur: getPrecioFinal(cofarsur, 'cofarsur', cantidad),
         delsud: getPrecioFinal(delsud, 'delsud', cantidad),
+        kellerhoff: getPrecioFinal(kellerhoff, 'kellerhoff', cantidad),
     };
 }

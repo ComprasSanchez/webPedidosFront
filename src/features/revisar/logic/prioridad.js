@@ -4,13 +4,13 @@ export function proveedorViable(slug, ean, ctx) {
         const s = ctx.stockDeposito.find(x => x.ean === ean)?.stock ?? 0;
         return s > 0;
     }
-    if (slug === "kellerhoff") return true; // como antes
     if (slug === "suizaTuc") return true; // siempre viable para perfumería
 
     const fuente = slug === "monroe" ? ctx.preciosMonroe
         : slug === "suizo" ? ctx.preciosSuizo
             : slug === "cofarsur" ? ctx.preciosCofarsur
-                : slug === "delsud" ? (ctx.preciosDelSud ?? []) : [];
+                : slug === "delsud" ? (ctx.preciosDelSud ?? [])
+                    : slug === "kellerhoff" ? (ctx.preciosKellerhoff ?? []) : [];
     const p = fuente.find(x => x.ean === ean);
     const val = p?.offerPrice ?? p?.priceList;
     return p?.stock > 0 && typeof val === "number" && val > 0;
