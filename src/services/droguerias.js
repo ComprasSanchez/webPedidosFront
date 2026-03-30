@@ -5,7 +5,7 @@ import { API_URL } from "../config/api";
 import { http } from "../lib/http";
 const nativeFetch = typeof window !== 'undefined' ? window.fetch.bind(window) : fetch;
 
-function withTimeout(promise, ms = 12000, controller) {
+function withTimeout(promise, ms = 15000, controller) {
     const id = setTimeout(() => controller.abort(), ms);
     return promise.finally(() => clearTimeout(id));
 }
