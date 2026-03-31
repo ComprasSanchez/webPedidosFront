@@ -9,7 +9,7 @@ function useTxtUpload({ sucursalCodigo, replaceCarrito, acumularProductosEnCarri
     const [duplicateItems, setDuplicateItems] = useState([]);
     const [pendingItems, setPendingItems] = useState([]);
 
-    // Handler para subir archivo (TXT individual o ZIP masivo)
+    // Handler para subir archivo (TXT individual, ZIP masivo o CSV masivo)
     const handleUploadTxt = async (e) => {
         const file = e.target.files[0];
         if (!file) return;

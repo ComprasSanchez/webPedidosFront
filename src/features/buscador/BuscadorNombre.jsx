@@ -140,7 +140,7 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                         <label
                             htmlFor="uploadTxt"
                             className="buscador_btn_buscar"
-                            title="Subir archivo TXT o ZIP"
+                            title="Subir archivo TXT, ZIP o CSV"
                         >
                             {loadingTxt ? (
                                 <>
@@ -155,7 +155,7 @@ const BuscadorNombre = ({ onProductoEncontrado, onLimpiarResultados, sucursalCod
                         <input
                             id="uploadTxt"
                             type="file"
-                            accept=".txt,.zip"
+                            accept=".txt,.zip,.csv"
                             onChange={handleUploadTxt}
                             style={{ display: "none" }}
                             disabled={loadingTxt}
