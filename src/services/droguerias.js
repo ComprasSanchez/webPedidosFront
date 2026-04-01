@@ -616,7 +616,7 @@ export async function getPreciosKellerhoff(carrito, sucursal, opts = {}) {
         return items.map(it => ({
             ean: it.ean, stock: null, priceList: null, offerPrice: null,
             finalPrice: null, effectiveDiscountPct: null, offers: [],
-            error: err.message || 'Error de conexión', _status: 0
+            error: err.message || 'Error de conexión', _status: 0, manualOnly: true
         }));
     }
 }

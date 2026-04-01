@@ -3,14 +3,34 @@ import React from "react";
 const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
     const p = precios.find((m) => m.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
+    const modoArchivo = p?.manualOnly === true;
 
     const handleClick = () => {
-        if (p && p.priceList != null) {
+        if (modoArchivo || (p && p.priceList != null)) {
             onSelect(idQuantio, "kellerhoff");
         }
     };
 
     if (!p) return <div className={clase}>No disponible</div>;
+
+    if (modoArchivo) {
+        return (
+            <div className={clase} onClick={handleClick}>
+                <div style={{ fontWeight: "bold" }}>
+                    Archivo
+                    <span
+                        style={{
+                            color: "#00bcd4",
+                            marginLeft: "5px",
+                            visibility: seleccionado ? "visible" : "hidden",
+                        }}
+                    >
+                        ✔
+                    </span>
+                </div>
+            </div>
+        );
+    }
 
     // ⚠️ Mostrar error si hubo fallo HTTP
     if (p._status >= 500) {
