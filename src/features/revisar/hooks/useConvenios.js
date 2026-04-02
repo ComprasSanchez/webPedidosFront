@@ -2,6 +2,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { fetchConvenios } from "../../../services/convenios";
 
+function normalizeProveedorSlug(value) {
+    const slug = String(value || "").toLowerCase().trim();
+    if (slug === "kellerof") return "kellerhoff";
+    return slug;
+}
+
 export function useConvenios({ sucursal }) {
     const [reglas, setReglas] = useState(null);
     const [ready, setReady] = useState(false);
@@ -22,7 +28,7 @@ export function useConvenios({ sucursal }) {
                 const porEan = Object.fromEntries(
                     Object.entries(byEAN).map(([ean, prioridad]) => [
                         String(ean),
-                        (Array.isArray(prioridad) ? prioridad : []).map((s) => String(s).toLowerCase()),
+                        (Array.isArray(prioridad) ? prioridad : []).map((s) => normalizeProveedorSlug(s)),
                     ])
                 );
 

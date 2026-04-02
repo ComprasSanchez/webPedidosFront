@@ -997,7 +997,6 @@ export default function RevisarPedido() {
                                 🧴 Perfumería ({carrito.filter(item => item.esPerfumeria === true).length})
                             </button>
                         </div>
-                        <div className="filtro_separador" />
                     </>
 
                     {/* Grupo stock depósito */}
@@ -1018,6 +1017,34 @@ export default function RevisarPedido() {
                                 ⚡ Pasar {cantConDepoActivo} a mejor precio
                             </button>
                         )}
+                    </div>
+                    <div className="filtro_grupo">
+                        <button
+                            className="filtro_btn active"
+                            onClick={() => {
+                                const filas = carritoFiltrado.map(item => {
+                                    const carritoId = obtenerCarritoId(item);
+                                    const prov = seleccion[carritoId]?.proveedor || '';
+                                    return [
+                                        item.ean,
+                                        (item.descripcion || '').replace(/"/g, '""'),
+                                        item.unidades,
+                                        sucursalActual,
+                                        prov
+                                    ].join(';');
+                                });
+                                const csv = ['sep=;', 'Codebar;Producto;Cantidad;Sucursal;Drogueria', ...filas].join('\n');
+                                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `productos_${sucursalActual || 'pedido'}.csv`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            }}
+                        >
+                            📥 Exportar CSV
+                        </button>
                     </div>
                 </div>
             )}
@@ -1053,32 +1080,6 @@ export default function RevisarPedido() {
 
             {carritoFiltrado.length > 0 && (
                 <div className="revisar_footer">
-                    <button
-                        className="revisar_btn_exportar"
-                        onClick={() => {
-                            const filas = carritoFiltrado.map(item => {
-                                const carritoId = obtenerCarritoId(item);
-                                const prov = seleccion[carritoId]?.proveedor || '';
-                                return [
-                                    item.ean,
-                                    `"${(item.descripcion || '').replace(/"/g, '""')}"`,
-                                    item.unidades,
-                                    sucursalActual,
-                                    prov
-                                ].join(',');
-                            });
-                            const csv = ['Codebar,Producto,Cantidad,Sucursal,Drogueria', ...filas].join('\n');
-                            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `productos_${sucursalActual || 'pedido'}.csv`;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                        }}
-                    >
-                        📥 Exportar CSV
-                    </button>
                     <button className="revisar_btn_confirmar" onClick={handleConfirmar}>
                         Confirmar pedido
                     </button>

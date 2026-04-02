@@ -1,6 +1,6 @@
 // hooks/usePreciosYStock.js
 import { useEffect, useState, useRef, useMemo } from "react";
-import { getPreciosMonroe, getPreciosSuizo, getPreciosCofarsur, getPreciosDelSud, getPreciosKellerhoff, getStockDisponible } from "../../../services/droguerias";
+import { getPreciosMonroe, getPreciosSuizo, getPreciosCofarsur, getPreciosDelSud, getStockDisponible } from "../../../services/droguerias";
 
 export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, usuario, soloDeposito = false }) {
     const [preciosMonroe, setPM] = useState([]);
@@ -95,12 +95,11 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                     'x-user-rol': usuario?.rol || 'sucursal'
                 };
 
-                const [m, s, c, ds, k, d] = await Promise.all([
+                const [m, s, c, ds, d] = await Promise.all([
                     getPreciosMonroe(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getPreciosSuizo(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getPreciosCofarsur(productosParaConsulta, sucursal, { fetch: authFetch, headers: headersConRol }),
                     getPreciosDelSud(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
-                    getPreciosKellerhoff(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                 ]);
 
@@ -156,18 +155,7 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                     });
                     return combined;
                 });
-                setPK(prev => {
-                    const combined = [...prev];
-                    k.forEach(nuevoItem => {
-                        const existingIndex = combined.findIndex(item => item.ean === nuevoItem.ean);
-                        if (existingIndex >= 0) {
-                            combined[existingIndex] = nuevoItem;
-                        } else {
-                            combined.push(nuevoItem);
-                        }
-                    });
-                    return combined;
-                });
+                setPK([]);
                 setSD(prev => {
                     const combined = [...prev];
                     d.forEach(nuevoItem => {
