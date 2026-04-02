@@ -162,6 +162,40 @@ export default function ResumenPedidos() {
         }
     };
 
+    const handleDescargarItems = async (row) => {
+        try {
+            const res = await authFetch(`${API_URL}/api/resumen-pedidos/${row.id}/items`);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || `Error ${res.status} al obtener los productos`);
+                return;
+            }
+            const { items } = await res.json();
+            if (!items || items.length === 0) {
+                alert('No se encontraron productos para este pedido.');
+                return;
+            }
+            const bom = "\uFEFF";
+            const header = "EAN;Descripcion;Unidades";
+            const rows = items.map(i =>
+                `${i.ean ?? ""};${(i.descripcion ?? "").replace(/;/g, ",")};${i.unidades ?? ""}`
+            );
+            const csv = bom + [header, ...rows].join("\r\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Pedido_${row.proveedor}_${row.sucursal}_${row.id}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error("Error descargando items:", e);
+            alert("Error al generar el archivo.");
+        }
+    };
+
     const handleRecarrito = async (row) => {
         if (cargandoRecarrito) return;
         const confirmar = window.confirm(
@@ -394,16 +428,25 @@ export default function ResumenPedidos() {
                                                 </button>
                                             )}
                                             {row.proveedor !== "kellerhoff" && row.proveedor !== "suizaTuc" && (
-                                                <button
-                                                    className="rped_btn_recarrito"
-                                                    onClick={() => handleRecarrito(row)}
-                                                    disabled={cargandoRecarrito === row.id}
-                                                    title="Cargar al carrito"
-                                                >
-                                                    {cargandoRecarrito === row.id
-                                                        ? <span style={{ fontSize: "0.75rem" }}>...</span>
-                                                        : <FaCartPlus />}
-                                                </button>
+                                                <>
+                                                    <button
+                                                        className="rped_btn_recarrito"
+                                                        onClick={() => handleRecarrito(row)}
+                                                        disabled={cargandoRecarrito === row.id}
+                                                        title="Cargar al carrito"
+                                                    >
+                                                        {cargandoRecarrito === row.id
+                                                            ? <span style={{ fontSize: "0.75rem" }}>...</span>
+                                                            : <FaCartPlus />}
+                                                    </button>
+                                                    <button
+                                                        className="rped_btn_descarga"
+                                                        onClick={() => handleDescargarItems(row)}
+                                                        title="Descargar CSV del pedido"
+                                                    >
+                                                        <FaDownload />
+                                                    </button>
+                                                </>
                                             )}
                                         </td>
                                     </tr>
