@@ -204,7 +204,7 @@ export default function RevisarPedido() {
         };
     }, [carrito]);
 
-    const { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, loading: loadingPS }
+    const { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, stockDisponible, loading: loadingPS }
         = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario, soloDeposito });
 
     const { reglas, ready, matchConvenio } = useConvenios({ sucursal: sucursalActual });
@@ -213,12 +213,12 @@ export default function RevisarPedido() {
     const getStockConSucursal = useCallback((idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual), [sucursalActual]);
 
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
-        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual
+        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual
     });
 
     const { noPedirMap, toggleNoPedir, persistirCarrito } = usePersistenciaCarrito({ carrito, usuario, replaceCarrito });
 
-    const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || preciosDelSud?.length || preciosKellerhoff?.length || stockDisponible?.length);
+    const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || preciosDelSud?.length || stockDisponible?.length);
     const loading = loadingPS || !ready;
 
     // 🏪 Conteos para filtro depósito
@@ -269,7 +269,7 @@ export default function RevisarPedido() {
             })
             .forEach(item => {
                 const cId = obtenerCarritoId(item);
-                const mejor = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur }, item.unidades ?? 1);
+                const mejor = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
                 if (mejor) handleElegirProveedor(cId, mejor);
             });
     };
@@ -285,7 +285,7 @@ export default function RevisarPedido() {
         if (!item) return;
         const stockDepo = getStock(item.idQuantio, stockDisponible, sucursalActual);
         const match = matchConvenio(item, reglas);
-        const proveedorIdeal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur }, item.unidades ?? 1);
+        const proveedorIdeal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
 
         // Validar que no se pueda seleccionar depósito si el stock no es válido
         if (nuevoProveedor === "deposito") {
@@ -355,17 +355,15 @@ export default function RevisarPedido() {
                 const motivo = seleccion[carritoId]?.motivo;
                 if (motivo === "Falta") return false;
                 const prov = seleccion[carritoId]?.proveedor;
-                if (!prov || prov === "deposito" || prov === "suizaTuc") return false;
+                if (!prov || prov === "deposito" || prov === "kellerhoff" || prov === "suizaTuc" || prov === "delsud") return false;
                 const fuente =
                     prov === "monroe" ? preciosMonroe :
                         prov === "suizo" ? preciosSuizo :
                             prov === "cofarsur" ? preciosCofarsur :
-                                prov === "delsud" ? preciosDelSud :
-                                    prov === "kellerhoff" ? preciosKellerhoff : [];
+                                prov === "delsud" ? preciosDelSud : [];
 
                 const p = fuente.find(x => x.ean === item.ean);
-                if (prov === "kellerhoff" && p?.manualOnly) return false;
-                const precio = getPrecioFinal(p, prov, item.unidades ?? 1);
+                const precio = getPrecioFinal(p, prov);
                 const sinPrecio = !(typeof precio === "number" && precio > 0);
                 return sinPrecio;
             });
@@ -387,8 +385,8 @@ export default function RevisarPedido() {
         }
 
         const carritoConPrecios = (carritoSinNoPedir || []).map((item) => {
-            const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1);
-            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...(preciosDelSud || []), ...(preciosKellerhoff || []), ...stockDisponible].find(p => (p.idProducto ?? p.idQuantio) === item.idQuantio);
+            const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud });
+            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...(preciosDelSud || []), ...stockDisponible].find(p => (p.idProducto ?? p.idQuantio) === item.idQuantio);
             const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.idProducto ?? fuente?.id ?? null;
             return {
                 ...item,
@@ -447,19 +445,18 @@ export default function RevisarPedido() {
                     precio = 0;
                 } else if (proveedor === "monroe") {
                     const p = preciosMonroe.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "monroe", item.unidades ?? 1);
+                    precio = getPrecioFinal(p, "monroe");
                 } else if (proveedor === "suizo") {
                     const p = preciosSuizo.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "suizo", item.unidades ?? 1);
+                    precio = getPrecioFinal(p, "suizo");
                 } else if (proveedor === "cofarsur") {
                     const p = preciosCofarsur.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "cofarsur", item.unidades ?? 1);
+                    precio = getPrecioFinal(p, "cofarsur");
                 } else if (proveedor === "delsud") {
                     const p = preciosDelSud.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "delsud", item.unidades ?? 1);
+                    precio = getPrecioFinal(p, "delsud");
                 } else if (proveedor === "kellerhoff") {
-                    const p = preciosKellerhoff.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "kellerhoff", item.unidades ?? 1);
+                    precio = 0;
                 } else if (proveedor === "suizaTuc") {
                     precio = 0; // Suiza Tucumán no tiene precio, solo genera TXT
                 }
@@ -1032,7 +1029,6 @@ export default function RevisarPedido() {
                     preciosSuizo={preciosSuizo}
                     preciosCofarsur={preciosCofarsur}
                     preciosDelSud={preciosDelSud}
-                    preciosKellerhoff={preciosKellerhoff}
                     stockDisponible={stockDisponible}
                     seleccion={seleccion}
                     onElegirProveedor={handleElegirProveedor}
@@ -1057,6 +1053,32 @@ export default function RevisarPedido() {
 
             {carritoFiltrado.length > 0 && (
                 <div className="revisar_footer">
+                    <button
+                        className="revisar_btn_exportar"
+                        onClick={() => {
+                            const filas = carritoFiltrado.map(item => {
+                                const carritoId = obtenerCarritoId(item);
+                                const prov = seleccion[carritoId]?.proveedor || '';
+                                return [
+                                    item.ean,
+                                    `"${(item.descripcion || '').replace(/"/g, '""')}"`,
+                                    item.unidades,
+                                    sucursalActual,
+                                    prov
+                                ].join(',');
+                            });
+                            const csv = ['Codebar,Producto,Cantidad,Sucursal,Drogueria', ...filas].join('\n');
+                            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `productos_${sucursalActual || 'pedido'}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }}
+                    >
+                        📥 Exportar CSV
+                    </button>
                     <button className="revisar_btn_confirmar" onClick={handleConfirmar}>
                         Confirmar pedido
                     </button>
