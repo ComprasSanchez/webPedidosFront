@@ -1,7 +1,8 @@
 import React from "react";
 
 const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
-    const p = precios.find((m) => m.ean === ean);
+    const listaPrecios = Array.isArray(precios) ? precios : [];
+    const p = listaPrecios.find((m) => m.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
     const modoArchivo = p?.manualOnly === true;
 
