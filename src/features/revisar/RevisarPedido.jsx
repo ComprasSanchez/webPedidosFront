@@ -25,6 +25,8 @@ import Modal from "../../components/ui/Modal";
 export default function RevisarPedido() {
     const [mostrarResumen, setMostrarResumen] = useState(false);
     const [resumenFinal, setResumenFinal] = useState(null);
+    const [itemsConfirmados, setItemsConfirmados] = useState([]);
+    const itemsConfirmadosRef = useRef([]);
     const [isSending, setIsSending] = useState(false);
     const navigate = useNavigate();
     const { carrito, eliminarDelCarrito, actualizarUnidades, actualizarCantidad, replaceCarrito, soloDeposito, obtenerCarritoId } = useCarrito();
@@ -396,6 +398,47 @@ export default function RevisarPedido() {
             };
         });
 
+        const itemsPreparados = carritoConPrecios.map((item) => {
+            const carritoId = obtenerCarritoId(item);
+            const provSel = seleccion[carritoId]?.proveedor;
+            const motivo = seleccion[carritoId]?.motivo;
+
+            let proveedor = provSel;
+            let precio = 0;
+
+            if (motivo === "Falta") {
+                proveedor = "Falta";
+                precio = 0;
+            } else if (proveedor === "monroe") {
+                const p = preciosMonroe.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "monroe");
+            } else if (proveedor === "suizo") {
+                const p = preciosSuizo.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "suizo");
+            } else if (proveedor === "cofarsur") {
+                const p = preciosCofarsur.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "cofarsur");
+            } else if (proveedor === "delsud") {
+                const p = preciosDelSud.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "delsud");
+            } else if (proveedor === "kellerhoff") {
+                const p = preciosKellerhoff.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "kellerhoff");
+            } else if (proveedor === "suizaTuc") {
+                precio = 0;
+            }
+
+            return {
+                idProducto: item.idQuantio ?? null,
+                codebar: item.ean,
+                cantidad: item.unidades,
+                precio,
+                proveedor,
+                motivo,
+                nroPedidoDrogueria: "",
+            };
+        });
+
         const resumenFinal = construirResumenPedido(carritoConPrecios, seleccion, obtenerCarritoId);
 
         // 🆕 Agregar información del filtro aplicado (solo compras)
@@ -409,6 +452,8 @@ export default function RevisarPedido() {
         }
 
         setResumenFinal(resumenFinal);
+        itemsConfirmadosRef.current = itemsPreparados;
+        setItemsConfirmados(itemsPreparados);
         setMostrarResumen(true);
     };
 
@@ -418,61 +463,13 @@ export default function RevisarPedido() {
 
         const toastId = toast.loading("Enviando pedido...");
 
-        const itemsParaEnviar = (carritoFiltrado || [])
-            .filter(item => {
-                // 🆔 Usar carritoId para filtrar noPedir
-                const carritoId = obtenerCarritoId(item);
-                if (noPedirMap[carritoId]) return false;
-                // Filtrar por proveedores seleccionados en el modal
-                if (proveedoresSeleccionados) {
-                    const provSel = seleccion[carritoId]?.proveedor;
-                    const motivo = seleccion[carritoId]?.motivo;
-                    const provEfectivo = motivo === "Falta" ? "Falta" : provSel;
-                    if (!proveedoresSeleccionados.includes(provEfectivo)) return false;
-                }
-                return true;
-            })
-            .map(item => {
-                // 🆔 Usar carritoId para obtener selección
-                const carritoId = obtenerCarritoId(item);
-                const provSel = seleccion[carritoId]?.proveedor;
-                const motivo = seleccion[carritoId]?.motivo;
+        const snapshotItems = (itemsConfirmadosRef.current?.length ? itemsConfirmadosRef.current : itemsConfirmados) || [];
 
-                let proveedor = provSel;
-                let precio = 0;
-
-                if (motivo === "Falta") {
-                    proveedor = "Falta";
-                    precio = 0;
-                } else if (proveedor === "monroe") {
-                    const p = preciosMonroe.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "monroe");
-                } else if (proveedor === "suizo") {
-                    const p = preciosSuizo.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "suizo");
-                } else if (proveedor === "cofarsur") {
-                    const p = preciosCofarsur.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "cofarsur");
-                } else if (proveedor === "delsud") {
-                    const p = preciosDelSud.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "delsud");
-                } else if (proveedor === "kellerhoff") {
-                    const p = preciosKellerhoff.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "kellerhoff");
-                } else if (proveedor === "suizaTuc") {
-                    precio = 0; // Suiza Tucumán no tiene precio, solo genera TXT
-                }
-
-                return {
-                    idProducto: item.idQuantio ?? null,
-                    codebar: item.ean,
-                    cantidad: item.unidades,
-                    precio,
-                    proveedor,
-                    motivo,
-                    nroPedidoDrogueria: "",
-                };
-            });
+        const itemsParaEnviar = snapshotItems.filter(item => {
+            if (!item?.proveedor) return false;
+            if (proveedoresSeleccionados && !proveedoresSeleccionados.includes(item.proveedor)) return false;
+            return true;
+        });
 
 
 
