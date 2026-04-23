@@ -17,7 +17,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
     const generarExcelKellerhoff = async (productosKeller) => {
         try {
             // Preparar datos en el formato que espera el backend
-            const datosKeller = productosKeller.map(item => ({
+            const datos = productosKeller.map(item => ({
                 codebar: item.ean || item.codebar,
                 cantidad: item.unidades
             }));
