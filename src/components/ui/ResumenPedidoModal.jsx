@@ -220,7 +220,13 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                     <button
                         onClick={() => {
                             const provs = Object.keys(seleccionados).filter(k => seleccionados[k]);
-                            onEnviar(provs);
+                            const itemsSeleccionados = proveedores
+                                .filter(prov => seleccionados[prov.proveedor])
+                                .flatMap(prov => (prov.items || []).map(item => ({
+                                    ...item,
+                                    proveedor: prov.proveedor,
+                                })));
+                            onEnviar({ proveedores: provs, items: itemsSeleccionados });
                         }}
                         className="resumen_modal_button_enviar"
                         disabled={isSending || !haySeleccionados}

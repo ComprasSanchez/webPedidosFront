@@ -30,6 +30,10 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) 
         return <div className={clase}>⚠️ Error {p._status}</div>;
     }
 
+    if (typeof p.error === "string" && p.error.trim()) {
+        return <div className={clase}>{p.error}</div>;
+    }
+
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
     const precio = typeof p.finalPrice === "number"

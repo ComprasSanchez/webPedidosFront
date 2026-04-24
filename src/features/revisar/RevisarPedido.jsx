@@ -457,19 +457,41 @@ export default function RevisarPedido() {
         setMostrarResumen(true);
     };
 
-    const handleEnviarPedido = async (proveedoresSeleccionados) => {
+    const handleEnviarPedido = async (payloadSeleccion = {}) => {
         if (isSending) return;
         setIsSending(true);
 
         const toastId = toast.loading("Enviando pedido...");
 
+        const proveedoresSeleccionados = Array.isArray(payloadSeleccion)
+            ? payloadSeleccion
+            : (payloadSeleccion.proveedores || []);
+        const itemsSeleccionadosModal = Array.isArray(payloadSeleccion?.items)
+            ? payloadSeleccion.items
+            : [];
+
         const snapshotItems = (itemsConfirmadosRef.current?.length ? itemsConfirmadosRef.current : itemsConfirmados) || [];
 
-        const itemsParaEnviar = snapshotItems.filter(item => {
+        let itemsParaEnviar = snapshotItems.filter(item => {
             if (!item?.proveedor) return false;
             if (proveedoresSeleccionados && !proveedoresSeleccionados.includes(item.proveedor)) return false;
             return true;
         });
+
+        if (!itemsParaEnviar.length && itemsSeleccionadosModal.length) {
+            itemsParaEnviar = itemsSeleccionadosModal.map((item) => {
+                const itemCarrito = carrito.find(c => c.ean === item.ean);
+                return {
+                    idProducto: itemCarrito?.idQuantio ?? null,
+                    codebar: item.ean,
+                    cantidad: item.unidades,
+                    precio: Number(item.precio ?? 0) || 0,
+                    proveedor: item.proveedor,
+                    motivo: item.motivo,
+                    nroPedidoDrogueria: "",
+                };
+            });
+        }
 
 
 
