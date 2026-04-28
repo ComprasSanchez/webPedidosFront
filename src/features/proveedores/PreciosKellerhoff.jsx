@@ -34,13 +34,14 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) 
         return <div className={clase}>{p.error}</div>;
     }
 
-    if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
-
     const precio = typeof p.finalPrice === "number"
         ? p.finalPrice
         : (typeof p.priceList === "number" ? p.priceList : null);
 
-    if (precio == null) return <div className={clase}>SIN PRECIO</div>;
+    if (precio == null) {
+        if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
+        return <div className={clase}>SIN PRECIO</div>;
+    }
 
     const tieneDescuento = typeof p.priceList === "number"
         && typeof p.finalPrice === "number"
@@ -68,6 +69,11 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) 
             {typeof p.effectiveDiscountPct === "number" && p.effectiveDiscountPct > 0 && (
                 <div style={{ marginTop: "3px", fontSize: "11px", color: "#555" }}>
                     -{p.effectiveDiscountPct}%
+                </div>
+            )}
+            {p.stock === false && (
+                <div style={{ marginTop: "3px", fontSize: "11px", color: "#a33", fontWeight: "500" }}>
+                    Sin stock
                 </div>
             )}
         </div>
