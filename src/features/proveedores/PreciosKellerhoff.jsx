@@ -6,7 +6,12 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) 
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
     const handleClick = () => {
-        if (p && p.priceList != null && p.stock !== false && !p.manualOnly) {
+        if (p?.manualOnly) {
+            onSelect(idQuantio, "kellerhoff");
+            return;
+        }
+
+        if (p && p.priceList != null && p.stock !== false) {
             onSelect(idQuantio, "kellerhoff");
         }
     };

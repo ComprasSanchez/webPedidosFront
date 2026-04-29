@@ -366,6 +366,9 @@ export default function RevisarPedido() {
                                     prov === "kellerhoff" ? preciosKellerhoff : [];
 
                 const p = fuente.find(x => x.ean === item.ean);
+                if (prov === "kellerhoff" && p?.manualOnly) {
+                    return false;
+                }
                 const precio = getPrecioFinal(p, prov);
                 const sinPrecio = !(typeof precio === "number" && precio > 0);
                 return sinPrecio;
