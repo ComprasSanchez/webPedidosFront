@@ -27,7 +27,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
 
             // Crear un "pseudo-archivo" con los datos de Keller
             const excelData = {
-                productos: datosKeller,
+                productos: datos,
                 sucursalId: sucursalId
             };
 
