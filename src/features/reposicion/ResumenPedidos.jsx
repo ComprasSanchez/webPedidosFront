@@ -415,7 +415,8 @@ export default function ResumenPedidos() {
                                             {row.mensaje_proveedor || "—"}
                                         </td>
                                         <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                                            {(row.proveedor === "kellerhoff" || row.proveedor === "suizaTuc") && row.estado_pedido === "SKIP" && (
+                                            {(row.proveedor === "kellerhoff" || row.proveedor === "suizaTuc")
+                                                && ["SKIP", "ERROR"].includes((row.estado_pedido || "").toUpperCase()) && (
                                                 <button
                                                     className="rped_btn_descarga"
                                                     onClick={() => handleDescargar(row)}
