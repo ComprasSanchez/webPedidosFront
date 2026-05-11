@@ -1,0 +1,706 @@
+// Colores de proveedor (reutilizamos los mismos que resumenPedidos)
+$color-kellerhoff: #6f42c1;
+$color-cofarsur: #1f97ac;
+$color-monroe: #e05a2b;
+$color-delsud: #28a745;
+$color-suizaTuc: #fd7e14;
+$color-deposito: #6c757d;
+
+.conv {
+    padding: 1.5rem 2rem;
+    font-family: 'Roboto', sans-serif;
+    max-width: 1400px;
+    margin: 0 auto;
+
+    &_titulo {
+        font-size: 1.6rem;
+        font-weight: 600;
+        margin-bottom: 1.25rem;
+        color: #1f1f1f;
+    }
+
+    // ── Filtros ──────────────────────────────────────────────────────────────
+    &_filtros {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: flex-end;
+        margin-bottom: 1.25rem;
+
+        label {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #555;
+            gap: 3px;
+        }
+
+        input,
+        select {
+            padding: 0.45rem 0.6rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            background: #fff;
+            min-width: 180px;
+
+            &:focus {
+                outline: none;
+                border-color: #1f97ac;
+            }
+        }
+    }
+
+    &_btn_nuevo {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        background: #1f97ac;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.88rem;
+        font-weight: 500;
+        cursor: pointer;
+        align-self: flex-end;
+        transition: background 0.2s;
+
+        &:hover {
+            background: #177a8c;
+        }
+    }
+
+    &_error {
+        color: #dc3545;
+        margin-bottom: 0.75rem;
+        font-size: 0.88rem;
+    }
+
+    // ── Tabla ─────────────────────────────────────────────────────────────────
+    &_tabla_wrap {
+        overflow-x: auto;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+    }
+
+    &_tabla {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+
+        thead tr {
+            background: #f5f5f5;
+        }
+
+        th,
+        td {
+            padding: 0.6rem 0.85rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            font-weight: 600;
+            color: #444;
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background: #fafafa;
+        }
+    }
+
+    &_td_id {
+        color: #999;
+        font-size: 0.78rem;
+        width: 50px;
+    }
+
+    &_td_valor {
+        font-family: monospace;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    &_td_desc {
+        font-size: 0.82rem;
+        color: #333;
+        max-width: 220px;
+    }
+
+    &_td_lab {
+        font-size: 0.82rem;
+        color: #555;
+        white-space: nowrap;
+    }
+
+    &_td_acciones {
+        white-space: nowrap;
+        width: 80px;
+        text-align: right;
+    }
+
+    &_th_check {
+        width: 36px;
+        text-align: center;
+
+        input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: #1f97ac;
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    &_tr_sel {
+        background: #eaf6f9 !important;
+    }
+
+    &_loading,
+    &_vacio {
+        text-align: center;
+        color: #999;
+        padding: 2rem !important;
+    }
+
+    // ── Badges tipo ──────────────────────────────────────────────────────────
+    &_badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+
+        &_ean {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        &_lab {
+            background: #f3e5f5;
+            color: #6a1b9a;
+        }
+    }
+
+    // ── Chips proveedor ───────────────────────────────────────────────────────
+    &_chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    &_chip {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #fff;
+
+        &_kellerhoff {
+            background: $color-kellerhoff;
+        }
+
+        &_cofarsur {
+            background: $color-cofarsur;
+        }
+
+        &_monroe {
+            background: $color-monroe;
+        }
+
+        &_delsud {
+            background: $color-delsud;
+        }
+
+        &_suizaTuc {
+            background: $color-suizaTuc;
+        }
+
+        &_deposito {
+            background: $color-deposito;
+        }
+    }
+
+    // ── Botones icono ─────────────────────────────────────────────────────────
+    &_btn_icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        transition: background 0.15s;
+
+        &:hover {
+            background: #f0f0f0;
+        }
+    }
+
+    &_btn_edit {
+        color: #1f97ac;
+    }
+
+    &_btn_del {
+        color: #dc3545;
+    }
+
+    // ── Barra de acción masiva ────────────────────────────────────────────────
+    &_bulk_bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 1rem;
+        margin-bottom: 0.75rem;
+        background: #e0f5fa;
+        border: 1px solid #1f97ac;
+        border-radius: 8px;
+        flex-wrap: wrap;
+    }
+
+    &_bulk_count {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1f97ac;
+    }
+
+    &_btn_bulk {
+        padding: 0.4rem 1rem;
+        background: #1f97ac;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+
+        &:hover {
+            background: #177a8c;
+        }
+    }
+
+    &_btn_deselect {
+        padding: 0.4rem 0.8rem;
+        background: #fff;
+        color: #666;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        margin-left: auto;
+
+        &:hover {
+            background: #f5f5f5;
+        }
+    }
+
+    &_bulk_aviso {
+        font-size: 0.85rem;
+        color: #666;
+        margin: -0.5rem 0 0.5rem;
+    }
+
+    // ── Paginación ────────────────────────────────────────────────────────────
+    &_paginacion {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        font-size: 0.88rem;
+        color: #555;
+
+        button {
+            padding: 0.35rem 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #fff;
+            cursor: pointer;
+
+            &:disabled {
+                opacity: 0.4;
+                cursor: default;
+            }
+
+            &:not(:disabled):hover {
+                background: #f0f0f0;
+            }
+        }
+    }
+
+    &_total {
+        margin-top: 0.75rem;
+        font-size: 0.82rem;
+        color: #888;
+    }
+
+    // ── Modal ─────────────────────────────────────────────────────────────────
+    &_modal_titulo {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin-bottom: 1.25rem;
+        color: #1f1f1f;
+    }
+
+    &_form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-width: 360px;
+    }
+
+    &_label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #555;
+
+        input,
+        select {
+            padding: 0.45rem 0.6rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.9rem;
+
+            &:focus {
+                outline: none;
+                border-color: #1f97ac;
+            }
+        }
+    }
+
+    &_label_text {
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #555;
+    }
+
+    // ── Editor de prioridad ───────────────────────────────────────────────────
+    &_prio_section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    &_prio_hint {
+        font-size: 0.78rem;
+        color: #888;
+        margin: 0;
+    }
+
+    &_prio_empty {
+        font-size: 0.82rem;
+        color: #aaa;
+        font-style: italic;
+    }
+
+    &_prio_list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    &_prio_item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    &_prio_num {
+        width: 18px;
+        text-align: right;
+        font-size: 0.75rem;
+        color: #aaa;
+        flex-shrink: 0;
+    }
+
+    &_prio_btns {
+        display: flex;
+        gap: 3px;
+        margin-left: auto;
+
+        button {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 2px 7px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+
+            &:disabled {
+                opacity: 0.35;
+                cursor: default;
+            }
+
+            &:not(:disabled):hover {
+                background: #e8e8e8;
+            }
+        }
+    }
+
+    &_prio_quitar {
+        color: #dc3545 !important;
+        font-weight: 600;
+    }
+
+    &_prio_agregar {
+        select {
+            padding: 0.4rem 0.6rem;
+            border: 1px dashed #1f97ac;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #1f97ac;
+            background: #f0fafc;
+            cursor: pointer;
+            width: 100%;
+
+            &:focus {
+                outline: none;
+            }
+        }
+    }
+
+    &_aviso_info {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.65rem 0.9rem;
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        border-left: 4px solid #f9a825;
+        border-radius: 6px;
+        font-size: 0.84rem;
+        color: #5a4200;
+        line-height: 1.45;
+        em { font-style: normal; font-weight: 600; }
+    }
+
+    &_form_error {
+        color: #dc3545;
+        font-size: 0.83rem;
+        margin: 0;
+    }
+
+    &_confirm_bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0.9rem;
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: #856404;
+        flex-wrap: wrap;
+
+        span {
+            flex: 1;
+            min-width: 180px;
+        }
+    }
+
+    &_form_acciones {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding-top: 0.5rem;
+    }
+
+    &_btn_cancelar {
+        padding: 0.45rem 1.1rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background: #fff;
+        font-size: 0.88rem;
+        cursor: pointer;
+
+        &:hover {
+            background: #f5f5f5;
+        }
+    }
+
+    &_btn_guardar {
+        padding: 0.45rem 1.1rem;
+        border: none;
+        border-radius: 6px;
+        background: #1f97ac;
+        color: #fff;
+        font-size: 0.88rem;
+        font-weight: 500;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        &:not(:disabled):hover {
+            background: #177a8c;
+        }
+    }
+
+    // ── Boton agregar masivo ────────────────────────────────────────────────────
+    &_btn_masivo {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        background: #4a5568;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.88rem;
+        font-weight: 500;
+        cursor: pointer;
+        align-self: flex-end;
+        transition: background 0.2s;
+        &:hover { background: #2d3748; }
+    }
+
+    // ── Buscar productos (modal bulk create) ──────────────────────────────────
+    &_form_wide {
+        min-width: min(520px, 90vw);
+        max-width: 600px;
+    }
+
+    &_buscar_row {
+        display: flex;
+        gap: 0.5rem;
+        input {
+            flex: 1;
+        }
+    }
+
+    &_btn_buscar {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.45rem 0.9rem;
+        background: #1f97ac;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        white-space: nowrap;
+        &:disabled { opacity: 0.6; cursor: default; }
+        &:not(:disabled):hover { background: #177a8c; }
+    }
+
+    // ── Resultados de busqueda ────────────────────────────────────────────────
+    &_resultados_wrap {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    &_resultados_header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 0.75rem;
+        background: #f5f5f5;
+        font-size: 0.82rem;
+        color: #555;
+        flex-wrap: wrap;
+    }
+
+    &_btn_small {
+        padding: 0.25rem 0.6rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #fff;
+        font-size: 0.78rem;
+        cursor: pointer;
+        &:hover { background: #f0f0f0; }
+    }
+
+    &_sel_count {
+        margin-left: auto;
+        font-weight: 600;
+        color: #1f97ac;
+    }
+
+    &_resultados_lista {
+        max-height: 280px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &_resultado_item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.45rem 0.75rem;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        font-size: 0.83rem;
+        &:last-child { border-bottom: none; }
+        &:hover { background: #fafafa; }
+        &.sel { background: #eaf6f9; }
+
+        input[type="checkbox"] {
+            flex-shrink: 0;
+            accent-color: #1f97ac;
+            cursor: pointer;
+        }
+    }
+
+    &_resultado_desc {
+        flex: 1;
+        color: #222;
+    }
+
+    &_resultado_lab {
+        font-size: 0.78rem;
+        color: #888;
+        white-space: nowrap;
+    }
+
+    &_resultado_ean {
+        font-family: monospace;
+        font-size: 0.78rem;
+        color: #aaa;
+        white-space: nowrap;
+    }
+
+    // ── Resultado de creacion ─────────────────────────────────────────────────
+    &_create_result {
+        padding: 0.5rem 0.75rem;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: #155724;
+    }
+
+    // ── Responsive ────────────────────────────────────────────────────────────
+    @media (max-width: 600px) {
+        padding: 1rem;
+
+        &_filtros {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        &_btn_nuevo {
+            width: 100%;
+            justify-content: center;
+        }
+
+        &_form {
+            min-width: unset;
+        }
+    }
+}

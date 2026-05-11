@@ -8,6 +8,7 @@ import RevisarPedido from "../features/revisar/RevisarPedido";
 import PanelAdmin from "../features/admin/PanelAdmin";
 import PanelCredenciales from "../features/admin/PanelCredenciales";
 import ResumenPedidos from "../features/reposicion/ResumenPedidos";
+import GestionConvenios from "../features/convenios/GestionConvenios";
 import Navbar from "../features/navbar/Navbar";
 
 // ✅ Ruta privada con control de login + roles
@@ -86,6 +87,16 @@ const AppRouter = () => {
                     element={
                         <PrivateRoute roles={["compras", "admin"]}>
                             <ResumenPedidos />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Reposición - Gestión de convenios */}
+                <Route
+                    path="/reposicion/convenios"
+                    element={
+                        <PrivateRoute roles={["compras", "admin"]}>
+                            <GestionConvenios />
                         </PrivateRoute>
                     }
                 />
