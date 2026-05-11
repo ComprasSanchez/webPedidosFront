@@ -599,7 +599,7 @@ export async function getPreciosKellerhoff(carrito, sucursal, opts = {}) {
         return items.map(it => {
             const r = resultados[it.ean];
             if (!r) {
-                return { ean: it.ean, stock: false, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], _status: res.status };
+                return { ean: it.ean, stock: false, priceList: null, offerPrice: null, finalPrice: null, effectiveDiscountPct: null, offers: [], error: null, manualOnly: false, _status: res.status };
             }
             const stock = r.stock === true;
             const priceList = typeof r.priceList === 'number' ? r.priceList : null;
@@ -609,7 +609,18 @@ export async function getPreciosKellerhoff(carrito, sucursal, opts = {}) {
                 ? Number(((1 - (finalPrice / priceList)) * 100).toFixed(2))
                 : null;
             const offers = Array.isArray(r.offers) ? r.offers : [];
-            return { ean: it.ean, stock, priceList, offerPrice, finalPrice, effectiveDiscountPct, offers, _status: res.status };
+            return {
+                ean: it.ean,
+                stock,
+                priceList,
+                offerPrice,
+                finalPrice,
+                effectiveDiscountPct,
+                offers,
+                error: typeof r.error === 'string' ? r.error : null,
+                manualOnly: r.manualOnly === true,
+                _status: res.status
+            };
         });
 
     } catch (err) {

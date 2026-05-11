@@ -17,7 +17,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
     const generarExcelKellerhoff = async (productosKeller) => {
         try {
             // Preparar datos en el formato que espera el backend
-            const datosKeller = productosKeller.map(item => ({
+            const datos = productosKeller.map(item => ({
                 codebar: item.ean || item.codebar,
                 cantidad: item.unidades
             }));
@@ -27,7 +27,7 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
 
             // Crear un "pseudo-archivo" con los datos de Keller
             const excelData = {
-                productos: datosKeller,
+                productos: datos,
                 sucursalId: sucursalId
             };
 
@@ -220,7 +220,13 @@ const ResumenPedidoModal = ({ resumen, onClose, onEnviar, isSending, sucursalAct
                     <button
                         onClick={() => {
                             const provs = Object.keys(seleccionados).filter(k => seleccionados[k]);
-                            onEnviar(provs);
+                            const itemsSeleccionados = proveedores
+                                .filter(prov => seleccionados[prov.proveedor])
+                                .flatMap(prov => (prov.items || []).map(item => ({
+                                    ...item,
+                                    proveedor: prov.proveedor,
+                                })));
+                            onEnviar({ proveedores: provs, items: itemsSeleccionados });
                         }}
                         className="resumen_modal_button_enviar"
                         disabled={isSending || !haySeleccionados}

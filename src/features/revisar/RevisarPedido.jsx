@@ -25,6 +25,8 @@ import Modal from "../../components/ui/Modal";
 export default function RevisarPedido() {
     const [mostrarResumen, setMostrarResumen] = useState(false);
     const [resumenFinal, setResumenFinal] = useState(null);
+    const [itemsConfirmados, setItemsConfirmados] = useState([]);
+    const itemsConfirmadosRef = useRef([]);
     const [isSending, setIsSending] = useState(false);
     const navigate = useNavigate();
     const { carrito, eliminarDelCarrito, actualizarUnidades, actualizarCantidad, replaceCarrito, soloDeposito, obtenerCarritoId } = useCarrito();
@@ -204,7 +206,7 @@ export default function RevisarPedido() {
         };
     }, [carrito]);
 
-    const { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, stockDisponible, loading: loadingPS }
+    const { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, loading: loadingPS }
         = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario, soloDeposito });
 
     const { reglas, ready, matchConvenio } = useConvenios({ sucursal: sucursalActual });
@@ -213,12 +215,12 @@ export default function RevisarPedido() {
     const getStockConSucursal = useCallback((idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual), [sucursalActual]);
 
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
-        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual
+        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual
     });
 
     const { noPedirMap, toggleNoPedir, persistirCarrito } = usePersistenciaCarrito({ carrito, usuario, replaceCarrito });
 
-    const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || preciosDelSud?.length || stockDisponible?.length);
+    const datosCompletos = !!(preciosMonroe?.length || preciosSuizo?.length || preciosCofarsur?.length || preciosDelSud?.length || preciosKellerhoff?.length || stockDisponible?.length);
     const loading = loadingPS || !ready;
 
     // 🏪 Conteos para filtro depósito
@@ -269,7 +271,7 @@ export default function RevisarPedido() {
             })
             .forEach(item => {
                 const cId = obtenerCarritoId(item);
-                const mejor = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
+                const mejor = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff });
                 if (mejor) handleElegirProveedor(cId, mejor);
             });
     };
@@ -285,7 +287,7 @@ export default function RevisarPedido() {
         if (!item) return;
         const stockDepo = getStock(item.idQuantio, stockDisponible, sucursalActual);
         const match = matchConvenio(item, reglas);
-        const proveedorIdeal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur });
+        const proveedorIdeal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff });
 
         // Validar que no se pueda seleccionar depósito si el stock no es válido
         if (nuevoProveedor === "deposito") {
@@ -355,14 +357,18 @@ export default function RevisarPedido() {
                 const motivo = seleccion[carritoId]?.motivo;
                 if (motivo === "Falta") return false;
                 const prov = seleccion[carritoId]?.proveedor;
-                if (!prov || prov === "deposito" || prov === "kellerhoff" || prov === "suizaTuc" || prov === "delsud") return false;
+                if (!prov || prov === "deposito" || prov === "suizaTuc" || prov === "delsud") return false;
                 const fuente =
                     prov === "monroe" ? preciosMonroe :
                         prov === "suizo" ? preciosSuizo :
                             prov === "cofarsur" ? preciosCofarsur :
-                                prov === "delsud" ? preciosDelSud : [];
+                                prov === "delsud" ? preciosDelSud :
+                                    prov === "kellerhoff" ? preciosKellerhoff : [];
 
                 const p = fuente.find(x => x.ean === item.ean);
+                if (prov === "kellerhoff" && p?.manualOnly) {
+                    return false;
+                }
                 const precio = getPrecioFinal(p, prov);
                 const sinPrecio = !(typeof precio === "number" && precio > 0);
                 return sinPrecio;
@@ -385,13 +391,54 @@ export default function RevisarPedido() {
         }
 
         const carritoConPrecios = (carritoSinNoPedir || []).map((item) => {
-            const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud });
-            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...(preciosDelSud || []), ...stockDisponible].find(p => (p.idProducto ?? p.idQuantio) === item.idQuantio);
+            const precios = getPreciosItem(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff });
+            const fuente = [...preciosMonroe, ...preciosSuizo, ...preciosCofarsur, ...(preciosDelSud || []), ...(preciosKellerhoff || []), ...stockDisponible].find(p => (p.idProducto ?? p.idQuantio) === item.idQuantio);
             const idQuantio = item.idQuantio ?? fuente?.idQuantio ?? fuente?.idProducto ?? fuente?.id ?? null;
             return {
                 ...item,
                 precios,
                 idQuantio,
+            };
+        });
+
+        const itemsPreparados = carritoConPrecios.map((item) => {
+            const carritoId = obtenerCarritoId(item);
+            const provSel = seleccion[carritoId]?.proveedor;
+            const motivo = seleccion[carritoId]?.motivo;
+
+            let proveedor = provSel;
+            let precio = 0;
+
+            if (motivo === "Falta") {
+                proveedor = "Falta";
+                precio = 0;
+            } else if (proveedor === "monroe") {
+                const p = preciosMonroe.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "monroe");
+            } else if (proveedor === "suizo") {
+                const p = preciosSuizo.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "suizo");
+            } else if (proveedor === "cofarsur") {
+                const p = preciosCofarsur.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "cofarsur");
+            } else if (proveedor === "delsud") {
+                const p = preciosDelSud.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "delsud");
+            } else if (proveedor === "kellerhoff") {
+                const p = preciosKellerhoff.find(p => p.ean === item.ean);
+                precio = getPrecioFinal(p, "kellerhoff");
+            } else if (proveedor === "suizaTuc") {
+                precio = 0;
+            }
+
+            return {
+                idProducto: item.idQuantio ?? null,
+                codebar: item.ean,
+                cantidad: item.unidades,
+                precio,
+                proveedor,
+                motivo,
+                nroPedidoDrogueria: "",
             };
         });
 
@@ -408,69 +455,46 @@ export default function RevisarPedido() {
         }
 
         setResumenFinal(resumenFinal);
+        itemsConfirmadosRef.current = itemsPreparados;
+        setItemsConfirmados(itemsPreparados);
         setMostrarResumen(true);
     };
 
-    const handleEnviarPedido = async (proveedoresSeleccionados) => {
+    const handleEnviarPedido = async (payloadSeleccion = {}) => {
         if (isSending) return;
         setIsSending(true);
 
         const toastId = toast.loading("Enviando pedido...");
 
-        const itemsParaEnviar = (carritoFiltrado || [])
-            .filter(item => {
-                // 🆔 Usar carritoId para filtrar noPedir
-                const carritoId = obtenerCarritoId(item);
-                if (noPedirMap[carritoId]) return false;
-                // Filtrar por proveedores seleccionados en el modal
-                if (proveedoresSeleccionados) {
-                    const provSel = seleccion[carritoId]?.proveedor;
-                    const motivo = seleccion[carritoId]?.motivo;
-                    const provEfectivo = motivo === "Falta" ? "Falta" : provSel;
-                    if (!proveedoresSeleccionados.includes(provEfectivo)) return false;
-                }
-                return true;
-            })
-            .map(item => {
-                // 🆔 Usar carritoId para obtener selección
-                const carritoId = obtenerCarritoId(item);
-                const provSel = seleccion[carritoId]?.proveedor;
-                const motivo = seleccion[carritoId]?.motivo;
+        const proveedoresSeleccionados = Array.isArray(payloadSeleccion)
+            ? payloadSeleccion
+            : (payloadSeleccion.proveedores || []);
+        const itemsSeleccionadosModal = Array.isArray(payloadSeleccion?.items)
+            ? payloadSeleccion.items
+            : [];
 
-                let proveedor = provSel;
-                let precio = 0;
+        const snapshotItems = (itemsConfirmadosRef.current?.length ? itemsConfirmadosRef.current : itemsConfirmados) || [];
 
-                if (motivo === "Falta") {
-                    proveedor = "Falta";
-                    precio = 0;
-                } else if (proveedor === "monroe") {
-                    const p = preciosMonroe.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "monroe");
-                } else if (proveedor === "suizo") {
-                    const p = preciosSuizo.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "suizo");
-                } else if (proveedor === "cofarsur") {
-                    const p = preciosCofarsur.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "cofarsur");
-                } else if (proveedor === "delsud") {
-                    const p = preciosDelSud.find(p => p.ean === item.ean);
-                    precio = getPrecioFinal(p, "delsud");
-                } else if (proveedor === "kellerhoff") {
-                    precio = 0;
-                } else if (proveedor === "suizaTuc") {
-                    precio = 0; // Suiza Tucumán no tiene precio, solo genera TXT
-                }
+        let itemsParaEnviar = snapshotItems.filter(item => {
+            if (!item?.proveedor) return false;
+            if (proveedoresSeleccionados && !proveedoresSeleccionados.includes(item.proveedor)) return false;
+            return true;
+        });
 
+        if (!itemsParaEnviar.length && itemsSeleccionadosModal.length) {
+            itemsParaEnviar = itemsSeleccionadosModal.map((item) => {
+                const itemCarrito = carrito.find(c => c.ean === item.ean);
                 return {
-                    idProducto: item.idQuantio ?? null,
+                    idProducto: itemCarrito?.idQuantio ?? null,
                     codebar: item.ean,
                     cantidad: item.unidades,
-                    precio,
-                    proveedor,
-                    motivo,
+                    precio: Number(item.precio ?? 0) || 0,
+                    proveedor: item.proveedor,
+                    motivo: item.motivo,
                     nroPedidoDrogueria: "",
                 };
             });
+        }
 
 
 
@@ -1056,6 +1080,7 @@ export default function RevisarPedido() {
                     preciosSuizo={preciosSuizo}
                     preciosCofarsur={preciosCofarsur}
                     preciosDelSud={preciosDelSud}
+                    preciosKellerhoff={preciosKellerhoff}
                     stockDisponible={stockDisponible}
                     seleccion={seleccion}
                     onElegirProveedor={handleElegirProveedor}
