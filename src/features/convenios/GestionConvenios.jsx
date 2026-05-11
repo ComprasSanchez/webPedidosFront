@@ -290,7 +290,7 @@ export default function GestionConvenios() {
         setResultadosBusqueda([]);
         setProdSelec(new Set());
         try {
-            const r = await authFetch(`${API_URL}/api/convenios/productos/buscar?q=${encodeURIComponent(buscarProducto)}&limit=200`);
+            const r = await authFetch(`${API_URL}/api/convenios/productos/buscar?q=${encodeURIComponent(buscarProducto)}&limit=500`);
             const data = await r.json();
             setResultadosBusqueda(Array.isArray(data) ? data : []);
         } catch { }
