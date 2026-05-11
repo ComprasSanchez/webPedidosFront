@@ -482,7 +482,11 @@ $color-deposito: #6c757d;
         font-size: 0.84rem;
         color: #5a4200;
         line-height: 1.45;
-        em { font-style: normal; font-weight: 600; }
+
+        em {
+            font-style: normal;
+            font-weight: 600;
+        }
     }
 
     &_form_error {
@@ -564,7 +568,10 @@ $color-deposito: #6c757d;
         cursor: pointer;
         align-self: flex-end;
         transition: background 0.2s;
-        &:hover { background: #2d3748; }
+
+        &:hover {
+            background: #2d3748;
+        }
     }
 
     // ── Buscar productos (modal bulk create) ──────────────────────────────────
@@ -576,6 +583,7 @@ $color-deposito: #6c757d;
     &_buscar_row {
         display: flex;
         gap: 0.5rem;
+
         input {
             flex: 1;
         }
@@ -593,8 +601,15 @@ $color-deposito: #6c757d;
         font-size: 0.85rem;
         cursor: pointer;
         white-space: nowrap;
-        &:disabled { opacity: 0.6; cursor: default; }
-        &:not(:disabled):hover { background: #177a8c; }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        &:not(:disabled):hover {
+            background: #177a8c;
+        }
     }
 
     // ── Resultados de busqueda ────────────────────────────────────────────────
@@ -622,7 +637,10 @@ $color-deposito: #6c757d;
         background: #fff;
         font-size: 0.78rem;
         cursor: pointer;
-        &:hover { background: #f0f0f0; }
+
+        &:hover {
+            background: #f0f0f0;
+        }
     }
 
     &_sel_count {
@@ -646,9 +664,18 @@ $color-deposito: #6c757d;
         border-bottom: 1px solid #f0f0f0;
         cursor: pointer;
         font-size: 0.83rem;
-        &:last-child { border-bottom: none; }
-        &:hover { background: #fafafa; }
-        &.sel { background: #eaf6f9; }
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background: #fafafa;
+        }
+
+        &.sel {
+            background: #eaf6f9;
+        }
 
         input[type="checkbox"] {
             flex-shrink: 0;
