@@ -4,6 +4,7 @@ $color-cofarsur: #1f97ac;
 $color-monroe: #e05a2b;
 $color-delsud: #28a745;
 $color-suizaTuc: #fd7e14;
+$color-suizo: #0d6efd;
 $color-deposito: #6c757d;
 
 .conv {
@@ -182,6 +183,21 @@ $color-deposito: #6c757d;
             background: #f3e5f5;
             color: #6a1b9a;
         }
+
+        &_nc {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        &_activo {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        &_inactivo {
+            background: #f8d7da;
+            color: #721c24;
+        }
     }
 
     // ── Chips proveedor ───────────────────────────────────────────────────────
@@ -217,6 +233,10 @@ $color-deposito: #6c757d;
 
         &_suizaTuc {
             background: $color-suizaTuc;
+        }
+
+        &_suizo {
+            background: $color-suizo;
         }
 
         &_deposito {
@@ -729,5 +749,169 @@ $color-deposito: #6c757d;
         &_form {
             min-width: unset;
         }
+    }
+
+    // ── Tabs ─────────────────────────────────────────────────────────────────
+    &_tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    &_tab {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.55rem 1.25rem;
+        border: none;
+        background: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #666;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: color 0.15s, border-color 0.15s;
+
+        &:hover {
+            color: #1f97ac;
+        }
+
+        &_active {
+            color: #1f97ac;
+            border-bottom-color: #1f97ac;
+        }
+    }
+
+    // ── Descuentos NC ─────────────────────────────────────────────────────────
+    &_nc_header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+    }
+
+    &_nc_desc {
+        font-size: 0.88rem;
+        color: #555;
+        margin: 0;
+        max-width: 600px;
+        line-height: 1.5;
+    }
+
+    &_td_pct {
+        white-space: nowrap;
+        font-size: 0.9rem;
+    }
+
+    &_label_inline {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 0.5rem !important;
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #1f97ac;
+            cursor: pointer;
+        }
+    }
+
+    // ── Mini buscador de producto en modal NC ─────────────────────────────────
+    &_nc_prod_lista {
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 4px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &_nc_prod_item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.4rem 0.75rem;
+        border: none;
+        border-bottom: 1px solid #f0f0f0;
+        background: #fff;
+        text-align: left;
+        cursor: pointer;
+        font-size: 0.83rem;
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background: #f0fafc;
+        }
+
+        &.sel {
+            background: #eaf6f9;
+        }
+    }
+
+    &_nc_prod_desc {
+        flex: 1;
+        color: #222;
+    }
+
+    &_nc_prod_id {
+        font-family: monospace;
+        font-size: 0.78rem;
+        color: #999;
+        white-space: nowrap;
+    }
+
+    &_nc_prod_sel {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.82rem;
+        color: #1f97ac;
+        margin: 4px 0 0;
+    }
+
+    &_nc_prod_quitar {
+        background: none;
+        border: none;
+        color: #dc3545;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 1rem;
+        line-height: 1;
+        padding: 0 2px;
+    }
+
+    // ── Celda valor enriquecida (nombre + EAN + id) ───────────────────────────
+    &_nc_enriched {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    &_nc_enriched_nombre {
+        font-size: 0.86rem;
+        color: #222;
+        font-weight: 500;
+    }
+
+    &_nc_enriched_ean {
+        font-size: 0.78rem;
+        font-family: monospace;
+        color: #1f97ac;
+        letter-spacing: 0.03em;
+    }
+
+    &_nc_enriched_id {
+        font-size: 0.74rem;
+        font-family: monospace;
+        color: #aaa;
     }
 }

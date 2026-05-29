@@ -209,13 +209,13 @@ export default function RevisarPedido() {
     const { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, loading: loadingPS }
         = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario, soloDeposito });
 
-    const { reglas, ready, matchConvenio } = useConvenios({ sucursal: sucursalActual });
+    const { reglas, ready, matchConvenio, getFactorNC } = useConvenios({ sucursal: sucursalActual, authFetch });
 
     // Crear una versión de getStock que ya tenga la sucursal aplicada (memorizada)
     const getStockConSucursal = useCallback((idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual), [sucursalActual]);
 
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
-        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual
+        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual, getFactorNC
     });
 
     const { noPedirMap, toggleNoPedir, persistirCarrito } = usePersistenciaCarrito({ carrito, usuario, replaceCarrito });
@@ -1085,6 +1085,7 @@ export default function RevisarPedido() {
                     seleccion={seleccion}
                     onElegirProveedor={handleElegirProveedor}
                     onMotivo={handleMotivo}
+                    getFactorNC={getFactorNC}
                     onEliminar={(item) => {
                         // 🆔 Usar carritoId para eliminar
                         const carritoId = obtenerCarritoId(item);

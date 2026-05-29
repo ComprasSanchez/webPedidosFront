@@ -1,6 +1,6 @@
 // hooks/useConvenios.js
 import { useEffect, useState, useCallback } from "react";
-import { fetchConvenios } from "../../../services/convenios";
+import { fetchConvenios, fetchDescuentosNC } from "../../../services/convenios";
 
 function normalizeProveedorSlug(value) {
     const slug = String(value || "").toLowerCase().trim();
@@ -8,9 +8,10 @@ function normalizeProveedorSlug(value) {
     return slug;
 }
 
-export function useConvenios({ sucursal }) {
+export function useConvenios({ sucursal, authFetch }) {
     const [reglas, setReglas] = useState(null);
     const [ready, setReady] = useState(false);
+    const [descuentosNC, setDescuentosNC] = useState([]);
 
     useEffect(() => {
         if (!sucursal) return;
@@ -21,7 +22,10 @@ export function useConvenios({ sucursal }) {
 
         (async () => {
             try {
-                const data = await fetchConvenios(sucursal); // 👈 { byEAN: {...}, byLAB: {...} }
+                const promises = [fetchConvenios(sucursal)];
+                if (authFetch) promises.push(fetchDescuentosNC(authFetch));
+
+                const [data, ncData] = await Promise.all(promises);
                 const byEAN = data?.byEAN ?? {};
 
                 // normalizamos: claves string y slugs en minúsculas
@@ -32,7 +36,10 @@ export function useConvenios({ sucursal }) {
                     ])
                 );
 
-                if (!cancel) setReglas({ porEan });
+                if (!cancel) {
+                    setReglas({ porEan });
+                    setDescuentosNC(Array.isArray(ncData) ? ncData.filter(r => r.activo) : []);
+                }
             } catch (err) {
                 console.warn("useConvenios: no se pudieron cargar convenios:", err?.message || err);
                 if (!cancel) setReglas({ porEan: {} });
@@ -56,5 +63,32 @@ export function useConvenios({ sucursal }) {
         [reglas]
     );
 
-    return { reglas, ready, matchConvenio };
+    // 👉 Devuelve el factor de precio efectivo para un item+proveedor según descuentos NC
+    // Prioridad: producto (idQuantio) > laboratorio (CodLab) > perfumeria > todo
+    const getFactorNC = useCallback(
+        (item, proveedor) => {
+            const registros = descuentosNC.filter(r => r.id_proveedor === proveedor);
+            if (!registros.length) return 1;
+
+            const porProducto = registros.find(
+                r => r.scope === "producto" && String(r.scope_valor) === String(item?.idQuantio ?? "")
+            );
+            if (porProducto) return 1 - porProducto.porcentaje / 100;
+
+            const codLab = item?.CodLab ?? item?.laboratorio ?? null;
+            const porLab = registros.find(r => r.scope === "laboratorio" && r.scope_valor === codLab);
+            if (porLab) return 1 - porLab.porcentaje / 100;
+
+            const porPerf = registros.find(r => r.scope === "perfumeria");
+            if (porPerf && item?.esPerfumeria === true) return 1 - porPerf.porcentaje / 100;
+
+            const porTodo = registros.find(r => r.scope === "todo");
+            if (porTodo) return 1 - porTodo.porcentaje / 100;
+
+            return 1;
+        },
+        [descuentosNC]
+    );
+
+    return { reglas, ready, matchConvenio, descuentosNC, getFactorNC };
 }

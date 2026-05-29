@@ -32,6 +32,7 @@ export default function TablaRevisar({
     onToggleNoPedir,
     getStock,
     precioValido,
+    getFactorNC = null,
     opcionesMotivo = DEFAULT_OPCIONES_MOTIVO,
 }) {
     const { obtenerCarritoId } = useCarrito();
@@ -93,6 +94,7 @@ export default function TablaRevisar({
                                 }
                                 getStock={getStock}
                                 precioValido={precioValido}
+                                getFactorNC={getFactorNC}
                                 opcionesMotivo={opcionesMotivo}
                             />
                         );

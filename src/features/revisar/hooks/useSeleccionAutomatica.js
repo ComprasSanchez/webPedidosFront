@@ -3,7 +3,7 @@ import { pickPorPrioridad } from "../logic/prioridad";
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 import { useCarrito } from "../../../context/CarritoContext";
 
-export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [], preciosKellerhoff = [], stockDisponible, matchConvenio, getStock, sucursal }) {
+export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [], preciosKellerhoff = [], stockDisponible, matchConvenio, getStock, sucursal, getFactorNC = null }) {
     const { obtenerCarritoId } = useCarrito();
     const [seleccion, setSeleccion] = useState({});
     const prevEansRef = useRef([]);
@@ -130,7 +130,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 return;
             }
 
-            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1);
+            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1, item, getFactorNC);
             if (ideal) {
                 nuevaSeleccion[clave] = { proveedor: ideal, motivo: "Mejor precio" };
             } else {
@@ -209,7 +209,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             const prov = sel.proveedor;
             const motivo = sel.motivo;
             const stockDepo = getStock(item.ean, stockDisponible, sucursal);
-            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1);
+            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1, item, getFactorNC);
 
             if (stockDepo > 0 && prov !== "deposito") {
                 nueva[clave] = { proveedor: "deposito", motivo: "Stock Depo" };
