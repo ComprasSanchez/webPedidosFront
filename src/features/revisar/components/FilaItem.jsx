@@ -39,6 +39,7 @@ export default function FilaItem({
     pedir,
     togglePedir,
     getStock,
+    getFactorNC = null,
     opcionesMotivo,
 }) {
     const { obtenerCarritoId } = useCarrito();
@@ -117,6 +118,7 @@ export default function FilaItem({
                     cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "monroe"}
                     onSelect={onElegirProveedor}
+                    factorNC={getFactorNC ? getFactorNC(item, "monroe") : 1}
                 />
             </td>
 
@@ -129,6 +131,7 @@ export default function FilaItem({
                     cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "suizo"}
                     onSelect={onElegirProveedor}
+                    factorNC={getFactorNC ? getFactorNC(item, "suizo") : 1}
                 />
             </td>
 
@@ -141,6 +144,7 @@ export default function FilaItem({
                     cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "cofarsur"}
                     onSelect={onElegirProveedor}
+                    factorNC={getFactorNC ? getFactorNC(item, "cofarsur") : 1}
                 />
             </td>
 
@@ -176,6 +180,7 @@ export default function FilaItem({
                     cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "delsud"}
                     onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
+                    factorNC={getFactorNC ? getFactorNC(item, "delsud") : 1}
                 />
             </td>
 

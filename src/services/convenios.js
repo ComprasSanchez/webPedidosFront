@@ -6,6 +6,13 @@ export const EXTERNOS = {
     // si sumás otros externos, agregalos acá
 };
 
+// Trae todos los descuentos NC activos (requiere authFetch autenticado)
+export async function fetchDescuentosNC(authFetch) {
+    const res = await authFetch(`${API_URL}/api/convenios/descuentos-nc`);
+    if (!res.ok) throw new Error("No se pudieron cargar descuentos NC");
+    return res.json();
+}
+
 // Trae reglas normalizadas por sucursal
 export async function fetchConvenios(sucursal_codigo) {
     const res = await fetch(`${API_URL}/api/convenios?sucursal=${encodeURIComponent(sucursal_codigo)}`);

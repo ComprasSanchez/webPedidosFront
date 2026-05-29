@@ -1,4 +1,4 @@
-const PreciosSuizo = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1 }) => {
+const PreciosSuizo = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1, factorNC = 1 }) => {
     const p = precios.find((s) => s.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
@@ -11,17 +11,17 @@ const PreciosSuizo = ({ idQuantio, ean, precios, seleccionado, onSelect, cantida
     if (p.noDisponible === true) return <div className={clase}>NO DISPONIBLE</div>;
     if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
 
-    // Suizo: el servidor ya computé el precio con la cantidad enviada — confiamos en finalPrice
-    const precio = (typeof p.finalPrice === "number") ? p.finalPrice : (p.offerPrice ?? p.priceList);
-    if (precio == null || precio === 0) return <div className={clase}>SIN PRECIO</div>;
+    // Suizo: el servidor ya computó el precio con la cantidad enviada — confiamos en finalPrice
+    const precioApi = (typeof p.finalPrice === "number") ? p.finalPrice : (p.offerPrice ?? p.priceList);
+    if (precioApi == null || precioApi === 0) return <div className={clase}>SIN PRECIO</div>;
 
-    const showTachado = (typeof p.priceList === "number") && (precio < p.priceList);
+    const precio = precioApi * factorNC;
+    const ncPct = factorNC < 1 ? Math.round((1 - factorNC) * 100) : 0;
+    const showTachado = (typeof p.priceList === "number") && (precioApi < p.priceList);
 
-    // % real (solo si hay tachado)
-    const effPct = showTachado
-        ? (typeof p.effectiveDiscountPct === "number"
-            ? p.effectiveDiscountPct
-            : Number(((1 - (precio / p.priceList)) * 100).toFixed(2)))
+    // % descuento solo de la API (sin NC)
+    const apiPct = showTachado
+        ? Number(((1 - (precioApi / p.priceList)) * 100).toFixed(2))
         : null;
 
     const minUnits = Number.isFinite(p.minimo_unids) ? p.minimo_unids : null;
@@ -50,9 +50,15 @@ const PreciosSuizo = ({ idQuantio, ean, precios, seleccionado, onSelect, cantida
                 </span>
             </div>
 
-            {effPct != null && effPct > 0 && (
+            {apiPct != null && apiPct > 0 && (
                 <div style={{ marginTop: "2px", fontSize: "11px", color: "#333" }}>
-                    -{effPct.toFixed(0)}%
+                    -{apiPct.toFixed(0)}%
+                </div>
+            )}
+
+            {ncPct > 0 && (
+                <div style={{ marginTop: "2px", fontSize: "10px", color: "#e67e00", fontWeight: "600" }}>
+                    Extra -{ncPct}%
                 </div>
             )}
 
