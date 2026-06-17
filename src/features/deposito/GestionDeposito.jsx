@@ -165,9 +165,20 @@ export default function GestionDeposito() {
     };
 
     const toggleCluster = (cluster) => {
+        const pedidosDelCluster = todosLosPedidos.filter(p => p.cluster_nombre === cluster);
+        const todosYaSelec = pedidosDelCluster.every(p => seleccionados.has(p.nro_pedido_interno));
         setFiltroCluster(prev => {
             const next = new Set(prev);
             next.has(cluster) ? next.delete(cluster) : next.add(cluster);
+            return next;
+        });
+        setSeleccionados(prev => {
+            const next = new Set(prev);
+            if (todosYaSelec) {
+                pedidosDelCluster.forEach(p => next.delete(p.nro_pedido_interno));
+            } else {
+                pedidosDelCluster.forEach(p => next.add(p.nro_pedido_interno));
+            }
             return next;
         });
     };
@@ -315,7 +326,14 @@ export default function GestionDeposito() {
                                         </button>
                                     ))}
                                     {filtroCluster.size > 0 && (
-                                        <button className="dep_chip_cluster_limpiar" onClick={() => setFiltroCluster(new Set())} title="Quitar todos los filtros">
+                                        <button
+                                            className="dep_chip_cluster_limpiar"
+                                            onClick={() => {
+                                                setFiltroCluster(new Set());
+                                                setSeleccionados(new Set());
+                                            }}
+                                            title="Quitar filtros y deseleccionar todo"
+                                        >
                                             ✕ limpiar
                                         </button>
                                     )}
