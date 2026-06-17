@@ -69,6 +69,8 @@ export default function GestionDeposito() {
     const [seleccionados, setSeleccionados] = useState(new Set());
     // Qué pedidos internos están expandidos (muestran sus productos)
     const [expandidos, setExpandidos]       = useState(new Set());
+    // Filtro por cluster (vacío = mostrar todos)
+    const [filtroCluster, setFiltroCluster] = useState(new Set());
 
     // ── Modal procesar ────────────────────────────────────────────────────────
     const [modalProcesar, setModalProcesar]       = useState(false);
@@ -90,6 +92,7 @@ export default function GestionDeposito() {
             .then(data => {
                 setPendientes(agruparPorPedido(data.data || []));
                 setSeleccionados(new Set());
+                setFiltroCluster(new Set());
             })
             .catch(e => setErrorPend(e.message))
             .finally(() => setLoadingPend(false));
@@ -126,6 +129,27 @@ export default function GestionDeposito() {
         return Array.from(map.values());
     }, [todosLosPedidos]);
 
+    const clustersUnicos = useMemo(() => {
+        const set = new Set();
+        for (const p of todosLosPedidos) {
+            if (p.cluster_nombre) set.add(p.cluster_nombre);
+        }
+        return [...set].sort();
+    }, [todosLosPedidos]);
+
+    // Lista filtrada por cluster (si no hay filtro activo devuelve todo)
+    const pendientesFiltrados = useMemo(() => {
+        if (filtroCluster.size === 0) return pendientes;
+        return pendientes
+            .map(suc => ({ ...suc, pedidos: suc.pedidos.filter(p => filtroCluster.has(p.cluster_nombre)) }))
+            .filter(suc => suc.pedidos.length > 0);
+    }, [pendientes, filtroCluster]);
+
+    const pedidosVisibles = useMemo(
+        () => pendientesFiltrados.flatMap(s => s.pedidos),
+        [pendientesFiltrados]
+    );
+
     // ── Selección ─────────────────────────────────────────────────────────────
     const togglePedido = (nro) => {
         setSeleccionados(prev => {
@@ -136,8 +160,16 @@ export default function GestionDeposito() {
     };
 
     const seleccionarTodo = () => {
-        const todos = todosLosPedidos.every(p => seleccionados.has(p.nro_pedido_interno));
-        setSeleccionados(todos ? new Set() : new Set(todosLosPedidos.map(p => p.nro_pedido_interno)));
+        const todos = pedidosVisibles.every(p => seleccionados.has(p.nro_pedido_interno));
+        setSeleccionados(todos ? new Set() : new Set(pedidosVisibles.map(p => p.nro_pedido_interno)));
+    };
+
+    const toggleCluster = (cluster) => {
+        setFiltroCluster(prev => {
+            const next = new Set(prev);
+            next.has(cluster) ? next.delete(cluster) : next.add(cluster);
+            return next;
+        });
     };
 
     const seleccionarPorUsuario = (login) => {
@@ -233,7 +265,7 @@ export default function GestionDeposito() {
     };
 
     const todosOk = resultados?.every(r => r.ok) ?? false;
-    const todosTienen  = seleccionados.size === todosLosPedidos.length && todosLosPedidos.length > 0;
+    const todosTienen = pedidosVisibles.length > 0 && pedidosVisibles.every(p => seleccionados.has(p.nro_pedido_interno));
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
@@ -267,6 +299,28 @@ export default function GestionDeposito() {
                                 />
                                 Seleccionar todo
                             </label>
+
+                            {/* Filtro por cluster */}
+                            {clustersUnicos.length > 0 && (
+                                <div className="dep_toolbar_clusters">
+                                    <span className="dep_toolbar_label">Cluster:</span>
+                                    {clustersUnicos.map(c => (
+                                        <button
+                                            key={c}
+                                            className={`dep_chip_cluster ${filtroCluster.has(c) ? "dep_chip_cluster_activo" : ""}`}
+                                            onClick={() => toggleCluster(c)}
+                                            title={filtroCluster.has(c) ? `Quitar filtro: ${c}` : `Filtrar por: ${c}`}
+                                        >
+                                            {c}
+                                        </button>
+                                    ))}
+                                    {filtroCluster.size > 0 && (
+                                        <button className="dep_chip_cluster_limpiar" onClick={() => setFiltroCluster(new Set())} title="Quitar todos los filtros">
+                                            ✕ limpiar
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Quick-select por usuario */}
                             {usuariosUnicos.length > 0 && (
@@ -314,7 +368,11 @@ export default function GestionDeposito() {
                             <FaCheckCircle className="dep_vacio_icon" />
                             <p>No hay pedidos pendientes</p>
                         </div>
-                    ) : pendientes.map(suc => (
+                    ) : pendientesFiltrados.length === 0 ? (
+                        <div className="dep_vacio">
+                            <p>Ningún pedido coincide con el filtro seleccionado</p>
+                        </div>
+                    ) : pendientesFiltrados.map(suc => (
                         <div key={suc.sucursal_codigo} className="dep_suc_section">
 
                             {/* Header sucursal */}

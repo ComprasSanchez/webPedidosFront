@@ -92,6 +92,47 @@
         white-space: nowrap;
     }
 
+    &_toolbar_clusters {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    &_chip_cluster {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2rem 0.65rem;
+        border: 1px solid #c5cae9;
+        border-radius: 14px;
+        background: #fff;
+        font-size: 0.8rem;
+        color: #3949ab;
+        cursor: pointer;
+        transition: all 0.15s;
+
+        &:hover { border-color: #3949ab; background: #e8eaf6; }
+
+        &_activo {
+            background: #e8eaf6;
+            border-color: #3949ab;
+            font-weight: 600;
+        }
+
+        &_limpiar {
+            padding: 0.2rem 0.55rem;
+            border: 1px solid #ccc;
+            border-radius: 14px;
+            background: none;
+            font-size: 0.75rem;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.15s;
+
+            &:hover { border-color: #999; color: #555; }
+        }
+    }
+
     &_toolbar_usuarios {
         display: flex;
         align-items: center;
