@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/logo.png";
-import { FaSearch, FaShoppingCart, FaSignOutAlt, FaUserShield, FaKey, FaStore, FaUsers, FaWarehouse, FaFileImport, FaClipboardList, FaHandshake } from "react-icons/fa";
+import { FaSearch, FaShoppingCart, FaSignOutAlt, FaUserShield, FaKey, FaStore, FaUsers, FaWarehouse, FaFileImport, FaClipboardList, FaHandshake, FaBoxOpen } from "react-icons/fa";
 import ModalSeleccionSucursal from "../../components/ui/ModalSeleccionSucursal";
 
 export default function Navbar() {
@@ -39,6 +39,12 @@ export default function Navbar() {
             ];
         }
 
+        if (usuario?.rol === "deposito") {
+            return [
+                { to: "/deposito", label: "Panel Depósito", icon: FaBoxOpen }
+            ];
+        }
+
         return [];
     };
 
@@ -46,6 +52,7 @@ export default function Navbar() {
     const getHomeRoute = () => {
         if (usuario?.rol === "compras") return "/buscador";
         if (usuario?.rol === "admin") return "/admin";
+        if (usuario?.rol === "deposito") return "/deposito";
         return "/buscador"; // sucursal por defecto
     };
 

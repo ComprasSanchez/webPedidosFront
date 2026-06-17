@@ -9,6 +9,7 @@ import PanelAdmin from "../features/admin/PanelAdmin";
 import PanelCredenciales from "../features/admin/PanelCredenciales";
 import ResumenPedidos from "../features/reposicion/ResumenPedidos";
 import GestionConvenios from "../features/convenios/GestionConvenios";
+import GestionDeposito from "../features/deposito/GestionDeposito";
 import Navbar from "../features/navbar/Navbar";
 
 // ✅ Ruta privada con control de login + roles
@@ -36,6 +37,7 @@ const AppRouter = () => {
         if (usuario.rol === "compras") return "/buscador";
         if (usuario.rol === "admin") return "/admin";
         if (usuario.rol === "sucursal") return "/buscador";
+        if (usuario.rol === "deposito") return "/deposito";
         return "/login";
     }; return (
         <>
@@ -97,6 +99,16 @@ const AppRouter = () => {
                     element={
                         <PrivateRoute roles={["compras", "admin"]}>
                             <GestionConvenios />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Depósito */}
+                <Route
+                    path="/deposito"
+                    element={
+                        <PrivateRoute roles={["deposito", "admin"]}>
+                            <GestionDeposito />
                         </PrivateRoute>
                     }
                 />
