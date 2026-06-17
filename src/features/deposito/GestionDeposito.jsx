@@ -35,6 +35,7 @@ function agruparPorPedido(data) {
                     usuario_rol:    r.usuario_rol,
                     estado_pedido:  r.estado_pedido,
                     fecha:          r.fecha_pedido ?? r.created_at,
+                    cluster_nombre: r.cluster_nombre ?? null,
                     reservas: []
                 });
             }
@@ -360,7 +361,12 @@ export default function GestionDeposito() {
                                                 onChange={() => togglePedido(ped.nro_pedido_interno)}
                                             />
                                             <div className="dep_ped_info" onClick={() => togglePedido(ped.nro_pedido_interno)}>
-                                                <span className="dep_ped_nro">{ped.nro_pedido_interno}</span>
+                                                <div className="dep_ped_nro_row">
+                                                    <span className="dep_ped_nro">{ped.nro_pedido_interno}</span>
+                                                    {ped.cluster_nombre && (
+                                                        <span className="dep_ped_cluster">{ped.cluster_nombre}</span>
+                                                    )}
+                                                </div>
                                                 <div className="dep_ped_meta">
                                                     {ped.usuario_login && (
                                                         <span className="dep_ped_usuario">
