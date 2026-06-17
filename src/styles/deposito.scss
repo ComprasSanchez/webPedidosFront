@@ -119,18 +119,6 @@
             font-weight: 600;
         }
 
-        &_limpiar {
-            padding: 0.2rem 0.55rem;
-            border: 1px solid #ccc;
-            border-radius: 14px;
-            background: none;
-            font-size: 0.75rem;
-            color: #888;
-            cursor: pointer;
-            transition: all 0.15s;
-
-            &:hover { border-color: #999; color: #555; }
-        }
     }
 
     &_toolbar_usuarios {
