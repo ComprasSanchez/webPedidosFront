@@ -23,15 +23,13 @@ const Login = () => {
             const { user } = JSON.parse(localStorage.getItem("session"));
 
             // 🔧 Redirección inteligente según el rol
-            let redirectTo = "/login"; // fallback
-
-            if (user.rol === "admin") {
-                redirectTo = "/admin";
-            } else if (user.rol === "compras") {
-                redirectTo = "/reposicion";
-            } else if (user.rol === "sucursal") {
-                redirectTo = "/buscador";
-            }
+            const rutas = {
+                admin:    "/admin",
+                compras:  "/buscador",
+                sucursal: "/buscador",
+                deposito: "/deposito",
+            };
+            const redirectTo = rutas[user.rol] ?? "/login";
 
             navigate(redirectTo, { replace: true });
         } else {
