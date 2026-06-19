@@ -348,7 +348,7 @@ export default function GestionDeposito() {
                                 Actualizar
                             </button>
                             {resumenSeleccion.totalPedidos > 0 && (
-                                <button className="dep_btn_procesar" onClick={() => { setResultados(null); setErrorProcesar(null); setSucursalesAbiertas(new Set(Object.keys(resumenSeleccion.porSucursal))); setModalProcesar(true); }}>
+                                <button className="dep_btn_procesar" onClick={() => { setResultados(null); setErrorProcesar(null); setSucursalesAbiertas(new Set()); setModalProcesar(true); }}>
                                     Procesar {resumenSeleccion.totalPedidos} pedido{resumenSeleccion.totalPedidos !== 1 ? "s" : ""}
                                     {resumenSeleccion.totalLotes > 1 && ` · ${resumenSeleccion.totalLotes} lotes`}
                                 </button>

@@ -34,7 +34,9 @@
         margin-bottom: -2px;
         transition: color 0.15s, border-color 0.15s;
 
-        &:hover { color: #1f97ac; }
+        &:hover {
+            color: #1f97ac;
+        }
 
         &_active {
             color: #1f97ac;
@@ -111,7 +113,10 @@
         cursor: pointer;
         transition: all 0.15s;
 
-        &:hover { border-color: #3949ab; background: #e8eaf6; }
+        &:hover {
+            border-color: #3949ab;
+            background: #e8eaf6;
+        }
 
         &_activo {
             background: #e8eaf6;
@@ -137,7 +142,9 @@
         cursor: pointer;
         white-space: nowrap;
 
-        input[type="checkbox"] { cursor: pointer; }
+        input[type="checkbox"] {
+            cursor: pointer;
+        }
     }
 
     &_chip_usuario {
@@ -153,7 +160,10 @@
         cursor: pointer;
         transition: all 0.15s;
 
-        &:hover { border-color: #1f97ac; color: #1f97ac; }
+        &:hover {
+            border-color: #1f97ac;
+            color: #1f97ac;
+        }
 
         &_activo {
             background: #e0f2f5;
@@ -218,12 +228,14 @@
         overflow: hidden;
         transition: border-color 0.15s, box-shadow 0.15s;
 
-        &:hover { border-color: #b8d4d9; }
+        &:hover {
+            border-color: #b8d4d9;
+        }
 
         &_sel {
             border-color: #1f97ac;
             background: #f0fafc;
-            box-shadow: 0 1px 6px rgba(31,151,172,0.1);
+            box-shadow: 0 1px 6px rgba(31, 151, 172, 0.1);
         }
     }
 
@@ -315,7 +327,9 @@
         font-size: 0.8rem;
         transition: color 0.15s;
 
-        &:hover { color: #1f97ac; }
+        &:hover {
+            color: #1f97ac;
+        }
     }
 
     // ── Tabla de productos dentro del pedido ──────────────────────────────────
@@ -323,12 +337,24 @@
         border-top: 1px solid #e8ecef;
         margin: 0;
 
-        th { background: #f9fafb; }
-        td { background: #fff; cursor: default !important; }
-        tbody tr:hover { background: #fff !important; }
+        th {
+            background: #f9fafb;
+        }
+
+        td {
+            background: #fff;
+            cursor: default !important;
+        }
+
+        tbody tr:hover {
+            background: #fff !important;
+        }
     }
 
-    &_td_desc { color: #444; font-size: 0.83rem; }
+    &_td_desc {
+        color: #444;
+        font-size: 0.83rem;
+    }
 
     // ── Preview en modal ──────────────────────────────────────────────────────
     &_preview_suc {
@@ -351,7 +377,9 @@
             user-select: none;
             transition: background 0.15s;
 
-            &:hover { background: #eaecef; }
+            &:hover {
+                background: #eaecef;
+            }
         }
     }
 
@@ -388,13 +416,25 @@
             margin: -0.15rem -0.25rem;
             transition: background 0.15s;
 
-            &:hover { background: rgba(0,0,0,0.05); }
+            &:hover {
+                background: rgba(0, 0, 0, 0.05);
+            }
         }
     }
 
-    &_resultado_nro { font-size: 0.85rem; color: #555; }
-    &_resultado_err { font-size: 0.85rem; color: #dc3545; }
-    &_resultado_warn { color: #e0a800; }
+    &_resultado_nro {
+        font-size: 0.85rem;
+        color: #555;
+    }
+
+    &_resultado_err {
+        font-size: 0.85rem;
+        color: #dc3545;
+    }
+
+    &_resultado_warn {
+        color: #e0a800;
+    }
 
     // ── Cards de sucursal (viejo — mantener por si se reusa) ──────────────────
     &_card {
@@ -405,11 +445,13 @@
         overflow: hidden;
         transition: box-shadow 0.15s;
 
-        &:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        &:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+        }
 
         &_expanded {
             border-color: #1f97ac;
-            box-shadow: 0 2px 12px rgba(31,151,172,0.12);
+            box-shadow: 0 2px 12px rgba(31, 151, 172, 0.12);
         }
     }
 
@@ -422,7 +464,9 @@
         background: #f8f9fa;
         user-select: none;
 
-        &:hover { background: #f0f4f5; }
+        &:hover {
+            background: #f0f4f5;
+        }
     }
 
     &_card_info {
@@ -450,8 +494,14 @@
         font-size: 0.82rem;
         color: #555;
 
-        &_sep { color: #ccc; }
-        &_fecha { color: #888; font-style: italic; }
+        &_sep {
+            color: #ccc;
+        }
+
+        &_fecha {
+            color: #888;
+            font-style: italic;
+        }
     }
 
     &_card_actions {
@@ -467,7 +517,9 @@
         transition: transform 0.2s;
         display: inline-block;
 
-        &_open { transform: rotate(180deg); }
+        &_open {
+            transform: rotate(180deg);
+        }
     }
 
     &_card_body {
@@ -476,7 +528,9 @@
     }
 
     // ── Tabla ─────────────────────────────────────────────────────────────────
-    &_tabla_wrap { overflow-x: auto; }
+    &_tabla_wrap {
+        overflow-x: auto;
+    }
 
     &_tabla {
         width: 100%;
@@ -507,15 +561,22 @@
             cursor: pointer;
             transition: background 0.1s;
 
-            &:hover { background: #f5f9fa; }
-            &:last-child td { border-bottom: none; }
+            &:hover {
+                background: #f5f9fa;
+            }
+
+            &:last-child td {
+                border-bottom: none;
+            }
         }
 
         &_modal {
             margin: 0.75rem 0 1rem;
             font-size: 0.875rem;
 
-            tbody tr { cursor: default; }
+            tbody tr {
+                cursor: default;
+            }
         }
     }
 
@@ -530,13 +591,44 @@
         padding-right: 0.5rem !important;
     }
 
-    &_td_ean     { font-family: monospace; font-size: 0.8rem; color: #555; }
-    &_td_cant    { text-align: center; font-weight: 600; }
-    &_td_pedido  { font-family: monospace; font-size: 0.8rem; color: #1f97ac; }
-    &_td_usuario { font-size: 0.82rem; color: #666; }
-    &_td_fecha   { font-size: 0.8rem; color: #888; white-space: nowrap; }
-    &_td_internos{ font-family: monospace; font-size: 0.78rem; color: #555; word-break: break-word; }
-    &_td_faltante{ color: #dc3545 !important; }
+    &_td_ean {
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: #555;
+    }
+
+    &_td_cant {
+        text-align: center;
+        font-weight: 600;
+    }
+
+    &_td_pedido {
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: #1f97ac;
+    }
+
+    &_td_usuario {
+        font-size: 0.82rem;
+        color: #666;
+    }
+
+    &_td_fecha {
+        font-size: 0.8rem;
+        color: #888;
+        white-space: nowrap;
+    }
+
+    &_td_internos {
+        font-family: monospace;
+        font-size: 0.78rem;
+        color: #555;
+        word-break: break-word;
+    }
+
+    &_td_faltante {
+        color: #dc3545 !important;
+    }
 
     // ── Botones ───────────────────────────────────────────────────────────────
     &_btn_procesar {
@@ -554,8 +646,14 @@
         transition: background 0.2s;
         white-space: nowrap;
 
-        &:hover { background: #177a8c; }
-        &:disabled { background: #9ecad3; cursor: not-allowed; }
+        &:hover {
+            background: #177a8c;
+        }
+
+        &:disabled {
+            background: #9ecad3;
+            cursor: not-allowed;
+        }
     }
 
     &_btn_refresh {
@@ -573,8 +671,15 @@
         transition: all 0.15s;
         flex-shrink: 0;
 
-        &:hover { background: #f0f0f0; border-color: #aaa; }
-        &:disabled { color: #bbb; cursor: not-allowed; }
+        &:hover {
+            background: #f0f0f0;
+            border-color: #aaa;
+        }
+
+        &:disabled {
+            color: #bbb;
+            cursor: not-allowed;
+        }
     }
 
     &_btn_cancelar {
@@ -587,8 +692,14 @@
         cursor: pointer;
         transition: background 0.15s;
 
-        &:hover { background: #f5f5f5; }
-        &:disabled { color: #bbb; cursor: not-allowed; }
+        &:hover {
+            background: #f5f5f5;
+        }
+
+        &:disabled {
+            color: #bbb;
+            cursor: not-allowed;
+        }
     }
 
     &_btn_guardar {
@@ -602,7 +713,9 @@
         cursor: pointer;
         transition: background 0.2s;
 
-        &:hover { background: #177a8c; }
+        &:hover {
+            background: #177a8c;
+        }
     }
 
     // ── Badges ────────────────────────────────────────────────────────────────
@@ -614,11 +727,31 @@
         font-weight: 600;
         white-space: nowrap;
 
-        &_pendiente { background: #fff3cd; color: #856404; }
-        &_exitoso   { background: #d1e7dd; color: #0f5132; }
-        &_faltante  { background: #f8d7da; color: #842029; }
-        &_cancelado { background: #e2e3e5; color: #41464b; }
-        &_sucursal  { background: #e0f2f5; color: #1a7080; font-family: monospace; }
+        &_pendiente {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        &_exitoso {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        &_faltante {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        &_cancelado {
+            background: #e2e3e5;
+            color: #41464b;
+        }
+
+        &_sucursal {
+            background: #e0f2f5;
+            color: #1a7080;
+            font-family: monospace;
+        }
     }
 
     &_nro_quantio {
@@ -641,10 +774,12 @@
         margin-bottom: 0.5rem;
     }
 
-    &_modal_body { min-width: 380px; }
+    &_modal_body {
+        min-width: 380px;
+    }
 
     &_modal_scroll {
-        max-height: 52vh;
+        max-height: 75vh;
         overflow-y: auto;
         margin: 0 -0.25rem;
         padding: 0 0.25rem;
@@ -658,7 +793,9 @@
         margin-top: 1.25rem;
     }
 
-    &_modal_resultado { min-width: 380px; }
+    &_modal_resultado {
+        min-width: 380px;
+    }
 
     &_modal_chevron {
         margin-left: auto;
@@ -666,7 +803,9 @@
         color: #999;
         flex-shrink: 0;
 
-        &_warn { color: #e0a800; }
+        &_warn {
+            color: #e0a800;
+        }
     }
 
     &_resultado_header {
@@ -676,8 +815,13 @@
         margin-bottom: 0.4rem;
     }
 
-    &_resultado_icon { font-size: 1.6rem; }
-    &_resultado_ok   { color: #198754; }
+    &_resultado_icon {
+        font-size: 1.6rem;
+    }
+
+    &_resultado_ok {
+        color: #198754;
+    }
 
     &_resultado_titulo {
         font-weight: 600;
@@ -718,10 +862,32 @@
     }
 
     // ── Estados globales ──────────────────────────────────────────────────────
-    &_loading    { padding: 1.5rem; text-align: center; color: #888; font-size: 0.9rem; }
-    &_error      { color: #dc3545; margin-bottom: 0.75rem; font-size: 0.875rem; }
-    &_form_error { color: #dc3545; font-size: 0.84rem; margin-top: 0.5rem; }
-    &_vacio_cell { padding: 2rem; text-align: center; color: #888; font-size: 0.9rem; cursor: default !important; }
+    &_loading {
+        padding: 1.5rem;
+        text-align: center;
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    &_error {
+        color: #dc3545;
+        margin-bottom: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    &_form_error {
+        color: #dc3545;
+        font-size: 0.84rem;
+        margin-top: 0.5rem;
+    }
+
+    &_vacio_cell {
+        padding: 2rem;
+        text-align: center;
+        color: #888;
+        font-size: 0.9rem;
+        cursor: default !important;
+    }
 
     &_vacio {
         text-align: center;
@@ -735,14 +901,24 @@
             display: block;
         }
 
-        p { font-size: 0.95rem; margin: 0; }
+        p {
+            font-size: 0.95rem;
+            margin: 0;
+        }
     }
 
     // ── Spin ──────────────────────────────────────────────────────────────────
-    &_spin { animation: dep_spin 0.9s linear infinite; }
+    &_spin {
+        animation: dep_spin 0.9s linear infinite;
+    }
 
     @keyframes dep_spin {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
     }
 }
