@@ -75,6 +75,14 @@ export default function GestionDeposito() {
     const [procesando, setProcesando]             = useState(false);
     const [resultados, setResultados]             = useState(null); // array por sucursal
     const [errorProcesar, setErrorProcesar]       = useState(null);
+    const [sucursalesAbiertas, setSucursalesAbiertas] = useState(new Set());
+
+    const toggleSucursalModal = (suc) =>
+        setSucursalesAbiertas(prev => {
+            const next = new Set(prev);
+            next.has(suc) ? next.delete(suc) : next.add(suc);
+            return next;
+        });
 
     // ── Historial ─────────────────────────────────────────────────────────────
     const [lotes, setLotes]             = useState([]);
@@ -340,7 +348,7 @@ export default function GestionDeposito() {
                                 Actualizar
                             </button>
                             {resumenSeleccion.totalPedidos > 0 && (
-                                <button className="dep_btn_procesar" onClick={() => { setResultados(null); setErrorProcesar(null); setModalProcesar(true); }}>
+                                <button className="dep_btn_procesar" onClick={() => { setResultados(null); setErrorProcesar(null); setSucursalesAbiertas(new Set(Object.keys(resumenSeleccion.porSucursal))); setModalProcesar(true); }}>
                                     Procesar {resumenSeleccion.totalPedidos} pedido{resumenSeleccion.totalPedidos !== 1 ? "s" : ""}
                                     {resumenSeleccion.totalLotes > 1 && ` · ${resumenSeleccion.totalLotes} lotes`}
                                 </button>
@@ -528,30 +536,43 @@ export default function GestionDeposito() {
                                 Se enviarán <strong>{resumenSeleccion.totalLotes} pedido{resumenSeleccion.totalLotes !== 1 ? "s" : ""} a Quantio</strong> (uno por sucursal), con los productos consolidados:
                             </p>
 
-                            {previewPorSucursal.map(({ sucursal, cantPedidos, productos }) => (
-                                <div key={sucursal} className="dep_preview_suc">
-                                    <div className="dep_preview_suc_header">
-                                        <span className="dep_badge dep_badge_sucursal">{sucursal}</span>
-                                        <span className="dep_preview_suc_info">
-                                            {cantPedidos} pedido{cantPedidos !== 1 ? "s" : ""} → 1 comprobante Quantio
-                                        </span>
-                                    </div>
-                                    <table className="dep_tabla dep_tabla_modal">
-                                        <thead>
-                                            <tr><th>EAN</th><th>Descripción</th><th>Unidades</th></tr>
-                                        </thead>
-                                        <tbody>
-                                            {productos.map(p => (
-                                                <tr key={p.idProducto}>
-                                                    <td className="dep_td_ean">{p.codebar ?? p.idProducto}</td>
-                                                    <td className="dep_td_desc">{p.descripcion ?? "—"}</td>
-                                                    <td className="dep_td_cant">{p.cantidad}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ))}
+                            <div className="dep_modal_scroll">
+                                {previewPorSucursal.map(({ sucursal, cantPedidos, productos }) => {
+                                    const abierta = sucursalesAbiertas.has(sucursal);
+                                    return (
+                                        <div key={sucursal} className="dep_preview_suc">
+                                            <div
+                                                className="dep_preview_suc_header dep_preview_suc_header_toggle"
+                                                onClick={() => toggleSucursalModal(sucursal)}
+                                            >
+                                                <span className="dep_badge dep_badge_sucursal">{sucursal}</span>
+                                                <span className="dep_preview_suc_info">
+                                                    {cantPedidos} pedido{cantPedidos !== 1 ? "s" : ""} · {productos.length} productos
+                                                </span>
+                                                <span className="dep_modal_chevron">
+                                                    {abierta ? <FaChevronDown /> : <FaChevronRight />}
+                                                </span>
+                                            </div>
+                                            {abierta && (
+                                                <table className="dep_tabla dep_tabla_modal">
+                                                    <thead>
+                                                        <tr><th>EAN</th><th>Descripción</th><th>Unidades</th></tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {productos.map(p => (
+                                                            <tr key={p.idProducto}>
+                                                                <td className="dep_td_ean">{p.codebar ?? p.idProducto}</td>
+                                                                <td className="dep_td_desc">{p.descripcion ?? "—"}</td>
+                                                                <td className="dep_td_cant">{p.cantidad}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
 
                             {errorProcesar && <p className="dep_form_error">{errorProcesar}</p>}
                             <div className="dep_modal_acciones">
@@ -575,40 +596,53 @@ export default function GestionDeposito() {
                                 </p>
                             </div>
 
-                            {resultados.map(r => (
-                                <div key={r.sucursal} className={`dep_resultado_suc ${r.ok ? "" : "dep_resultado_suc_error"}`}>
-                                    <div className="dep_resultado_suc_header">
-                                        <span className="dep_badge dep_badge_sucursal">{r.sucursal}</span>
-                                        {r.ok
-                                            ? <span className="dep_resultado_nro">→ Nro Quantio: <strong>{r.nro_pedido_quantio}</strong> · {r.reservas_procesadas} reservas · {r.productos_enviados} productos</span>
-                                            : <span className="dep_resultado_err">{r.error ?? "Error desconocido"}</span>
-                                        }
-                                    </div>
-                                    {r.ok && r.faltantes?.length > 0 && (
-                                        <div className="dep_faltantes">
-                                            <div className="dep_faltantes_header">
-                                                <FaExclamationTriangle />
-                                                <span>Faltantes ({r.faltantes.length})</span>
+                            <div className="dep_modal_scroll">
+                                {resultados.map(r => {
+                                    const abierta = sucursalesAbiertas.has(r.sucursal);
+                                    return (
+                                        <div key={r.sucursal} className={`dep_resultado_suc ${r.ok ? "" : "dep_resultado_suc_error"}`}>
+                                            <div
+                                                className="dep_resultado_suc_header dep_resultado_suc_header_toggle"
+                                                onClick={() => toggleSucursalModal(r.sucursal)}
+                                            >
+                                                <span className="dep_badge dep_badge_sucursal">{r.sucursal}</span>
+                                                {r.ok
+                                                    ? <span className="dep_resultado_nro">→ Nro Quantio: <strong>{r.nro_pedido_quantio}</strong> · {r.reservas_procesadas} reservas · {r.productos_enviados} productos</span>
+                                                    : <span className="dep_resultado_err">{r.error ?? "Error desconocido"}</span>
+                                                }
+                                                {r.ok && r.faltantes?.length > 0 && (
+                                                    <span className="dep_modal_chevron dep_modal_chevron_warn">
+                                                        {abierta ? <FaChevronDown /> : <FaChevronRight />}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <table className="dep_tabla dep_tabla_modal">
-                                                <thead>
-                                                    <tr><th>Descripción</th><th>Solic.</th><th>Confirm.</th><th>Faltante</th></tr>
-                                                </thead>
-                                                <tbody>
-                                                    {r.faltantes.map(f => (
-                                                        <tr key={f.idProducto}>
-                                                            <td>{f.descripcion ?? f.codebar ?? f.idProducto}</td>
-                                                            <td className="dep_td_cant">{f.solicitada}</td>
-                                                            <td className="dep_td_cant">{f.confirmada}</td>
-                                                            <td className="dep_td_cant dep_td_faltante">{f.faltante}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                            {abierta && r.ok && r.faltantes?.length > 0 && (
+                                                <div className="dep_faltantes">
+                                                    <div className="dep_faltantes_header">
+                                                        <FaExclamationTriangle />
+                                                        <span>Faltantes ({r.faltantes.length})</span>
+                                                    </div>
+                                                    <table className="dep_tabla dep_tabla_modal">
+                                                        <thead>
+                                                            <tr><th>Descripción</th><th>Solic.</th><th>Confirm.</th><th>Faltante</th></tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {r.faltantes.map(f => (
+                                                                <tr key={f.idProducto}>
+                                                                    <td>{f.descripcion ?? f.codebar ?? f.idProducto}</td>
+                                                                    <td className="dep_td_cant">{f.solicitada}</td>
+                                                                    <td className="dep_td_cant">{f.confirmada}</td>
+                                                                    <td className="dep_td_cant dep_td_faltante">{f.faltante}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+                                    );
+                                })}
+                            </div>
 
                             <div className="dep_modal_acciones">
                                 <button className="dep_btn_guardar" onClick={() => setModalProcesar(false)}>Cerrar</button>
