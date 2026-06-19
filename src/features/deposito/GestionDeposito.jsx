@@ -240,29 +240,40 @@ export default function GestionDeposito() {
     const procesarLotes = async () => {
         setProcesando(true);
         setErrorProcesar(null);
-        setResultados(null);
 
-        const resultadosAcumulados = [];
-        for (const [sucursal, { reservaIds }] of Object.entries(resumenSeleccion.porSucursal)) {
+        const entradas = Object.entries(resumenSeleccion.porSucursal);
+        setResultados(entradas.map(([suc]) => ({ sucursal: suc, status: "pending" })));
+
+        for (const [sucursal, { reservaIds }] of entradas) {
+            setResultados(prev => prev.map(r =>
+                r.sucursal === sucursal ? { ...r, status: "processing" } : r
+            ));
             try {
-                const r = await authFetch(`${API_URL}/api/deposito/procesar`, {
+                const res = await authFetch(`${API_URL}/api/deposito/procesar`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ sucursal_codigo: sucursal, reserva_ids: reservaIds })
                 });
-                const data = await r.json();
-                resultadosAcumulados.push({ sucursal, ok: r.ok, ...data });
+                const data = await res.json();
+                setResultados(prev => prev.map(r =>
+                    r.sucursal === sucursal
+                        ? { sucursal, status: res.ok ? "ok" : "error", ok: res.ok, ...data }
+                        : r
+                ));
             } catch (e) {
-                resultadosAcumulados.push({ sucursal, ok: false, error: e.message });
+                setResultados(prev => prev.map(r =>
+                    r.sucursal === sucursal
+                        ? { sucursal, status: "error", ok: false, error: e.message }
+                        : r
+                ));
             }
         }
 
-        setResultados(resultadosAcumulados);
         setProcesando(false);
         cargarPendientes();
     };
 
-    const todosOk = resultados?.every(r => r.ok) ?? false;
+    const todosOk = !procesando && resultados != null && resultados.every(r => r.ok === true);
     const todosTienen = todosLosPedidos.length > 0 && todosLosPedidos.every(p => seleccionados.has(p.nro_pedido_interno));
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -587,18 +598,41 @@ export default function GestionDeposito() {
                     ) : (
                         <div className="dep_modal_resultado">
                             <div className="dep_resultado_header">
-                                {todosOk
-                                    ? <FaCheckCircle className="dep_resultado_icon dep_resultado_ok" />
-                                    : <FaExclamationTriangle className="dep_resultado_icon dep_resultado_warn" />
+                                {procesando
+                                    ? <FaSync className="dep_resultado_icon dep_spin dep_resultado_procesando" />
+                                    : todosOk
+                                        ? <FaCheckCircle className="dep_resultado_icon dep_resultado_ok" />
+                                        : <FaExclamationTriangle className="dep_resultado_icon dep_resultado_warn" />
                                 }
                                 <p className="dep_resultado_titulo">
-                                    {todosOk ? "Todos los lotes procesados correctamente" : "Procesado con errores"}
+                                    {procesando
+                                        ? `Procesando... (${resultados.filter(r => r.status === "ok" || r.status === "error").length} / ${resultados.length})`
+                                        : todosOk ? "Todos los lotes procesados correctamente" : "Procesado con errores"
+                                    }
                                 </p>
                             </div>
 
                             <div className="dep_modal_scroll">
                                 {resultados.map(r => {
                                     const abierta = sucursalesAbiertas.has(r.sucursal);
+                                    if (r.status === "pending") return (
+                                        <div key={r.sucursal} className="dep_resultado_suc dep_resultado_suc_pending">
+                                            <div className="dep_resultado_suc_header">
+                                                <span className="dep_badge dep_badge_sucursal">{r.sucursal}</span>
+                                                <span className="dep_resultado_espera">En espera...</span>
+                                            </div>
+                                        </div>
+                                    );
+                                    if (r.status === "processing") return (
+                                        <div key={r.sucursal} className="dep_resultado_suc dep_resultado_suc_processing">
+                                            <div className="dep_resultado_suc_header">
+                                                <span className="dep_badge dep_badge_sucursal">{r.sucursal}</span>
+                                                <span className="dep_resultado_enviando">
+                                                    <FaSync className="dep_spin" /> Enviando...
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
                                     return (
                                         <div key={r.sucursal} className={`dep_resultado_suc ${r.ok ? "" : "dep_resultado_suc_error"}`}>
                                             <div
@@ -645,7 +679,7 @@ export default function GestionDeposito() {
                             </div>
 
                             <div className="dep_modal_acciones">
-                                <button className="dep_btn_guardar" onClick={() => setModalProcesar(false)}>Cerrar</button>
+                                <button className="dep_btn_guardar" onClick={() => setModalProcesar(false)} disabled={procesando}>Cerrar</button>
                             </div>
                         </div>
                     )}
