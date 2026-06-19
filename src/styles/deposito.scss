@@ -345,6 +345,14 @@
         padding: 0.5rem 0.75rem;
         background: #f4f6f8;
         border-bottom: 1px solid #dde2e7;
+
+        &_toggle {
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+
+            &:hover { background: #eaecef; }
+        }
     }
 
     &_preview_suc_info {
@@ -371,6 +379,17 @@
         align-items: center;
         gap: 0.6rem;
         flex-wrap: wrap;
+
+        &_toggle {
+            cursor: pointer;
+            user-select: none;
+            border-radius: 4px;
+            padding: 0.15rem 0.25rem;
+            margin: -0.15rem -0.25rem;
+            transition: background 0.15s;
+
+            &:hover { background: rgba(0,0,0,0.05); }
+        }
     }
 
     &_resultado_nro { font-size: 0.85rem; color: #555; }
@@ -624,6 +643,14 @@
 
     &_modal_body { min-width: 380px; }
 
+    &_modal_scroll {
+        max-height: 52vh;
+        overflow-y: auto;
+        margin: 0 -0.25rem;
+        padding: 0 0.25rem;
+        overscroll-behavior: contain;
+    }
+
     &_modal_acciones {
         display: flex;
         justify-content: flex-end;
@@ -632,6 +659,15 @@
     }
 
     &_modal_resultado { min-width: 380px; }
+
+    &_modal_chevron {
+        margin-left: auto;
+        font-size: 0.75rem;
+        color: #999;
+        flex-shrink: 0;
+
+        &_warn { color: #e0a800; }
+    }
 
     &_resultado_header {
         display: flex;
