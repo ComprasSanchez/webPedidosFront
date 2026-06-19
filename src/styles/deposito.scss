@@ -400,6 +400,17 @@
             border-color: #f5c2c7;
             background: #fff8f8;
         }
+
+        &_pending {
+            border-color: #e0e0e0;
+            background: #fafafa;
+            opacity: 0.6;
+        }
+
+        &_processing {
+            border-color: #b8d4d9;
+            background: #f0fafc;
+        }
     }
 
     &_resultado_suc_header {
@@ -434,6 +445,25 @@
 
     &_resultado_warn {
         color: #e0a800;
+    }
+
+    &_resultado_procesando {
+        color: #1f97ac;
+    }
+
+    &_resultado_espera {
+        font-size: 0.82rem;
+        color: #aaa;
+        font-style: italic;
+    }
+
+    &_resultado_enviando {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.82rem;
+        color: #1f97ac;
+        font-weight: 500;
     }
 
     // ── Cards de sucursal (viejo — mantener por si se reusa) ──────────────────
