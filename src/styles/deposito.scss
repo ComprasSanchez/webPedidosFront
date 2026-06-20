@@ -12,11 +12,17 @@
     }
 
     // ── Tabs ─────────────────────────────────────────────────────────────────
+    &_tabs_row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
     &_tabs {
         display: flex;
         gap: 0.25rem;
-        margin-bottom: 1.5rem;
-        border-bottom: 2px solid #e0e0e0;
     }
 
     &_tab {
@@ -661,6 +667,97 @@
     }
 
     // ── Botones ───────────────────────────────────────────────────────────────
+
+    // Split-button grupo (Procesar + ⋮)
+    &_btn_group {
+        position: relative;
+        display: inline-flex;
+        align-items: stretch;
+    }
+
+    &_btn_opciones {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0.55rem;
+        background: transparent;
+        border: 1px solid #1f97ac;
+        border-left: none;
+        border-radius: 0 6px 6px 0;
+        color: #1f97ac;
+        font-size: 1.5rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: background 0.15s;
+
+        &:hover {
+            background: #bd7777;
+            color: #e5f4f6;
+        }
+
+        &:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+    }
+
+    &_dropdown {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+        min-width: 200px;
+        z-index: 200;
+        overflow: hidden;
+
+        &_item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.55rem 0.85rem;
+            background: none;
+            border: none;
+            text-align: left;
+            font-size: 0.86rem;
+            cursor: pointer;
+            transition: background 0.12s;
+
+            &_danger {
+                color: #c0392b;
+
+                &:hover {
+                    color: #8d1e12;
+                    background: #f4c5c2;
+                }
+            }
+        }
+    }
+
+    &_btn_anular_confirm {
+        padding: 0.5rem 1.1rem;
+        background: #c0392b;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+            background: #a93226;
+        }
+
+        &:disabled {
+            background: #e8a49e;
+            cursor: not-allowed;
+        }
+    }
+
     &_btn_procesar {
         display: inline-flex;
         align-items: center;
@@ -668,16 +765,16 @@
         padding: 0.42rem 1rem;
         background: #1f97ac;
         color: #fff;
-        border: none;
-        border-radius: 6px;
-        font-size: 0.84rem;
-        font-weight: 500;
+        border: 1px solid #1f97ac;
+        border-radius: 6px 0 0 6px;
+        font-size: 0.94rem;
+        font-weight: 400;
         cursor: pointer;
         transition: background 0.2s;
         white-space: nowrap;
 
         &:hover {
-            background: #177a8c;
+            background: #115b68;
         }
 
         &:disabled {
@@ -935,6 +1032,35 @@
             font-size: 0.95rem;
             margin: 0;
         }
+    }
+
+    // ── Modal anular ─────────────────────────────────────────────────────────
+    &_anular_lista {
+        list-style: none;
+        padding: 0;
+        margin: 0.75rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+
+        li {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+    }
+
+    &_anular_detalle {
+        font-size: 0.85rem;
+        color: #555;
+    }
+
+    &_anular_aviso {
+        font-size: 0.82rem;
+        color: #c0392b;
+        font-weight: 500;
+        margin-top: 0.75rem;
+        margin-bottom: 0;
     }
 
     // ── Spin ──────────────────────────────────────────────────────────────────
