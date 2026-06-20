@@ -1,6 +1,6 @@
 // front/src/features/deposito/GestionDeposito.jsx
-import { useEffect, useState, useCallback, useMemo } from "react";
-import { FaBoxOpen, FaHistory, FaCheckCircle, FaExclamationTriangle, FaSync, FaChevronDown, FaChevronRight } from "react-icons/fa";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { FaBoxOpen, FaHistory, FaCheckCircle, FaExclamationTriangle, FaSync, FaChevronDown, FaChevronRight, FaTrashAlt } from "react-icons/fa";
 import { API_URL } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 import Modal from "../../components/ui/Modal";
@@ -29,12 +29,12 @@ function agruparPorPedido(data) {
             if (!pedidosMap.has(key)) {
                 pedidosMap.set(key, {
                     nro_pedido_interno: key,
-                    pedido_id:      r.pedido_id,
-                    usuario_login:  r.usuario_login,
+                    pedido_id: r.pedido_id,
+                    usuario_login: r.usuario_login,
                     usuario_nombre: r.usuario_nombre,
-                    usuario_rol:    r.usuario_rol,
-                    estado_pedido:  r.estado_pedido,
-                    fecha:          r.fecha_pedido ?? r.created_at,
+                    usuario_rol: r.usuario_rol,
+                    estado_pedido: r.estado_pedido,
+                    fecha: r.fecha_pedido ?? r.created_at,
                     cluster_nombre: r.cluster_nombre ?? null,
                     reservas: []
                 });
@@ -48,8 +48,8 @@ function agruparPorPedido(data) {
         }));
 
         return {
-            sucursal_codigo:  suc.sucursal_codigo,
-            total_unidades:   suc.total_unidades,
+            sucursal_codigo: suc.sucursal_codigo,
+            total_unidades: suc.total_unidades,
             pedido_mas_antiguo: suc.pedido_mas_antiguo,
             pedidos
         };
@@ -61,21 +61,36 @@ export default function GestionDeposito() {
     const [tab, setTab] = useState("pendientes");
 
     // ── Pendientes ────────────────────────────────────────────────────────────
-    const [pendientes, setPendientes]     = useState([]);
-    const [loadingPend, setLoadingPend]   = useState(false);
-    const [errorPend, setErrorPend]       = useState(null);
+    const [pendientes, setPendientes] = useState([]);
+    const [loadingPend, setLoadingPend] = useState(false);
+    const [errorPend, setErrorPend] = useState(null);
 
     // Conjunto de nro_pedido_interno seleccionados (unidad de selección)
     const [seleccionados, setSeleccionados] = useState(new Set());
     // Qué pedidos internos están expandidos (muestran sus productos)
-    const [expandidos, setExpandidos]       = useState(new Set());
+    const [expandidos, setExpandidos] = useState(new Set());
 
     // ── Modal procesar ────────────────────────────────────────────────────────
-    const [modalProcesar, setModalProcesar]       = useState(false);
-    const [procesando, setProcesando]             = useState(false);
-    const [resultados, setResultados]             = useState(null); // array por sucursal
-    const [errorProcesar, setErrorProcesar]       = useState(null);
+    const [modalProcesar, setModalProcesar] = useState(false);
+    const [procesando, setProcesando] = useState(false);
+    const [resultados, setResultados] = useState(null); // array por sucursal
+    const [errorProcesar, setErrorProcesar] = useState(null);
     const [sucursalesAbiertas, setSucursalesAbiertas] = useState(new Set());
+
+    // ── Modal anular ──────────────────────────────────────────────────────────
+    const [modalAnular, setModalAnular] = useState(false);
+    const [anulando, setAnulando] = useState(false);
+    const [resultadoAnular, setResultadoAnular] = useState(null); // { ok, reservas_anuladas, pedidos_anulados } | { error }
+
+    // ── Menú de opciones (⋮) ─────────────────────────────────────────────────
+    const [menuOpciones, setMenuOpciones] = useState(false);
+    const menuRef = useRef(null);
+    useEffect(() => {
+        if (!menuOpciones) return;
+        const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpciones(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [menuOpciones]);
 
     const toggleSucursalModal = (suc) =>
         setSucursalesAbiertas(prev => {
@@ -85,9 +100,9 @@ export default function GestionDeposito() {
         });
 
     // ── Historial ─────────────────────────────────────────────────────────────
-    const [lotes, setLotes]             = useState([]);
+    const [lotes, setLotes] = useState([]);
     const [loadingLotes, setLoadingLotes] = useState(false);
-    const [errorLotes, setErrorLotes]   = useState(null);
+    const [errorLotes, setErrorLotes] = useState(null);
 
     // ── Cargar pendientes ─────────────────────────────────────────────────────
     const cargarPendientes = useCallback(() => {
@@ -205,7 +220,7 @@ export default function GestionDeposito() {
             }
         }
         const totalPedidos = Object.values(porSucursal).reduce((s, v) => s + v.pedidos.length, 0);
-        const totalLotes   = Object.keys(porSucursal).length;
+        const totalLotes = Object.keys(porSucursal).length;
         return { porSucursal, totalPedidos, totalLotes };
     }, [pendientes, seleccionados]);
 
@@ -276,18 +291,55 @@ export default function GestionDeposito() {
     const todosOk = !procesando && resultados != null && resultados.every(r => r.ok === true);
     const todosTienen = todosLosPedidos.length > 0 && todosLosPedidos.every(p => seleccionados.has(p.nro_pedido_interno));
 
+    // ── Anular pedidos seleccionados ──────────────────────────────────────────
+    const anularPedidos = async () => {
+        setAnulando(true);
+        setResultadoAnular(null);
+
+        const reservaIds = [...seleccionados]
+            .flatMap(nro => {
+                const ped = todosLosPedidos.find(p => p.nro_pedido_interno === nro);
+                return ped ? ped.reservas.map(r => r.reserva_id) : [];
+            });
+
+        try {
+            const res = await authFetch(`${API_URL}/api/deposito/anular`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reserva_ids: reservaIds })
+            });
+            const data = await res.json();
+            setResultadoAnular(res.ok ? { ok: true, ...data } : { ok: false, error: data.error ?? "Error desconocido" });
+            if (res.ok) cargarPendientes();
+        } catch (e) {
+            setResultadoAnular({ ok: false, error: e.message });
+        } finally {
+            setAnulando(false);
+        }
+    };
+
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="dep">
             <h2 className="dep_titulo">Panel del Depósito</h2>
 
-            {/* Tabs */}
-            <div className="dep_tabs">
-                <button className={`dep_tab ${tab === "pendientes" ? "dep_tab_active" : ""}`} onClick={() => setTab("pendientes")}>
-                    <FaBoxOpen /> Pedidos pendientes
-                </button>
-                <button className={`dep_tab ${tab === "historial" ? "dep_tab_active" : ""}`} onClick={() => setTab("historial")}>
-                    <FaHistory /> Historial de lotes
+            {/* Tabs + Actualizar */}
+            <div className="dep_tabs_row">
+                <div className="dep_tabs">
+                    <button className={`dep_tab ${tab === "pendientes" ? "dep_tab_active" : ""}`} onClick={() => setTab("pendientes")}>
+                        <FaBoxOpen /> Pedidos pendientes
+                    </button>
+                    <button className={`dep_tab ${tab === "historial" ? "dep_tab_active" : ""}`} onClick={() => setTab("historial")}>
+                        <FaHistory /> Historial de lotes
+                    </button>
+                </div>
+                <button
+                    className="dep_btn_refresh"
+                    onClick={tab === "pendientes" ? cargarPendientes : cargarLotes}
+                    disabled={loadingPend || loadingLotes}
+                >
+                    <FaSync className={(loadingPend || loadingLotes) ? "dep_spin" : ""} />
+                    Actualizar
                 </button>
             </div>
 
@@ -315,7 +367,7 @@ export default function GestionDeposito() {
                                     <span className="dep_toolbar_label">Por cluster:</span>
                                     {clustersUnicos.map(c => {
                                         const pedidosC = todosLosPedidos.filter(p => p.cluster_nombre === c);
-                                        const activo   = pedidosC.every(p => seleccionados.has(p.nro_pedido_interno));
+                                        const activo = pedidosC.every(p => seleccionados.has(p.nro_pedido_interno));
                                         return (
                                             <button
                                                 key={c}
@@ -336,7 +388,7 @@ export default function GestionDeposito() {
                                     <span className="dep_toolbar_label">Por usuario:</span>
                                     {usuariosUnicos.map(u => {
                                         const pedidosU = todosLosPedidos.filter(p => p.usuario_login === u.login);
-                                        const activo   = pedidosU.every(p => seleccionados.has(p.nro_pedido_interno));
+                                        const activo = pedidosU.every(p => seleccionados.has(p.nro_pedido_interno));
                                         return (
                                             <button
                                                 key={u.login}
@@ -351,18 +403,37 @@ export default function GestionDeposito() {
                                     })}
                                 </div>
                             )}
+
                         </div>
 
                         <div className="dep_toolbar_der">
-                            <button className="dep_btn_refresh" onClick={cargarPendientes} disabled={loadingPend}>
-                                <FaSync className={loadingPend ? "dep_spin" : ""} />
-                                Actualizar
-                            </button>
                             {resumenSeleccion.totalPedidos > 0 && (
-                                <button className="dep_btn_procesar" onClick={() => { setResultados(null); setErrorProcesar(null); setSucursalesAbiertas(new Set()); setModalProcesar(true); }}>
-                                    Procesar {resumenSeleccion.totalPedidos} pedido{resumenSeleccion.totalPedidos !== 1 ? "s" : ""}
-                                    {resumenSeleccion.totalLotes > 1 && ` · ${resumenSeleccion.totalLotes} lotes`}
-                                </button>
+                                <div className="dep_btn_group" ref={menuRef}>
+                                    <button
+                                        className="dep_btn_procesar"
+                                        onClick={() => { setResultados(null); setErrorProcesar(null); setSucursalesAbiertas(new Set()); setModalProcesar(true); }}
+                                    >
+                                        Procesar {resumenSeleccion.totalPedidos} pedido{resumenSeleccion.totalPedidos !== 1 ? "s" : ""}
+                                    </button>
+                                    <button
+                                        className="dep_btn_opciones"
+                                        onClick={() => setMenuOpciones(p => !p)}
+                                        title="Más opciones"
+                                    >
+                                        ⋮
+                                    </button>
+                                    {menuOpciones && (
+                                        <div className="dep_dropdown">
+                                            <button
+                                                className="dep_dropdown_item dep_dropdown_item_danger"
+                                                onClick={() => { setMenuOpciones(false); setResultadoAnular(null); setModalAnular(true); }}
+                                            >
+                                                <FaTrashAlt />
+                                                Anular {resumenSeleccion.totalPedidos} pedido{resumenSeleccion.totalPedidos !== 1 ? "s" : ""}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
@@ -409,7 +480,7 @@ export default function GestionDeposito() {
 
                             {/* Pedidos internos */}
                             {suc.pedidos.map(ped => {
-                                const selec    = seleccionados.has(ped.nro_pedido_interno);
+                                const selec = seleccionados.has(ped.nro_pedido_interno);
                                 const expanded = expandidos.has(ped.nro_pedido_interno);
                                 return (
                                     <div key={ped.nro_pedido_interno} className={`dep_ped_card ${selec ? "dep_ped_card_sel" : ""}`}>
@@ -494,9 +565,6 @@ export default function GestionDeposito() {
                 <div>
                     <div className="dep_section_header">
                         <p className="dep_section_desc">Lotes procesados y enviados a Quantio.</p>
-                        <button className="dep_btn_refresh" onClick={cargarLotes} disabled={loadingLotes}>
-                            <FaSync className={loadingLotes ? "dep_spin" : ""} /> Actualizar
-                        </button>
                     </div>
                     {errorLotes && <p className="dep_error">{errorLotes}</p>}
                     <div className="dep_tabla_wrap">
@@ -534,6 +602,58 @@ export default function GestionDeposito() {
                         </table>
                     </div>
                 </div>
+            )}
+
+            {/* ── Modal anular ─────────────────────────────────────────────────── */}
+            {modalAnular && (
+                <Modal onClose={() => { if (!anulando) setModalAnular(false); }}>
+                    <h3 className="dep_modal_titulo">Anular pedidos seleccionados</h3>
+
+                    {!resultadoAnular ? (
+                        <div className="dep_modal_body">
+                            <p className="dep_modal_desc">
+                                Se van a anular <strong>{resumenSeleccion.totalPedidos} pedido{resumenSeleccion.totalPedidos !== 1 ? "s" : ""}</strong> de las siguientes sucursales. El stock quedará liberado.
+                            </p>
+                            <ul className="dep_anular_lista">
+                                {Object.entries(resumenSeleccion.porSucursal).map(([suc, { pedidos }]) => (
+                                    <li key={suc}>
+                                        <span className="dep_badge dep_badge_sucursal">{suc}</span>
+                                        <span className="dep_anular_detalle">
+                                            {pedidos.length} pedido{pedidos.length !== 1 ? "s" : ""} · {pedidos.map(p => p.nro_pedido_interno).join(", ")}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <p className="dep_anular_aviso">Esta acción no se puede deshacer.</p>
+                            <div className="dep_modal_acciones">
+                                <button className="dep_btn_cancelar" onClick={() => setModalAnular(false)} disabled={anulando}>
+                                    Cancelar
+                                </button>
+                                <button className="dep_btn_anular_confirm" onClick={anularPedidos} disabled={anulando}>
+                                    {anulando ? "Anulando..." : "Confirmar anulación"}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="dep_modal_resultado">
+                            <div className="dep_resultado_header">
+                                {resultadoAnular.ok
+                                    ? <FaCheckCircle className="dep_resultado_icon dep_resultado_ok" />
+                                    : <FaExclamationTriangle className="dep_resultado_icon dep_resultado_warn" />
+                                }
+                                <p className="dep_resultado_titulo">
+                                    {resultadoAnular.ok
+                                        ? `${resultadoAnular.reservas_anuladas} reservas anuladas — stock liberado`
+                                        : `Error: ${resultadoAnular.error}`
+                                    }
+                                </p>
+                            </div>
+                            <div className="dep_modal_acciones">
+                                <button className="dep_btn_guardar" onClick={() => setModalAnular(false)}>Cerrar</button>
+                            </div>
+                        </div>
+                    )}
+                </Modal>
             )}
 
             {/* ── Modal procesar ───────────────────────────────────────────────── */}
