@@ -165,23 +165,28 @@ export class ZipProcessor {
             }
         });
 
-        // Extraer números de pedidos del depósito de la respuesta del backend
+        // Extraer números de pedidos del depósito de la respuesta del backend.
+        // Si el pedido fue enviado directo a Quantio usamos el número real (nroPedidoQuantio).
+        // Si quedó pendiente en el panel del depósito (DEPOSITO_DIRECTO=false o fallback por error
+        // de Quantio) todavía no hay número de Quantio — mostramos el interno (DEPO-xxx) en su lugar.
         if (zipData.pedidos_deposito?.pedidos_resumen) {
             zipData.pedidos_deposito.pedidos_resumen.forEach(pedido => {
                 const sucursal = pedido.sucursal;
-                if (metadatosSucursales[sucursal] && pedido.nroPedidoQuantio) {
+                const numeroAMostrar = pedido.nroPedidoQuantio || pedido.nroPedidoInterno;
+
+                if (metadatosSucursales[sucursal] && numeroAMostrar) {
                     // Acumular múltiples números de pedido en lugar de sobreescribir
                     if (!metadatosSucursales[sucursal].nrosPedidosDeposito) {
                         metadatosSucursales[sucursal].nrosPedidosDeposito = [];
                     }
 
                     // Evitar duplicados si ya existe el número
-                    if (!metadatosSucursales[sucursal].nrosPedidosDeposito.includes(pedido.nroPedidoQuantio)) {
-                        metadatosSucursales[sucursal].nrosPedidosDeposito.push(pedido.nroPedidoQuantio);
+                    if (!metadatosSucursales[sucursal].nrosPedidosDeposito.includes(numeroAMostrar)) {
+                        metadatosSucursales[sucursal].nrosPedidosDeposito.push(numeroAMostrar);
                     }
 
                     // Mantener compatibilidad con el campo original (usar el último agregado)
-                    metadatosSucursales[sucursal].nroPedidoDeposito = pedido.nroPedidoQuantio;
+                    metadatosSucursales[sucursal].nroPedidoDeposito = numeroAMostrar;
                 }
             });
         }
