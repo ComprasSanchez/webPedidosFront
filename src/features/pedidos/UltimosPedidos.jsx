@@ -334,10 +334,34 @@ export default function UltimosPedidos() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {allItems.map((it, idx) => (
-                                        <tr key={`${it.id}-${idx}`}>
+                                    {allItems.map((it, idx) => {
+                                        const rechazado = it.estado_pedido === 'RECHAZADO';
+                                        return (
+                                        <tr
+                                            key={`${it.id}-${idx}`}
+                                            style={rechazado ? { background: '#fff5f5', borderLeft: '3px solid #dc3545' } : undefined}
+                                        >
                                             <td>{it.fecha.format("DD/MM/YYYY HH:mm")}</td>
-                                            <td>{it.nro_pedido ?? "-"}</td>
+                                            <td>
+                                                {it.nro_pedido ?? "-"}
+                                                {rechazado && (
+                                                    <span
+                                                        title={it.mensaje_proveedor || "Monroe rechazó este pedido"}
+                                                        style={{
+                                                            marginLeft: '6px',
+                                                            fontSize: '0.75em',
+                                                            background: '#dc3545',
+                                                            color: '#fff',
+                                                            borderRadius: '3px',
+                                                            padding: '1px 5px',
+                                                            verticalAlign: 'middle',
+                                                            cursor: 'help'
+                                                        }}
+                                                    >
+                                                        RECHAZADO
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td>{it.codebar}</td>
                                             <td
                                                 title={`Precio: $${Number(it.precio_comprado || 0).toFixed(2)} | Motivo: ${it.motivo ?? "—"}`}
@@ -349,7 +373,8 @@ export default function UltimosPedidos() {
                                             <td>{it.cantidad}</td>
                                             <td>{(it.drogueria || "—").toUpperCase()}</td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}

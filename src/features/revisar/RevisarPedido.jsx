@@ -564,16 +564,26 @@ export default function RevisarPedido() {
                         r.proveedor === 'monroe' && r.creditoInsuficiente === true
                     );
 
-                    if (hayErroresCreditoCofarsur || hayWarningsCreditoMonroe) {
+                    // 🚨 Detectar productos rechazados en Monroe (todos rechazados → errores, parcial → exitos)
+                    const hayRechazadosMonroe =
+                        data.resultados.errores.some(r => r.proveedor === 'monroe' && r.productosRechazados) ||
+                        data.resultados.exitos.some(r => r.proveedor === 'monroe' && r.productosRechazados?.total > 0);
+
+                    if (hayErroresCreditoCofarsur || hayWarningsCreditoMonroe || hayRechazadosMonroe) {
                         // Obtener información específica de cada proveedor con problemas de crédito
                         const creditoCofarsur = data.resultados.errores.find(r => r.proveedor === 'cofarsur' && r.creditoAgotado === true);
                         const creditoMonroe = data.resultados.exitos.find(r => r.proveedor === 'monroe' && r.creditoInsuficiente === true);
+                        const rechazadosMonroe =
+                            data.resultados.errores.find(r => r.proveedor === 'monroe' && r.productosRechazados) ||
+                            data.resultados.exitos.find(r => r.proveedor === 'monroe' && r.productosRechazados?.total > 0);
 
-                        const tituloToast = (hayErroresCreditoCofarsur && hayWarningsCreditoMonroe)
-                            ? "🚫 Pedido parcial: Problemas de crédito en Cofarsur y Monroe"
+                        const tituloToast = hayErroresCreditoCofarsur && (hayWarningsCreditoMonroe || hayRechazadosMonroe)
+                            ? "🚫 Pedido parcial: Problemas en Cofarsur y Monroe"
                             : hayErroresCreditoCofarsur
                                 ? "🚫 Pedido parcial: Cofarsur sin crédito"
-                                : "🚫 Pedido parcial: Monroe con crédito insuficiente";
+                                : hayRechazadosMonroe
+                                    ? "🚫 Monroe rechazó productos del pedido"
+                                    : "🚫 Pedido parcial: Monroe con crédito insuficiente";
 
                         toast(
                             <div>
@@ -605,7 +615,7 @@ export default function RevisarPedido() {
                                         </div>
                                     )}
 
-                                    {/* Problemas de Monroe */}
+                                    {/* Problemas de Monroe - crédito */}
                                     {creditoMonroe && (
                                         <div style={{ marginTop: '12px', padding: '8px', background: '#fff9e6', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
                                             <strong>⚠️ Monroe: Crédito insuficiente detectado</strong>
@@ -616,6 +626,34 @@ export default function RevisarPedido() {
                                             </div>
                                             <div style={{ fontSize: '0.85em', marginTop: '6px', fontStyle: 'italic' }}>
                                                 💡 Contactá a Monroe para verificar el estado del crédito y confirmar el pedido
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Monroe - productos rechazados */}
+                                    {rechazadosMonroe && (
+                                        <div style={{ marginTop: '12px', padding: '8px', background: '#fff5f5', borderRadius: '4px', borderLeft: '3px solid #dc3545' }}>
+                                            <strong>🚫 Monroe: {rechazadosMonroe.productosRechazados?.total} producto/s rechazado/s</strong>
+                                            <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                                {rechazadosMonroe.nroPedido
+                                                    ? <>Pedido #{rechazadosMonroe.nroPedido} generado pero Monroe no aceptó los siguientes productos:</>
+                                                    : <>Monroe no aceptó los siguientes productos:</>
+                                                }
+                                            </div>
+                                            <ul style={{ margin: '6px 0', paddingLeft: '20px', fontSize: '0.9em' }}>
+                                                {rechazadosMonroe.productosRechazados?.productos?.map((p, i) => (
+                                                    <li key={i}>
+                                                        <strong>{p.codebar}</strong>{p.nombre ? ` — ${p.nombre}` : ''}
+                                                        {p.errores?.length > 0 && (
+                                                            <span style={{ color: '#dc3545', marginLeft: '4px' }}>
+                                                                ({p.errores.map(e => e.descripcion || e.nombre).join(', ')})
+                                                            </span>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <div style={{ fontSize: '0.85em', marginTop: '4px', fontStyle: 'italic' }}>
+                                                💡 Estos productos no fueron pedidos a Monroe. Podés cambiarlos de proveedor o marcarlos como "Falta".
                                             </div>
                                         </div>
                                     )}
@@ -683,8 +721,14 @@ export default function RevisarPedido() {
                         r.proveedor === 'monroe' && r.creditoInsuficiente === true
                     );
 
-                    if (hayWarningsCreditoMonroe) {
+                    // 🚨 Detectar productos rechazados en Monroe (pedido exitoso pero con rechazos parciales)
+                    const hayRechazadosParcialMonroe = data.resultados.exitos?.some(r =>
+                        r.proveedor === 'monroe' && r.productosRechazados?.total > 0
+                    );
+
+                    if (hayWarningsCreditoMonroe || hayRechazadosParcialMonroe) {
                         const creditoMonroe = data.resultados.exitos.find(r => r.proveedor === 'monroe' && r.creditoInsuficiente === true);
+                        const rechazadosParcialMonroe = data.resultados.exitos.find(r => r.proveedor === 'monroe' && r.productosRechazados?.total > 0);
 
                         toast(
                             <div>
@@ -697,29 +741,55 @@ export default function RevisarPedido() {
                                             <li key={r.proveedor}>
                                                 {r.proveedor}: #{r.nroPedido} ({r.items} productos)
                                                 {r.creditoInsuficiente && <span style={{ color: '#f59e0b', marginLeft: '8px' }}>⚠️ Con observaciones</span>}
+                                                {r.productosRechazados?.total > 0 && <span style={{ color: '#dc3545', marginLeft: '8px' }}>🚫 {r.productosRechazados.total} rechazado/s</span>}
                                             </li>
                                         ))}
                                     </ul>
-                                    <div style={{ marginTop: '12px', padding: '8px', background: '#fff9e6', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
-                                        <strong>⚠️ Monroe: Crédito insuficiente detectado</strong>
-                                        <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
-                                            El pedido fue enviado pero Monroe reporta problemas de crédito.
-                                            <br />
-                                            Productos afectados: {creditoMonroe.detalleCredito?.productosAfectados || 0} de {creditoMonroe.items} productos
+                                    {creditoMonroe && (
+                                        <div style={{ marginTop: '12px', padding: '8px', background: '#fff9e6', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
+                                            <strong>⚠️ Monroe: Crédito insuficiente detectado</strong>
+                                            <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                                El pedido fue enviado pero Monroe reporta problemas de crédito.
+                                                <br />
+                                                Productos afectados: {creditoMonroe.detalleCredito?.productosAfectados || 0} de {creditoMonroe.items} productos
+                                            </div>
+                                            <div style={{ fontSize: '0.85em', marginTop: '6px', fontStyle: 'italic' }}>
+                                                💡 Contactá a Monroe para verificar el estado del crédito y confirmar el pedido
+                                            </div>
                                         </div>
-                                        <div style={{ fontSize: '0.85em', marginTop: '6px', fontStyle: 'italic' }}>
-                                            💡 Contactá a Monroe para verificar el estado del crédito y confirmar el pedido
+                                    )}
+                                    {rechazadosParcialMonroe && (
+                                        <div style={{ marginTop: '12px', padding: '8px', background: '#fff5f5', borderRadius: '4px', borderLeft: '3px solid #dc3545' }}>
+                                            <strong>🚫 Monroe: {rechazadosParcialMonroe.productosRechazados.total} producto/s rechazado/s</strong>
+                                            <div style={{ fontSize: '0.9em', marginTop: '4px' }}>
+                                                Pedido #{rechazadosParcialMonroe.nroPedido} generado pero Monroe no aceptó los siguientes productos:
+                                            </div>
+                                            <ul style={{ margin: '6px 0', paddingLeft: '20px', fontSize: '0.9em' }}>
+                                                {rechazadosParcialMonroe.productosRechazados.productos?.map((p, i) => (
+                                                    <li key={i}>
+                                                        <strong>{p.codebar}</strong>{p.nombre ? ` — ${p.nombre}` : ''}
+                                                        {p.errores?.length > 0 && (
+                                                            <span style={{ color: '#dc3545', marginLeft: '4px' }}>
+                                                                ({p.errores.map(e => e.descripcion || e.nombre).join(', ')})
+                                                            </span>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <div style={{ fontSize: '0.85em', marginTop: '4px', fontStyle: 'italic' }}>
+                                                💡 Estos productos no fueron pedidos a Monroe. Podés cambiarlos de proveedor o marcarlos como "Falta".
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>,
                             {
                                 id: toastId,
-                                duration: 12000,
+                                duration: 15000,
                                 style: {
-                                    maxWidth: '600px',
-                                    background: '#fff9e6',
-                                    borderLeft: '3px solid #f59e0b'
+                                    maxWidth: '650px',
+                                    background: hayRechazadosParcialMonroe ? '#fff5f5' : '#fff9e6',
+                                    borderLeft: `3px solid ${hayRechazadosParcialMonroe ? '#dc3545' : '#f59e0b'}`
                                 }
                             }
                         );
@@ -803,7 +873,47 @@ export default function RevisarPedido() {
                         r.proveedor === 'cofarsur' && r.creditoAgotado === true
                     );
 
-                    if (hayErroresCreditoCofarsur) {
+                    // 🚨 Detectar todos los productos rechazados en Monroe (único proveedor, todos rechazados)
+                    const hayRechazadosTodosMonroe = data.resultados.errores.some(r =>
+                        r.proveedor === 'monroe' && r.productosRechazados?.total > 0
+                    );
+
+                    if (hayRechazadosTodosMonroe) {
+                        const rechazadosTodosMonroe = data.resultados.errores.find(r => r.proveedor === 'monroe' && r.productosRechazados?.total > 0);
+                        toast.error(
+                            <div>
+                                <strong>🚫 Monroe rechazó todos los productos</strong>
+                                <br />
+                                <div style={{ marginTop: '8px', fontSize: '0.95em' }}>
+                                    Monroe asignó el número de pedido #{rechazadosTodosMonroe.nroPedido} pero no aceptó ningún producto.
+                                </div>
+                                <ul style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '0.9em' }}>
+                                    {rechazadosTodosMonroe.productosRechazados?.productos?.map((p, i) => (
+                                        <li key={i}>
+                                            <strong>{p.codebar}</strong>{p.nombre ? ` — ${p.nombre}` : ''}
+                                            {p.errores?.length > 0 && (
+                                                <span style={{ color: '#dc3545', marginLeft: '4px' }}>
+                                                    ({p.errores.map(e => e.descripcion || e.nombre).join(', ')})
+                                                </span>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <div style={{ fontSize: '0.85em', marginTop: '4px', fontStyle: 'italic' }}>
+                                    💡 Podés cambiar estos productos a otro proveedor o marcarlos como "Falta".
+                                </div>
+                            </div>,
+                            {
+                                id: toastId,
+                                duration: 20000,
+                                style: {
+                                    maxWidth: '600px',
+                                    background: '#fff5f5',
+                                    borderLeft: '4px solid #dc3545'
+                                }
+                            }
+                        );
+                    } else if (hayErroresCreditoCofarsur) {
                         // Toast específico para crédito agotado
                         toast.error(
                             <div>
