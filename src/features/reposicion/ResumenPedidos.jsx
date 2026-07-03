@@ -429,7 +429,7 @@ export default function ResumenPedidos() {
                                                             : <FaDownload />}
                                                     </button>
                                                 )}
-                                            {row.proveedor !== "kellerhoff" && row.proveedor !== "suizaTuc" && (
+                                            {row.proveedor !== "suizaTuc" && (
                                                 <>
                                                     <button
                                                         className="rped_btn_recarrito"
