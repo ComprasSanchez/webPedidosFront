@@ -416,18 +416,18 @@ export default function ResumenPedidos() {
                                         </td>
                                         <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                                             {(row.proveedor === "kellerhoff" || row.proveedor === "suizaTuc")
-                                                && ["SKIP", "ERROR"].includes((row.estado_pedido || "").toUpperCase()) && (
-                                                <button
-                                                    className="rped_btn_descarga"
-                                                    onClick={() => handleDescargar(row)}
-                                                    disabled={descargando === row.id}
-                                                    title="Descargar archivo"
-                                                >
-                                                    {descargando === row.id
-                                                        ? <span style={{ fontSize: "0.75rem" }}>...</span>
-                                                        : <FaDownload />}
-                                                </button>
-                                            )}
+                                                && ["SKIP", "ERROR", "ENVIADO_SIN_NUMERO",].includes((row.estado_pedido || "").toUpperCase()) && (
+                                                    <button
+                                                        className="rped_btn_descarga"
+                                                        onClick={() => handleDescargar(row)}
+                                                        disabled={descargando === row.id}
+                                                        title="Descargar archivo"
+                                                    >
+                                                        {descargando === row.id
+                                                            ? <span style={{ fontSize: "0.75rem" }}>...</span>
+                                                            : <FaDownload />}
+                                                    </button>
+                                                )}
                                             {row.proveedor !== "kellerhoff" && row.proveedor !== "suizaTuc" && (
                                                 <>
                                                     <button
