@@ -67,6 +67,7 @@ const ESTADOS = [
     { value: "ERROR", label: "Error" },
     { value: "PROCESANDO", label: "Procesando" },
     { value: "CREDITO_AGOTADO", label: "Crédito agotado" },
+    { value: "ENVIADO_SIN_NUMERO", label: "Enviado sin número" },
     { value: "SKIP", label: "Skip (sin API)" },
     { value: "FALTA", label: "Falta" },
 ];
