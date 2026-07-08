@@ -125,6 +125,8 @@ export default function GestionConvenios() {
     const [buscar, setBuscar] = useState("");
     const [filtroTipo, setFiltroTipo] = useState("");
     const [filtroLab, setFiltroLab] = useState("");
+    const [filtroProveedorPrioridad, setFiltroProveedorPrioridad] = useState("");
+    const [filtroPosicionPrioridad, setFiltroPosicionPrioridad] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -195,13 +197,21 @@ export default function GestionConvenios() {
         setLoading(true);
         setError(null);
         setSeleccionados(new Set());
-        const params = new URLSearchParams({ page, limit: LIMIT, buscar, tipo: filtroTipo, laboratorio: filtroLab });
+        const params = new URLSearchParams({
+            page,
+            limit: LIMIT,
+            buscar,
+            tipo: filtroTipo,
+            laboratorio: filtroLab,
+            proveedorPrioridad: filtroProveedorPrioridad,
+            posicionPrioridad: filtroPosicionPrioridad,
+        });
         authFetch(`${API_URL}/api/convenios/detalle?${params}`)
             .then(r => { if (!r.ok) throw new Error("Error al cargar"); return r.json(); })
             .then(data => { setItems(data.items || []); setTotal(data.total || 0); })
             .catch(e => setError(e.message))
             .finally(() => setLoading(false));
-    }, [authFetch, page, buscar, filtroTipo, filtroLab]);
+    }, [authFetch, page, buscar, filtroTipo, filtroLab, filtroProveedorPrioridad, filtroPosicionPrioridad]);
 
     useEffect(() => { cargar(); }, [cargar]);
 
@@ -510,6 +520,35 @@ export default function GestionConvenios() {
                             <option value="">Todos</option>
                             {laboratorios.map(l => (
                                 <option key={l.CodLab} value={l.CodLab}>{l.laboratorio}</option>
+                            ))}
+                        </select>
+                    </label>
+                    <label>
+                        Proveedor en prioridad
+                        <select
+                            value={filtroProveedorPrioridad}
+                            onChange={e => {
+                                setFiltroProveedorPrioridad(e.target.value);
+                                if (!e.target.value) setFiltroPosicionPrioridad("");
+                                setPage(1);
+                            }}
+                        >
+                            <option value="">Todos</option>
+                            {PROVEEDORES_DISPONIBLES.map(p => (
+                                <option key={p} value={p}>{PROVEEDOR_LABEL[p] ?? p}</option>
+                            ))}
+                        </select>
+                    </label>
+                    <label>
+                        Posición
+                        <select
+                            value={filtroPosicionPrioridad}
+                            disabled={!filtroProveedorPrioridad}
+                            onChange={e => { setFiltroPosicionPrioridad(e.target.value); setPage(1); }}
+                        >
+                            <option value="">Cualquiera</option>
+                            {PROVEEDORES_DISPONIBLES.map((_, i) => (
+                                <option key={i} value={i + 1}>{i + 1}°</option>
                             ))}
                         </select>
                     </label>
