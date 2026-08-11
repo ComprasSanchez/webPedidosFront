@@ -263,6 +263,9 @@ export default function GestionDeposito() {
             setResultados(prev => prev.map(r =>
                 r.sucursal === sucursal ? { ...r, status: "processing" } : r
             ));
+            // Tiempo real de ida y vuelta para esta sucursal (incluye red), para saber
+            // cuánto tarda cada lote antes de pasar al siguiente.
+            const tInicio = performance.now();
             try {
                 const res = await authFetch(`${API_URL}/api/deposito/procesar`, {
                     method: "POST",
@@ -270,15 +273,17 @@ export default function GestionDeposito() {
                     body: JSON.stringify({ sucursal_codigo: sucursal, reserva_ids: reservaIds })
                 });
                 const data = await res.json();
+                const roundtripMs = Math.round(performance.now() - tInicio);
                 setResultados(prev => prev.map(r =>
                     r.sucursal === sucursal
-                        ? { sucursal, status: res.ok ? "ok" : "error", ok: res.ok, ...data }
+                        ? { sucursal, status: res.ok ? "ok" : "error", ok: res.ok, roundtripMs, ...data }
                         : r
                 ));
             } catch (e) {
+                const roundtripMs = Math.round(performance.now() - tInicio);
                 setResultados(prev => prev.map(r =>
                     r.sucursal === sucursal
-                        ? { sucursal, status: "error", ok: false, error: e.message }
+                        ? { sucursal, status: "error", ok: false, error: e.message, roundtripMs }
                         : r
                 ));
             }
@@ -764,6 +769,12 @@ export default function GestionDeposito() {
                                                     ? <span className="dep_resultado_nro">→ Nro Quantio: <strong>{r.nro_pedido_quantio}</strong> · {r.reservas_procesadas} reservas · {r.productos_enviados} productos</span>
                                                     : <span className="dep_resultado_err">{r.error ?? "Error desconocido"}</span>
                                                 }
+                                                {typeof r.roundtripMs === "number" && (
+                                                    <span className="dep_resultado_tiempo" title="Total (ida y vuelta) · servidor · solo API Quantio">
+                                                        {" "}· {r.roundtripMs}ms
+                                                        {r.tiempos && ` (servidor ${r.tiempos.servidor_total_ms ?? "?"}ms, Quantio ${r.tiempos.quantio_http_ms ?? "?"}ms)`}
+                                                    </span>
+                                                )}
                                                 {r.ok && r.faltantes?.length > 0 && (
                                                     <span className="dep_modal_chevron dep_modal_chevron_warn">
                                                         {abierta ? <FaChevronDown /> : <FaChevronRight />}
