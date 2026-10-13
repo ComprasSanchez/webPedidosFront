@@ -1,8 +1,10 @@
 import { calcularPrecioEfectivo } from '../revisar/utils/precioTiers';
 
-const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1, factorNC = 1 }) => {
+const PreciosCofarsur = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1, factorNC = 1, soloDepo = false }) => {
     const p = precios.find((c) => c.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
+
+    if (soloDepo) return <div className={clase}>Solo Depo</div>;
 
     if (!p) return <div className={clase}>No disponible</div>;
 

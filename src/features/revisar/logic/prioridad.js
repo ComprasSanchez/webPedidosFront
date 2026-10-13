@@ -6,6 +6,8 @@ export function proveedorViable(slug, ean, ctx) {
         const s = ctx.stockDeposito.find(x => x.ean === ean)?.stock ?? 0;
         return s > 0;
     }
+    // Producto solo-depósito: ninguna droguería externa es opción, sin excepción.
+    if (ctx.soloDepo) return false;
     if (slug === "kellerhoff") return true;
     if (slug === "suizaTuc") return true; // siempre viable para perfumería
 
@@ -23,6 +25,7 @@ export function pickPorPrioridad(item, prioridad, ctx) {
     for (const slug of prioridad) {
         if (proveedorViable(slug, item.ean, ctx)) return slug;
     }
+    if (ctx.soloDepo) return null;
     // Fallback especial: kellerhoff o suizaTuc siempre están disponibles
     if (prioridad.includes("kellerhoff")) return "kellerhoff";
     if (prioridad.includes("suizaTuc")) return "suizaTuc";

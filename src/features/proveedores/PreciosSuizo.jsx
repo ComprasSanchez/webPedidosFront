@@ -1,10 +1,12 @@
-const PreciosSuizo = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1, factorNC = 1 }) => {
+const PreciosSuizo = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1, factorNC = 1, soloDepo = false }) => {
     const p = precios.find((s) => s.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
     const handleClick = () => {
         if (p && p.priceList != null) onSelect(idQuantio, "suizo");
     };
+
+    if (soloDepo) return <div className={clase}>Solo Depo</div>;
 
     if (!p) return <div className={clase}>No disponible</div>;
     if (p._status >= 500) return <div className={clase}>⚠️ Error {p._status}</div>;

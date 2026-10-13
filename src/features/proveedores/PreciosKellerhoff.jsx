@@ -1,6 +1,6 @@
 import React from "react";
 
-const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) => {
+const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, soloDepo = false }) => {
     const listaPrecios = Array.isArray(precios) ? precios : [];
     const p = listaPrecios.find((m) => m.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
@@ -15,6 +15,8 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect }) 
             onSelect(idQuantio, "kellerhoff");
         }
     };
+
+    if (soloDepo) return <div className={clase}>Solo Depo</div>;
 
     if (!p) return <div className={clase}>No disponible</div>;
 

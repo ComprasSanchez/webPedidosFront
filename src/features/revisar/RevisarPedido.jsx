@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useCarrito } from "../../context/CarritoContext";
 import { usePreciosYStock } from "./hooks/usePreciosYStock";
 import { useConvenios } from "./hooks/useConvenios";
+import { useSoloDepo } from "./hooks/useSoloDepo";
 import { useSeleccionAutomatica } from "./hooks/useSeleccionAutomatica";
 import { usePersistenciaCarrito } from "./hooks/usePersistenciaCarrito";
 import { mejorProveedor, precioValido } from "./logic/mejorProveedor";
@@ -206,8 +207,10 @@ export default function RevisarPedido() {
         };
     }, [carrito]);
 
+    const { esSoloDepo, ready: soloDepoReady } = useSoloDepo();
+
     const { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, loading: loadingPS }
-        = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario, soloDeposito });
+        = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario, soloDeposito, esSoloDepo, soloDepoReady });
 
     const { reglas, ready, matchConvenio, getFactorNC } = useConvenios({ sucursal: sucursalActual, authFetch });
 
@@ -215,7 +218,7 @@ export default function RevisarPedido() {
     const getStockConSucursal = useCallback((idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual), [sucursalActual]);
 
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
-        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual, getFactorNC
+        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual, getFactorNC, esSoloDepo
     });
 
     const { noPedirMap, toggleNoPedir, persistirCarrito } = usePersistenciaCarrito({ carrito, usuario, replaceCarrito });
@@ -297,6 +300,12 @@ export default function RevisarPedido() {
             }
         }
 
+        // Producto solo-depósito: ninguna droguería externa es seleccionable, sin excepción.
+        if (nuevoProveedor !== "deposito" && esSoloDepo(item)) {
+            toast.error("Este producto es solo depósito: no se puede pedir a droguerías externas");
+            return;
+        }
+
         // 🆔 Usar carritoId como identificador
         const itemId = item.carritoId || (item.esProductoNoRegistrado ? `ean_${item.ean}` : String(item.idQuantio));
 
@@ -355,7 +364,7 @@ export default function RevisarPedido() {
             .some((item) => {
                 const carritoId = obtenerCarritoId(item);
                 const motivo = seleccion[carritoId]?.motivo;
-                if (motivo === "Falta") return false;
+                if (motivo === "Falta" || motivo === "Falta Solo Depo") return false;
                 const prov = seleccion[carritoId]?.proveedor;
                 if (!prov || prov === "deposito" || prov === "suizaTuc" || prov === "delsud") return false;
                 const fuente =
@@ -409,7 +418,7 @@ export default function RevisarPedido() {
             let proveedor = provSel;
             let precio = 0;
 
-            if (motivo === "Falta") {
+            if (motivo === "Falta" || motivo === "Falta Solo Depo") {
                 proveedor = "Falta";
                 precio = 0;
             } else if (proveedor === "monroe") {
@@ -1196,6 +1205,7 @@ export default function RevisarPedido() {
                     onElegirProveedor={handleElegirProveedor}
                     onMotivo={handleMotivo}
                     getFactorNC={getFactorNC}
+                    esSoloDepo={esSoloDepo}
                     onEliminar={(item) => {
                         // 🆔 Usar carritoId para eliminar
                         const carritoId = obtenerCarritoId(item);
