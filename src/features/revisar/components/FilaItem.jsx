@@ -40,6 +40,7 @@ export default function FilaItem({
     togglePedir,
     getStock,
     getFactorNC = null,
+    soloDepo = false,
     opcionesMotivo,
 }) {
     const { obtenerCarritoId } = useCarrito();
@@ -47,6 +48,10 @@ export default function FilaItem({
 
     // 🆔 Usar carritoId como identificador único
     const itemId = obtenerCarritoId(item);
+
+    // Producto solo-depósito: bloquea la selección de cualquier droguería externa,
+    // sin importar stock. onElegirProveedor ya valida esto también (defensa en profundidad).
+    const onElegirProveedorDrogueria = soloDepo ? () => { } : onElegirProveedor;
 
     const motivoActual = seleccion?.motivo;
     const proveedorActual = seleccion?.proveedor;
@@ -110,77 +115,101 @@ export default function FilaItem({
             />
 
             {/* Monroe */}
-            <td className={proveedorActual === "monroe" ? "celda_activa" : ""}>
+            <td
+                className={(proveedorActual === "monroe" ? "celda_activa" : "") + (soloDepo ? " celda_solo_depo" : "")}
+                title={soloDepo ? "Producto solo depósito: no se puede pedir a droguerías externas" : ""}
+            >
                 <PreciosMonroe
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosMonroe}
                     cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "monroe"}
-                    onSelect={onElegirProveedor}
+                    onSelect={onElegirProveedorDrogueria}
                     factorNC={getFactorNC ? getFactorNC(item, "monroe") : 1}
+                    soloDepo={soloDepo}
                 />
             </td>
 
             {/* Suizo */}
-            <td className={proveedorActual === "suizo" ? "celda_activa" : ""}>
+            <td
+                className={(proveedorActual === "suizo" ? "celda_activa" : "") + (soloDepo ? " celda_solo_depo" : "")}
+                title={soloDepo ? "Producto solo depósito: no se puede pedir a droguerías externas" : ""}
+            >
                 <PreciosSuizo
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosSuizo}
                     cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "suizo"}
-                    onSelect={onElegirProveedor}
+                    onSelect={onElegirProveedorDrogueria}
                     factorNC={getFactorNC ? getFactorNC(item, "suizo") : 1}
+                    soloDepo={soloDepo}
                 />
             </td>
 
             {/* Cofarsur */}
-            <td className={proveedorActual === "cofarsur" ? "celda_activa" : ""}>
+            <td
+                className={(proveedorActual === "cofarsur" ? "celda_activa" : "") + (soloDepo ? " celda_solo_depo" : "")}
+                title={soloDepo ? "Producto solo depósito: no se puede pedir a droguerías externas" : ""}
+            >
                 <PreciosCofarsur
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosCofarsur}
                     cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "cofarsur"}
-                    onSelect={onElegirProveedor}
+                    onSelect={onElegirProveedorDrogueria}
                     factorNC={getFactorNC ? getFactorNC(item, "cofarsur") : 1}
+                    soloDepo={soloDepo}
                 />
             </td>
 
             {/* Kellerhoff (kellerhoff en slug si así lo usás en back/estado) */}
-            <td className={proveedorActual === "kellerhoff" ? "celda_activa" : ""}>
+            <td
+                className={(proveedorActual === "kellerhoff" ? "celda_activa" : "") + (soloDepo ? " celda_solo_depo" : "")}
+                title={soloDepo ? "Producto solo depósito: no se puede pedir a droguerías externas" : ""}
+            >
                 <PreciosKellerhoff
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosKellerhoff}
                     seleccionado={proveedorActual === "kellerhoff"}
-                    onSelect={onElegirProveedor}
+                    onSelect={onElegirProveedorDrogueria}
+                    soloDepo={soloDepo}
                 />
             </td>
 
             {/* suizaTuc (suizaTuc en slug si así lo usás en back/estado) */}
             {usuario?.rol === 'compras' && (
-                <td className={"celda_suizaTuc" + (proveedorActual === "suizaTuc" ? " celda_activa" : "")}>
+                <td
+                    className={"celda_suizaTuc" + (proveedorActual === "suizaTuc" ? " celda_activa" : "") + (soloDepo ? " celda_solo_depo" : "")}
+                    title={soloDepo ? "Producto solo depósito: no se puede pedir a droguerías externas" : ""}
+                >
                     <PreciosSuizaTuc
                         idQuantio={itemId}
                         ean={item.ean}
                         seleccionado={proveedorActual === "suizaTuc"}
-                        onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
+                        onSelect={(idQuantio, proveedor) => onElegirProveedorDrogueria(itemId, proveedor)}
+                        soloDepo={soloDepo}
                     />
                 </td>
             )}
 
             {/* Del Sud */}
-            <td className={"celda_delsud" + (proveedorActual === "delsud" ? " celda_activa" : "")}>
+            <td
+                className={"celda_delsud" + (proveedorActual === "delsud" ? " celda_activa" : "") + (soloDepo ? " celda_solo_depo" : "")}
+                title={soloDepo ? "Producto solo depósito: no se puede pedir a droguerías externas" : ""}
+            >
                 <PreciosDelSud
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosDelSud}
                     cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "delsud"}
-                    onSelect={(idQuantio, proveedor) => onElegirProveedor(itemId, proveedor)}
+                    onSelect={(idQuantio, proveedor) => onElegirProveedorDrogueria(itemId, proveedor)}
                     factorNC={getFactorNC ? getFactorNC(item, "delsud") : 1}
+                    soloDepo={soloDepo}
                 />
             </td>
 

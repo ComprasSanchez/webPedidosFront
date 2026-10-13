@@ -167,6 +167,17 @@ td.celda_activa {
     position: relative;
 }
 
+td.celda_solo_depo {
+    pointer-events: none;
+    background-color: #eef6f8;
+
+    .precio_celda {
+        cursor: not-allowed;
+        color: #0c7489;
+        font-weight: 600;
+    }
+}
+
 
 .revisar_btn_confirmar {
     padding: 0.75rem 1.5rem;

@@ -1,6 +1,6 @@
 import { calcularPrecioEfectivo } from '../revisar/utils/precioTiers';
 
-const PreciosDelSud = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1, factorNC = 1 }) => {
+const PreciosDelSud = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1, factorNC = 1, soloDepo = false }) => {
     const p = precios?.find((m) => m.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
 
@@ -9,6 +9,8 @@ const PreciosDelSud = ({ idQuantio, ean, precios, seleccionado, onSelect, cantid
             onSelect(idQuantio, "delsud");
         }
     };
+
+    if (soloDepo) return <div className={clase}>Solo Depo</div>;
 
     if (!p) return <div className={clase}>No disponible</div>;
 

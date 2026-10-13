@@ -7,6 +7,7 @@ import { useAuth } from "../../../context/AuthContext.jsx";
 const DEFAULT_OPCIONES_MOTIVO = [
     { value: "", label: "Seleccionar motivo" },
     { value: "Falta", label: "Falta" },
+    { value: "Falta Solo Depo", label: "Falta Solo Depo" },
     { value: "Stock Depo", label: "Stock Depo" },
     { value: "Mejor precio", label: "Mejor precio" },
     { value: "Llega más rápido", label: "Llega más rápido" },
@@ -33,6 +34,7 @@ export default function TablaRevisar({
     getStock,
     precioValido,
     getFactorNC = null,
+    esSoloDepo = () => false,
     opcionesMotivo = DEFAULT_OPCIONES_MOTIVO,
 }) {
     const { obtenerCarritoId } = useCarrito();
@@ -95,6 +97,7 @@ export default function TablaRevisar({
                                 getStock={getStock}
                                 precioValido={precioValido}
                                 getFactorNC={getFactorNC}
+                                soloDepo={esSoloDepo(item)}
                                 opcionesMotivo={opcionesMotivo}
                             />
                         );

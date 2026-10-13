@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { getPreciosMonroe, getPreciosSuizo, getPreciosCofarsur, getPreciosDelSud, getPreciosKellerhoff, getStockDisponible } from "../../../services/droguerias";
 
-export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, usuario, soloDeposito = false }) {
+export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, usuario, soloDeposito = false, esSoloDepo = () => false, soloDepoReady = true }) {
     const [preciosMonroe, setPM] = useState([]);
     const [preciosSuizo, setPS] = useState([]);
     const [preciosCofarsur, setPC] = useState([]);
@@ -56,6 +56,14 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
             return;
         }
 
+        // Todavía no sabemos qué productos son solo-depósito (useSoloDepo no cargó).
+        // Esperamos sin marcar estos EANs como "consultados" (no tocar eanListRef) para
+        // que, apenas soloDepoReady pase a true, este mismo lote se reconsidere como nuevo
+        // y se filtre correctamente antes de pegarle a las 5 droguerías externas.
+        if (eansNuevos.length > 0 && !soloDepoReady) {
+            return;
+        }
+
         // Consultando precios para productos nuevos
 
         (async () => {
@@ -65,6 +73,11 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
             const productosParaConsulta = carrito.filter(item =>
                 item.ean && item.unidades > 0 && eansNuevos.includes(item.ean)
             );
+
+            // Productos solo-depósito: su precio de droguería nunca se va a usar (la selección
+            // los bloquea igual), así que se excluyen del batch a las 5 APIs externas para no
+            // gastar llamadas/créditos. El stock de depósito sí se sigue consultando para todos.
+            const productosParaDrogueria = productosParaConsulta.filter(item => !esSoloDepo(item));
 
             if (soloDeposito) {
                 // 🔥 MODO SOLO DEPÓSITO: No consultar droguerías para ahorrar créditos
@@ -96,11 +109,11 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
                 };
 
                 const [m, s, c, ds, k, d] = await Promise.all([
-                    getPreciosMonroe(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
-                    getPreciosSuizo(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
-                    getPreciosCofarsur(productosParaConsulta, sucursal, { fetch: authFetch, headers: headersConRol }),
-                    getPreciosDelSud(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
-                    getPreciosKellerhoff(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
+                    getPreciosMonroe(productosParaDrogueria, sucursal, { fetch: authFetch, headers: authHeaders }),
+                    getPreciosSuizo(productosParaDrogueria, sucursal, { fetch: authFetch, headers: authHeaders }),
+                    getPreciosCofarsur(productosParaDrogueria, sucursal, { fetch: authFetch, headers: headersConRol }),
+                    getPreciosDelSud(productosParaDrogueria, sucursal, { fetch: authFetch, headers: authHeaders }),
+                    getPreciosKellerhoff(productosParaDrogueria, sucursal, { fetch: authFetch, headers: authHeaders }),
                     getStockDisponible(productosParaConsulta, sucursal, { fetch: authFetch, headers: authHeaders }),
                 ]);
 
@@ -194,7 +207,7 @@ export function usePreciosYStock({ carrito, sucursal, authFetch, authHeaders, us
         return () => {
             cancelled = true;
         };
-    }, [carritoEsencial, sucursal, authFetch, authHeaders, usuario?.rol, soloDeposito]);
+    }, [carritoEsencial, sucursal, authFetch, authHeaders, usuario?.rol, soloDeposito, esSoloDepo, soloDepoReady]);
 
     return { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, loading };
 }

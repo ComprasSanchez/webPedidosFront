@@ -4,6 +4,7 @@ import React from "react";
 const DEFAULT_OPCIONES = [
     { value: "", label: "Seleccionar motivo" },
     { value: "Falta", label: "Falta" },
+    { value: "Falta Solo Depo", label: "Falta Solo Depo" },
     { value: "Stock Depo", label: "Stock Depo" },
     { value: "Mejor precio", label: "Mejor precio" },
     { value: "Llega más rápido", label: "Llega más rápido" },
@@ -25,7 +26,7 @@ export default function MotivoSelect({
         <select
             value={value || ""}
             onChange={(e) => onChange?.(e.target.value)}
-            disabled={disabled || value === "Falta"}
+            disabled={disabled || value === "Falta" || value === "Falta Solo Depo"}
         >
             {opciones.map((op) => {
                 const blockStockDepo = op.value === "Stock Depo" && (proveedorActual !== "deposito" || stockDepo <= 0);

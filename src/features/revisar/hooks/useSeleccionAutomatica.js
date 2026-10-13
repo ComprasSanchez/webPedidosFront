@@ -3,7 +3,7 @@ import { pickPorPrioridad } from "../logic/prioridad";
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 import { useCarrito } from "../../../context/CarritoContext";
 
-export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [], preciosKellerhoff = [], stockDisponible, matchConvenio, getStock, sucursal, getFactorNC = null }) {
+export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [], preciosKellerhoff = [], stockDisponible, matchConvenio, getStock, sucursal, getFactorNC = null, esSoloDepo = () => false }) {
     const { obtenerCarritoId } = useCarrito();
     const [seleccion, setSeleccion] = useState({});
     const prevEansRef = useRef([]);
@@ -114,6 +114,12 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 return;
             }
 
+            // Producto solo-depósito: nunca droguería externa, aunque no haya stock.
+            if (esSoloDepo(item)) {
+                nuevaSeleccion[clave] = { proveedor: "Falta", motivo: "Falta Solo Depo" };
+                return;
+            }
+
             const match = matchConvenio(item, reglas);
 
             if (match.aplica) {
@@ -174,77 +180,90 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             return;
         }
 
-        let nueva = { ...seleccion };
         const idsActuales = productosEsenciales.map(item => obtenerCarritoId(item));
 
-        const productosEliminados = [];
-        Object.keys(nueva).forEach(id => {
-            if (!idsActuales.includes(id)) {
-                productosEliminados.push(id);
-                delete nueva[id];
-                manualSelectionRef.current.delete(id);
+        // IMPORTANTE: el cálculo de "nueva" se hace dentro del updater funcional de
+        // setSeleccion, partiendo de `prev` (el estado más reciente garantizado por React)
+        // en vez de la `seleccion` capturada en el closure de este efecto. Este efecto y el
+        // de arriba pueden correr dentro del mismo ciclo de render con el mismo `seleccion`
+        // obsoleto en su clausura; si acá se parte de ese valor obsoleto, un setSeleccion
+        // posterior puede pisar una selección que el otro efecto ya había calculado bien
+        // (ej: "delsud" para un producto sin convenio) con una versión sin ese dato.
+        setSeleccion(prev => {
+            let nueva = { ...prev };
+
+            Object.keys(nueva).forEach(id => {
+                if (!idsActuales.includes(id)) {
+                    manualSelectionRef.current.delete(id);
+                    delete nueva[id];
+                }
+            });
+
+            if (!productosEsenciales.length) {
+                manualSelectionRef.current.clear();
+                return Object.keys(nueva).length > 0 ? {} : prev;
             }
+
+            let cambios = false;
+
+            productosEsenciales.forEach((item) => {
+                const clave = obtenerCarritoId(item);
+
+                if (manualSelectionRef.current.has(clave)) {
+                    return;
+                }
+
+                const sel = nueva[clave] || {};
+                const prov = sel.proveedor;
+                const motivo = sel.motivo;
+                const stockDepo = getStock(item.ean, stockDisponible, sucursal);
+                const soloDepo = esSoloDepo(item);
+                // Solo-depósito: nunca calcular ni asignar una droguería externa como "ideal".
+                const ideal = soloDepo ? null : mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1, item, getFactorNC);
+
+                if (stockDepo > 0 && prov !== "deposito") {
+                    nueva[clave] = { proveedor: "deposito", motivo: "Stock Depo" };
+                    cambios = true;
+                    return;
+                }
+                if (prov === "deposito" && stockDepo > 0 && motivo !== "Stock Depo") {
+                    nueva[clave].motivo = "Stock Depo";
+                    cambios = true;
+                }
+                if (prov === ideal && prov !== "deposito" && motivo !== "Mejor precio") {
+                    nueva[clave].motivo = "Mejor precio";
+                    cambios = true;
+                }
+                if (soloDepo && motivo !== "Falta Solo Depo" && prov !== "deposito" && !(stockDepo > 0)) {
+                    nueva[clave] = { proveedor: "Falta", motivo: "Falta Solo Depo" };
+                    cambios = true;
+                    return;
+                }
+                if (motivo === "Falta" && (stockDepo > 0 || ideal)) {
+                    nueva[clave] = stockDepo > 0
+                        ? { proveedor: "deposito", motivo: "Stock Depo" }
+                        : { proveedor: ideal, motivo: "Mejor precio" };
+                    cambios = true;
+                }
+                // El item todavía no tiene ninguna selección: el efecto principal pudo haber
+                // corrido en el mismo ciclo de render sin que este efecto viera su resultado
+                // todavía (closure de `prev` desactualizado). Se calcula acá mismo con "ideal"
+                // en vez de dejarlo vacío, para no perder una selección válida por la carrera.
+                // (stockDepo > 0 ya fue resuelto arriba con `return`, por eso no se repite acá.)
+                if (!motivo && !prov && !soloDepo && ideal) {
+                    nueva[clave] = { proveedor: ideal, motivo: "Mejor precio" };
+                    cambios = true;
+                }
+
+                // 🆕 Auto-ajuste para productos de perfumería que están en "Falta"
+                if (motivo === "Falta" && !stockDepo && !ideal && !soloDepo && item.esPerfumeria === true) {
+                    nueva[clave] = { proveedor: "suizaTuc", motivo: "Suiza Tucumán" };
+                    cambios = true;
+                }
+            });
+
+            return cambios ? nueva : prev;
         });
-
-
-        if (!productosEsenciales.length) {
-            if (Object.keys(nueva).length > 0) {
-                setSeleccion({});
-            }
-            manualSelectionRef.current.clear();
-            return;
-        }
-
-        let cambios = false;
-
-        productosEsenciales.forEach((item) => {
-            const clave = obtenerCarritoId(item);
-
-            if (manualSelectionRef.current.has(clave)) {
-
-                return;
-            }
-
-            const sel = nueva[clave] || {};
-            const prov = sel.proveedor;
-            const motivo = sel.motivo;
-            const stockDepo = getStock(item.ean, stockDisponible, sucursal);
-            const ideal = mejorProveedor(item.ean, { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff }, item.unidades ?? 1, item, getFactorNC);
-
-            if (stockDepo > 0 && prov !== "deposito") {
-                nueva[clave] = { proveedor: "deposito", motivo: "Stock Depo" };
-                cambios = true;
-                return;
-            }
-            if (prov === "deposito" && stockDepo > 0 && motivo !== "Stock Depo") {
-                nueva[clave].motivo = "Stock Depo";
-                cambios = true;
-            }
-            if (prov === ideal && prov !== "deposito" && motivo !== "Mejor precio") {
-                nueva[clave].motivo = "Mejor precio";
-                cambios = true;
-            }
-            if (motivo === "Falta" && (stockDepo > 0 || ideal)) {
-                nueva[clave] = stockDepo > 0
-                    ? { proveedor: "deposito", motivo: "Stock Depo" }
-                    : { proveedor: ideal, motivo: "Mejor precio" };
-                cambios = true;
-            }
-
-            // 🆕 Auto-ajuste para productos de perfumería que están en "Falta"
-            if (motivo === "Falta" && !stockDepo && !ideal && item.esPerfumeria === true) {
-
-                nueva[clave] = { proveedor: "suizaTuc", motivo: "Suiza Tucumán" };
-                cambios = true;
-            }
-
-        });
-
-        const huboCambiosEnLimpieza = Object.keys(seleccion).length !== Object.keys(nueva).length;
-
-        if (cambios || huboCambiosEnLimpieza) {
-            setSeleccion(nueva);
-        }
 
         prevEansAutoAjustesRef.current = productosEsenciales.map(item => ({
             carritoId: obtenerCarritoId(item),
