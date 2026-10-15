@@ -30,47 +30,19 @@ function formatMonto(val) {
     return Number(val).toFixed(2).replace(".", ",");
 }
 
-const ESTADO_CLASE = {
-    EXITOSO: "exitoso",
-    ERROR: "error",
-    PROCESANDO: "procesando",
-    CREDITO_AGOTADO: "credito_agotado",
-    SKIP: "skip",
-    SKIPPED: "skipped",
-    FALTA: "falta",
-};
+// Clase CSS a partir del valor real (ej: "suizaTuc" -> "suizatuc", "CREDITO_AGOTADO" -> "credito_agotado")
+function claseCss(valor) {
+    return String(valor || "").toLowerCase().replace(/[^a-z0-9_]+/g, "_") || "desconocido";
+}
 
-const PROVEEDOR_CLASE = {
-    monroe: "monroe",
-    cofarsur: "cofarsur",
-    suizo: "suizo",
-    suizaTuc: "suizatuc",
-    deposito: "deposito",
-    kellerhoff: "kellerhoff",
-    Falta: "falta",
-};
-
-const PROVEEDORES = [
-    { value: "", label: "Todos los proveedores" },
-    { value: "monroe", label: "Monroe" },
-    { value: "cofarsur", label: "Cofarsur" },
-    { value: "suizo", label: "Suizo" },
-    { value: "suizaTuc", label: "Suiza Tucumán" },
-    { value: "deposito", label: "Depósito" },
-    { value: "kellerhoff", label: "Kellerhoff" },
-    { value: "Falta", label: "Falta" },
-];
-
-const ESTADOS = [
-    { value: "", label: "Todos los estados" },
-    { value: "EXITOSO", label: "Exitoso" },
-    { value: "ERROR", label: "Error" },
-    { value: "PROCESANDO", label: "Procesando" },
-    { value: "CREDITO_AGOTADO", label: "Crédito agotado" },
-    { value: "ENVIADO_SIN_NUMERO", label: "Enviado sin número" },
-    { value: "SKIP", label: "Skip (sin API)" },
-    { value: "FALTA", label: "Falta" },
-];
+// Etiqueta legible a partir del valor real (ej: "suizaTuc" -> "Suiza Tuc", "CREDITO_AGOTADO" -> "Credito agotado")
+function etiqueta(valor) {
+    const txt = String(valor)
+        .replace(/_/g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .toLowerCase();
+    return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
 
 export default function ResumenPedidos() {
     const { authFetch, authHeaders } = useAuth();
@@ -87,9 +59,12 @@ export default function ResumenPedidos() {
     const [cargandoRecarrito, setCargandoRecarrito] = useState(null); // id del registro cargando al carrito
 
     const [page, setPage] = useState(1);
+    const [opcionesProveedor, setOpcionesProveedor] = useState([]);
+    const [opcionesEstado, setOpcionesEstado] = useState([]);
     const [data, setData] = useState([]);
     const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [loadingFiltros, setLoadingFiltros] = useState(true);
     const [error, setError] = useState("");
 
     // Construye la query string de filtros activos
@@ -125,6 +100,24 @@ export default function ResumenPedidos() {
             setLoading(false);
         }
     }, [authFetch, buildParams]);
+
+    // Opciones de los filtros: valores distintos existentes en la tabla
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await authFetch(`${API_URL}/api/resumen-pedidos/filtros`);
+                if (!res.ok) return;
+                const json = await res.json();
+                setOpcionesProveedor(json.proveedores || []);
+                setOpcionesEstado(json.estados || []);
+            } catch (e) {
+                console.error("Error cargando filtros:", e);
+            } finally {
+                setLoadingFiltros(false);
+            }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Carga inicial
     useEffect(() => {
@@ -295,16 +288,18 @@ export default function ResumenPedidos() {
                 <label>
                     Proveedor
                     <select value={proveedor} onChange={e => setProveedor(e.target.value)}>
-                        {PROVEEDORES.map(p => (
-                            <option key={p.value} value={p.value}>{p.label}</option>
+                        <option value="">Todos los proveedores</option>
+                        {opcionesProveedor.map(p => (
+                            <option key={p} value={p}>{etiqueta(p)}</option>
                         ))}
                     </select>
                 </label>
                 <label>
                     Estado
                     <select value={estado} onChange={e => setEstado(e.target.value)}>
-                        {ESTADOS.map(e => (
-                            <option key={e.value} value={e.value}>{e.label}</option>
+                        <option value="">Todos los estados</option>
+                        {opcionesEstado.map(est => (
+                            <option key={est} value={est}>{etiqueta(est)}</option>
                         ))}
                     </select>
                 </label>
@@ -351,7 +346,12 @@ export default function ResumenPedidos() {
             )}
 
             {/* ── Contenido ── */}
-            {loading && <div className="rped_loading">Cargando...</div>}
+            {(loading || loadingFiltros) && (
+                <div className="revisar_loader">
+                    <div className="spinner"></div>
+                    <p>Cargando resumen de pedidos...</p>
+                </div>
+            )}
 
             {error && !loading && (
                 <div className="rped_empty" style={{ color: "#c0392b" }}>{error}</div>
@@ -381,9 +381,8 @@ export default function ResumenPedidos() {
                         </thead>
                         <tbody>
                             {data.map(row => {
-                                const estadoKey = (row.estado_pedido || "").toUpperCase();
-                                const estadoClase = ESTADO_CLASE[estadoKey] || "desconocido";
-                                const provClase = PROVEEDOR_CLASE[row.proveedor] || "default";
+                                const estadoClase = claseCss(row.estado_pedido);
+                                const provClase = claseCss(row.proveedor);
 
                                 return (
                                     <tr key={row.id}>
