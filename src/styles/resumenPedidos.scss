@@ -215,6 +215,9 @@
         font-size: 0.75rem;
         font-weight: 600;
         white-space: nowrap;
+        // fallback para estados sin modificador propio
+        background: #e9ecef;
+        color: #555;
 
         &--exitoso {
             background: #d4edda;
@@ -262,6 +265,9 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.3px;
+        // fallback para proveedores sin modificador propio
+        background: #e9ecef;
+        color: #444;
 
         &--monroe {
             background: #d0e8ff;
