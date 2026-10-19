@@ -42,7 +42,10 @@ export function useConvenios({ sucursal, authFetch, esPerfumeria = esPerfumeriaM
 
                 if (!cancel) {
                     setReglas({ porEan });
-                    setDescuentosNC(Array.isArray(ncData) ? ncData.filter(r => r.activo) : []);
+                    // porcentaje llega como string ("10.00") por ser DECIMAL: se normaliza a número para comparar
+                    setDescuentosNC(Array.isArray(ncData)
+                        ? ncData.filter(r => r.activo).map(r => ({ ...r, porcentaje: Number(r.porcentaje) }))
+                        : []);
                 }
             } catch (err) {
                 console.warn("useConvenios: no se pudieron cargar convenios:", err?.message || err);
