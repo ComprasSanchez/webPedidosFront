@@ -4,6 +4,7 @@ import { useCarrito } from "../../context/CarritoContext";
 import { usePreciosYStock } from "./hooks/usePreciosYStock";
 import { useConvenios } from "./hooks/useConvenios";
 import { useSoloDepo } from "./hooks/useSoloDepo";
+import { useClasificacion } from "./hooks/useClasificacion";
 import { useSeleccionAutomatica } from "./hooks/useSeleccionAutomatica";
 import { usePersistenciaCarrito } from "./hooks/usePersistenciaCarrito";
 import { mejorProveedor, precioValido } from "./logic/mejorProveedor";
@@ -76,6 +77,9 @@ export default function RevisarPedido() {
     // Validación: sucursal debe ser una cadena no vacía
     const sucursalValida = sucursalActual && typeof sucursalActual === 'string' && sucursalActual.trim() !== '';
 
+    // Clasificación medicamento/perfumería por cluster (sin clasificar → flag manual del item)
+    const { esPerfumeria: esPerfumeriaItem, esMedicamento: esMedicamentoItem, getClusterIds, ready: clasifReady } = useClasificacion();
+
     // 🆕 Función para filtrar carrito según tipo de producto (solo compras)
     const obtenerCarritoFiltrado = () => {
         if (usuario?.rol !== 'compras' || filtroTipo === 'todos') {
@@ -83,7 +87,7 @@ export default function RevisarPedido() {
         }
 
         return carrito.filter(item => {
-            const esPerfumeria = item.esPerfumeria === true;
+            const esPerfumeria = esPerfumeriaItem(item);
 
             if (filtroTipo === 'perfumeria') {
                 return esPerfumeria;
@@ -212,13 +216,14 @@ export default function RevisarPedido() {
     const { preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, loading: loadingPS }
         = usePreciosYStock({ carrito, sucursal: sucursalActual, authFetch, authHeaders, usuario, soloDeposito, esSoloDepo, soloDepoReady });
 
-    const { reglas, ready, matchConvenio, getFactorNC } = useConvenios({ sucursal: sucursalActual, authFetch });
+    const { reglas, ready, matchConvenio, getFactorNC } = useConvenios({ sucursal: sucursalActual, authFetch, esPerfumeria: esPerfumeriaItem, esMedicamento: esMedicamentoItem, getClusterIds });
 
     // Crear una versión de getStock que ya tenga la sucursal aplicada (memorizada)
     const getStockConSucursal = useCallback((idQuantio, stockData) => getStock(idQuantio, stockData, sucursalActual), [sucursalActual]);
 
     const { seleccion, setSeleccion } = useSeleccionAutomatica({
-        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual, getFactorNC, esSoloDepo
+        carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock: getStockConSucursal, sucursal: sucursalActual, getFactorNC, esSoloDepo, esPerfumeria: esPerfumeriaItem, clasifReady,
+        suizaTucHabilitado: usuario?.rol === "compras" // las sucursales no pueden pedir a suizaTuc
     });
 
     const { noPedirMap, toggleNoPedir, persistirCarrito } = usePersistenciaCarrito({ carrito, usuario, replaceCarrito });
@@ -1134,10 +1139,10 @@ export default function RevisarPedido() {
                                 📦 Todos ({carrito.length})
                             </button>
                             <button className={`filtro_btn ${filtroTipo === 'medicamentos' ? 'active' : ''}`} onClick={() => setFiltroTipo('medicamentos')}>
-                                💊 Medicamentos ({carrito.filter(item => !item.esPerfumeria).length})
+                                💊 Medicamentos ({carrito.filter(item => !esPerfumeriaItem(item)).length})
                             </button>
                             <button className={`filtro_btn ${filtroTipo === 'perfumeria' ? 'active' : ''}`} onClick={() => setFiltroTipo('perfumeria')}>
-                                🧴 Perfumería ({carrito.filter(item => item.esPerfumeria === true).length})
+                                🧴 Perfumería ({carrito.filter(item => esPerfumeriaItem(item)).length})
                             </button>
                         </div>
                     </>

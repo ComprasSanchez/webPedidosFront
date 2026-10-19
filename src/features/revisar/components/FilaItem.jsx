@@ -176,6 +176,7 @@ export default function FilaItem({
                     precios={preciosKellerhoff}
                     seleccionado={proveedorActual === "kellerhoff"}
                     onSelect={onElegirProveedorDrogueria}
+                    factorNC={getFactorNC ? getFactorNC(item, "kellerhoff") : 1}
                     soloDepo={soloDepo}
                 />
             </td>

@@ -8,7 +8,11 @@ function normalizeProveedorSlug(value) {
     return slug;
 }
 
-export function useConvenios({ sucursal, authFetch }) {
+const esPerfumeriaManual = (item) => item?.esPerfumeria === true;
+const noEsMedicamento = () => false;
+const sinClusters = () => [];
+
+export function useConvenios({ sucursal, authFetch, esPerfumeria = esPerfumeriaManual, esMedicamento = noEsMedicamento, getClusterIds = sinClusters }) {
     const [reglas, setReglas] = useState(null);
     const [ready, setReady] = useState(false);
     const [descuentosNC, setDescuentosNC] = useState([]);
@@ -75,19 +79,29 @@ export function useConvenios({ sucursal, authFetch }) {
             );
             if (porProducto) return 1 - porProducto.porcentaje / 100;
 
+            // Cluster: si el item está en varios clusters con regla, gana el mayor porcentaje
+            const clusterIds = getClusterIds(item);
+            const porCluster = registros
+                .filter(r => r.scope === "cluster" && clusterIds.includes(String(r.scope_valor)))
+                .reduce((max, r) => (max === null || r.porcentaje > max.porcentaje ? r : max), null);
+            if (porCluster) return 1 - porCluster.porcentaje / 100;
+
             const codLab = item?.CodLab ?? item?.laboratorio ?? null;
             const porLab = registros.find(r => r.scope === "laboratorio" && r.scope_valor === codLab);
             if (porLab) return 1 - porLab.porcentaje / 100;
 
             const porPerf = registros.find(r => r.scope === "perfumeria");
-            if (porPerf && item?.esPerfumeria === true) return 1 - porPerf.porcentaje / 100;
+            if (porPerf && esPerfumeria(item)) return 1 - porPerf.porcentaje / 100;
+
+            const porMed = registros.find(r => r.scope === "medicamento");
+            if (porMed && esMedicamento(item)) return 1 - porMed.porcentaje / 100;
 
             const porTodo = registros.find(r => r.scope === "todo");
             if (porTodo) return 1 - porTodo.porcentaje / 100;
 
             return 1;
         },
-        [descuentosNC]
+        [descuentosNC, esPerfumeria, esMedicamento, getClusterIds]
     );
 
     return { reglas, ready, matchConvenio, descuentosNC, getFactorNC };
