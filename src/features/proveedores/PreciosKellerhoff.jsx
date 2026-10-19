@@ -1,6 +1,6 @@
 import React from "react";
 
-const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, soloDepo = false }) => {
+const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, factorNC = 1, soloDepo = false }) => {
     const listaPrecios = Array.isArray(precios) ? precios : [];
     const p = listaPrecios.find((m) => m.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
@@ -41,18 +41,19 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, so
         return <div className={clase}>{p.error}</div>;
     }
 
-    const precio = typeof p.finalPrice === "number"
+    const precioApi = typeof p.finalPrice === "number"
         ? p.finalPrice
         : (typeof p.priceList === "number" ? p.priceList : null);
 
-    if (precio == null) {
+    if (precioApi == null) {
         if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
         return <div className={clase}>SIN PRECIO</div>;
     }
 
-    const tieneDescuento = typeof p.priceList === "number"
-        && typeof p.finalPrice === "number"
-        && p.finalPrice < p.priceList;
+    const precio = precioApi * factorNC;
+    const ncPct = factorNC < 1 ? Math.round((1 - factorNC) * 100) : 0;
+
+    const tieneDescuento = typeof p.priceList === "number" && precio < p.priceList;
 
     return (
         <div className={clase} onClick={handleClick}>
@@ -76,6 +77,11 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, so
             {typeof p.effectiveDiscountPct === "number" && p.effectiveDiscountPct > 0 && (
                 <div style={{ marginTop: "3px", fontSize: "11px", color: "#555" }}>
                     -{p.effectiveDiscountPct}%
+                </div>
+            )}
+            {ncPct > 0 && (
+                <div style={{ marginTop: "2px", fontSize: "10px", color: "#e67e00", fontWeight: "600" }}>
+                    Extra -{ncPct}%
                 </div>
             )}
             {p.stock === false && (
