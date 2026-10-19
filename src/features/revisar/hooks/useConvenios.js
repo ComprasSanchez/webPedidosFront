@@ -87,7 +87,7 @@ export function useConvenios({ sucursal, authFetch, esPerfumeria = esPerfumeriaM
             if (porCluster) return 1 - porCluster.porcentaje / 100;
 
             const codLab = item?.CodLab ?? item?.laboratorio ?? null;
-            const porLab = registros.find(r => r.scope === "laboratorio" && r.scope_valor === codLab);
+            const porLab = codLab != null && registros.find(r => r.scope === "laboratorio" && String(r.scope_valor) === String(codLab));
             if (porLab) return 1 - porLab.porcentaje / 100;
 
             const porPerf = registros.find(r => r.scope === "perfumeria");
