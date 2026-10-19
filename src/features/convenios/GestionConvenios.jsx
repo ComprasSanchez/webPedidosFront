@@ -30,7 +30,9 @@ const PROVEEDORES_NC = ["suizo", "monroe", "cofarsur", "delsud", "kellerhoff", "
 const SCOPE_LABEL = {
     producto: "Producto específico",
     laboratorio: "Laboratorio",
+    cluster: "Cluster",
     perfumeria: "Toda la perfumería",
+    medicamento: "Todos los medicamentos",
     todo: "Todos los productos",
 };
 
@@ -173,6 +175,7 @@ export default function GestionConvenios() {
     const [ncProdResultados, setNcProdResultados] = useState([]);
     const [ncProdLoading, setNcProdLoading] = useState(false);
     const [ncProdSelDesc, setNcProdSelDesc] = useState(""); // descripcion del idPlex seleccionado
+    const [ncClusters, setNcClusters] = useState([]); // clusters activos para scope "cluster"
 
     // Compartido
     const [saving, setSaving] = useState(false);
@@ -400,6 +403,15 @@ export default function GestionConvenios() {
 
     useEffect(() => { if (tab === "descuentos-nc") cargarNC(); }, [tab, cargarNC]);
 
+    // Clusters para el selector (scope "cluster"): se cargan al abrir el modal con ese scope
+    useEffect(() => {
+        if (!ncModalForm || ncForm.scope !== "cluster" || ncClusters.length > 0) return;
+        authFetch(`${API_URL}/api/convenios/clusters`)
+            .then(r => { if (!r.ok) throw new Error("Error al cargar clusters"); return r.json(); })
+            .then(data => setNcClusters(Array.isArray(data) ? data : []))
+            .catch(e => setNcFormError(e.message));
+    }, [ncModalForm, ncForm.scope, ncClusters.length, authFetch]);
+
     const ncAbrirCrear = () => {
         setNcForm(EMPTY_NC_FORM);
         setNcEditando(null);
@@ -432,7 +444,7 @@ export default function GestionConvenios() {
         setNcFormError(null);
         if (!ncForm.id_proveedor) return setNcFormError("Seleccioná un proveedor");
         if (!ncForm.scope) return setNcFormError("Seleccioná un scope");
-        if ((ncForm.scope === "producto" || ncForm.scope === "laboratorio") && !ncForm.scope_valor.trim())
+        if ((ncForm.scope === "producto" || ncForm.scope === "laboratorio" || ncForm.scope === "cluster") && !String(ncForm.scope_valor).trim())
             return setNcFormError("El valor del scope es requerido");
         const pct = parseFloat(ncForm.porcentaje);
         if (isNaN(pct) || pct <= 0 || pct >= 100) return setNcFormError("El porcentaje debe ser entre 0 y 100");
@@ -447,7 +459,7 @@ export default function GestionConvenios() {
                 body: JSON.stringify({
                     id_proveedor: ncForm.id_proveedor,
                     scope: ncForm.scope,
-                    scope_valor: ncForm.scope_valor.trim() || null,
+                    scope_valor: String(ncForm.scope_valor).trim() || null,
                     porcentaje: pct,
                     descripcion: ncForm.descripcion.trim() || null,
                     activo: ncForm.activo,
@@ -981,6 +993,13 @@ export default function GestionConvenios() {
                                                     : <span className="conv_nc_enriched_id">{item.scope_valor}</span>}
                                                 {item.nombre_lab && <span className="conv_nc_enriched_id">{item.scope_valor}</span>}
                                             </div>
+                                        ) : item.scope === "cluster" ? (
+                                            <div className="conv_nc_enriched">
+                                                {item.nombre_cluster
+                                                    ? <span className="conv_nc_enriched_nombre">{item.nombre_cluster}</span>
+                                                    : <span className="conv_nc_enriched_id">{item.scope_valor}</span>}
+                                                {item.nombre_cluster && <span className="conv_nc_enriched_id">ID {item.scope_valor}</span>}
+                                            </div>
                                         ) : (
                                             item.scope_valor ?? "—"
                                         )}
@@ -1141,6 +1160,23 @@ export default function GestionConvenios() {
                                         placeholder="Ej: ABC123"
                                         onChange={e => setNcForm(f => ({ ...f, scope_valor: e.target.value }))}
                                     />
+                                </label>
+                            )}
+                            {ncForm.scope === "cluster" && (
+                                <label className="conv_label">
+                                    Cluster
+                                    <select
+                                        value={ncForm.scope_valor}
+                                        onChange={e => setNcForm(f => ({ ...f, scope_valor: e.target.value }))}
+                                    >
+                                        <option value="">— Seleccioná —</option>
+                                        {ncClusters.map(c => (
+                                            <option key={c.id} value={String(c.id)}>
+                                                {c.nombre} ({c.productos} prod.)
+                                                {c.medicamento === 1 ? " · medicamento" : c.medicamento === 0 ? " · perfumería" : ""}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </label>
                             )}
                             <label className="conv_label">

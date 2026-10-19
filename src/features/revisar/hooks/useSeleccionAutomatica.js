@@ -3,7 +3,9 @@ import { pickPorPrioridad } from "../logic/prioridad";
 import { mejorProveedor, precioValido } from "../logic/mejorProveedor";
 import { useCarrito } from "../../../context/CarritoContext";
 
-export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [], preciosKellerhoff = [], stockDisponible, matchConvenio, getStock, sucursal, getFactorNC = null, esSoloDepo = () => false }) {
+const esPerfumeriaManual = (item) => item?.esPerfumeria === true;
+
+export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud = [], preciosKellerhoff = [], stockDisponible, matchConvenio, getStock, sucursal, getFactorNC = null, esSoloDepo = () => false, esPerfumeria = esPerfumeriaManual, clasifReady = true, suizaTucHabilitado = true }) {
     const { obtenerCarritoId } = useCarrito();
     const [seleccion, setSeleccion] = useState({});
     const prevEansRef = useRef([]);
@@ -54,7 +56,8 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
     ).join('|'), obtenerCarritoId]);
 
     useEffect(() => {
-        if (!carrito || !carrito.length || !reglas) {
+        // Esperar la clasificación por cluster: define esPerfumeria (suizaTuc) de cada item
+        if (!carrito || !carrito.length || !reglas || !clasifReady) {
             return;
         }
 
@@ -127,7 +130,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 if (elegido) {
                     nuevaSeleccion[clave] = { proveedor: elegido, motivo: "Condición / Acuerdo" };
                 } else {
-                    if (item.esPerfumeria === true) {
+                    if (suizaTucHabilitado && esPerfumeria(item)) {
                         nuevaSeleccion[clave] = { proveedor: "suizaTuc", motivo: "Suiza Tucumán" };
                     } else {
                         nuevaSeleccion[clave] = { proveedor: "Falta", motivo: "Falta" };
@@ -140,7 +143,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             if (ideal) {
                 nuevaSeleccion[clave] = { proveedor: ideal, motivo: "Mejor precio" };
             } else {
-                if (item.esPerfumeria === true) {
+                if (suizaTucHabilitado && esPerfumeria(item)) {
                     nuevaSeleccion[clave] = { proveedor: "suizaTuc", motivo: "Suiza Tucumán" };
                 } else {
                     nuevaSeleccion[clave] = { proveedor: "Falta", motivo: "Falta" };
@@ -157,9 +160,10 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
         }
 
         prevEansRef.current = productosEsenciales.map(item => obtenerCarritoId(item)).sort();
-    }, [productosEsenciales, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock, obtenerCarritoId]);
+    }, [productosEsenciales, reglas, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, stockDisponible, matchConvenio, getStock, obtenerCarritoId, clasifReady]);
 
     useEffect(() => {
+        if (!clasifReady) return;
 
         const firmaActual = JSON.stringify(
             productosEsenciales.map(item => ({
@@ -256,7 +260,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
                 }
 
                 // 🆕 Auto-ajuste para productos de perfumería que están en "Falta"
-                if (motivo === "Falta" && !stockDepo && !ideal && !soloDepo && item.esPerfumeria === true) {
+                if (motivo === "Falta" && !stockDepo && !ideal && !soloDepo && suizaTucHabilitado && esPerfumeria(item)) {
                     nueva[clave] = { proveedor: "suizaTuc", motivo: "Suiza Tucumán" };
                     cambios = true;
                 }
@@ -275,7 +279,7 @@ export function useSeleccionAutomatica({ carrito, reglas, preciosMonroe, precios
             kellerhoff: !!(preciosKellerhoff && preciosKellerhoff.find && preciosKellerhoff.find(p => p.ean === item.ean)),
             stock: !!(stockDisponible && stockDisponible[item.ean])
         })).sort((a, b) => a.carritoId.localeCompare(b.carritoId));
-    }, [productosEsenciales, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, obtenerCarritoId]);
+    }, [productosEsenciales, stockDisponible, preciosMonroe, preciosSuizo, preciosCofarsur, preciosDelSud, preciosKellerhoff, obtenerCarritoId, clasifReady]);
 
     return { seleccion, setSeleccion: setSeleccionManual };
 }
