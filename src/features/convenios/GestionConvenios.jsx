@@ -53,6 +53,90 @@ const EMPTY_FORM = {
     prioridad: [],
 };
 
+// LabSelector: elige un laboratorio buscando por nombre (o código). `value` es el CodLab de Plex.
+// `nombre` (opcional) es el nombre ya conocido del valor inicial; si falta, se intenta resolver.
+function LabSelector({ value, nombre = "", onChange }) {
+    const { authFetch } = useAuth();
+    const [buscar, setBuscar] = useState("");
+    const [resultados, setResultados] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [nombreSel, setNombreSel] = useState(nombre);
+
+    // Búsqueda con debounce al tipear (mínimo 2 letras)
+    useEffect(() => {
+        const q = buscar.trim();
+        if (q.length < 2) { setResultados([]); return; }
+
+        let cancel = false;
+        const t = setTimeout(() => {
+            setLoading(true);
+            authFetch(`${API_URL}/api/convenios/laboratorios/buscar?q=${encodeURIComponent(q)}`)
+                .then(r => { if (!r.ok) throw new Error("Error al buscar laboratorios"); return r.json(); })
+                .then(data => { if (!cancel) setResultados(Array.isArray(data) ? data : []); })
+                .catch(() => { if (!cancel) setResultados([]); })
+                .finally(() => { if (!cancel) setLoading(false); });
+        }, 300);
+
+        return () => { cancel = true; clearTimeout(t); };
+    }, [buscar, authFetch]);
+
+    // Valor inicial sin nombre (ej: editar una regla existente): resolverlo por código
+    useEffect(() => {
+        const codigo = String(value ?? "").trim();
+        if (!codigo || nombreSel || codigo.length < 2) return;
+
+        let cancel = false;
+        authFetch(`${API_URL}/api/convenios/laboratorios/buscar?q=${encodeURIComponent(codigo)}`)
+            .then(r => (r.ok ? r.json() : []))
+            .then(data => {
+                const lab = Array.isArray(data) ? data.find(l => String(l.CodLab).toUpperCase() === codigo.toUpperCase()) : null;
+                if (!cancel && lab) setNombreSel(lab.laboratorio);
+            })
+            .catch(() => { });
+        return () => { cancel = true; };
+    }, [value, nombreSel, authFetch]);
+
+    return (
+        <div className="conv_label">
+            <span className="conv_label_text">Laboratorio (buscar por nombre)</span>
+            <input
+                type="text"
+                value={buscar}
+                placeholder="Ej: Roemmers, Bagó..."
+                onChange={e => setBuscar(e.target.value)}
+            />
+            {loading && <p className="conv_nc_prod_sel">Buscando...</p>}
+            {resultados.length > 0 && (
+                <div className="conv_nc_prod_lista">
+                    {resultados.map(l => (
+                        <button
+                            key={l.CodLab}
+                            type="button"
+                            className={`conv_nc_prod_item ${String(value) === String(l.CodLab) ? "sel" : ""}`}
+                            onClick={() => {
+                                onChange(String(l.CodLab));
+                                setNombreSel(l.laboratorio);
+                                setResultados([]);
+                                setBuscar("");
+                            }}
+                        >
+                            <span className="conv_nc_prod_desc">{l.laboratorio}</span>
+                            <span className="conv_nc_prod_id">{l.CodLab} · {l.productos} prod.</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+            {value && (
+                <p className="conv_nc_prod_sel">
+                    Seleccionado: <strong>{nombreSel || value}</strong>
+                    {nombreSel && <> ({value})</>}
+                    <button type="button" className="conv_nc_prod_quitar" onClick={() => { onChange(""); setNombreSel(""); }}>×</button>
+                </p>
+            )}
+        </div>
+    );
+}
+
 // PrioridadEditor (reutilizable)
 function PrioridadEditor({ prioridad, onChange }) {
     const disponibles = PROVEEDORES_DISPONIBLES.filter(p => !prioridad.includes(p));
@@ -176,10 +260,6 @@ export default function GestionConvenios() {
     const [ncProdLoading, setNcProdLoading] = useState(false);
     const [ncProdSelDesc, setNcProdSelDesc] = useState(""); // descripcion del idPlex seleccionado
     const [ncClusters, setNcClusters] = useState([]); // clusters activos para scope "cluster"
-    const [ncLabBuscar, setNcLabBuscar] = useState("");
-    const [ncLabResultados, setNcLabResultados] = useState([]);
-    const [ncLabLoading, setNcLabLoading] = useState(false);
-    const [ncLabSelNombre, setNcLabSelNombre] = useState(""); // nombre del laboratorio seleccionado
 
     // Compartido
     const [saving, setSaving] = useState(false);
@@ -407,25 +487,6 @@ export default function GestionConvenios() {
 
     useEffect(() => { if (tab === "descuentos-nc") cargarNC(); }, [tab, cargarNC]);
 
-    // Búsqueda de laboratorio por nombre (scope "laboratorio"), con debounce al tipear
-    useEffect(() => {
-        if (!ncModalForm || ncForm.scope !== "laboratorio") return;
-        const q = ncLabBuscar.trim();
-        if (q.length < 2) { setNcLabResultados([]); return; }
-
-        let cancel = false;
-        const t = setTimeout(() => {
-            setNcLabLoading(true);
-            authFetch(`${API_URL}/api/convenios/laboratorios/buscar?q=${encodeURIComponent(q)}`)
-                .then(r => { if (!r.ok) throw new Error("Error al buscar laboratorios"); return r.json(); })
-                .then(data => { if (!cancel) setNcLabResultados(Array.isArray(data) ? data : []); })
-                .catch(() => { if (!cancel) setNcLabResultados([]); })
-                .finally(() => { if (!cancel) setNcLabLoading(false); });
-        }, 300);
-
-        return () => { cancel = true; clearTimeout(t); };
-    }, [ncModalForm, ncForm.scope, ncLabBuscar, authFetch]);
-
     // Clusters para el selector (scope "cluster"): se cargan al abrir el modal con ese scope
     useEffect(() => {
         if (!ncModalForm || ncForm.scope !== "cluster" || ncClusters.length > 0) return;
@@ -442,9 +503,6 @@ export default function GestionConvenios() {
         setNcProdBuscar("");
         setNcProdResultados([]);
         setNcProdSelDesc("");
-        setNcLabBuscar("");
-        setNcLabResultados([]);
-        setNcLabSelNombre("");
         setNcModalForm(true);
     };
 
@@ -456,6 +514,7 @@ export default function GestionConvenios() {
             porcentaje: String(item.porcentaje),
             descripcion: item.descripcion ?? "",
             activo: item.activo === 1 || item.activo === true,
+            nombre_lab: item.scope === "laboratorio" ? (item.nombre_lab ?? "") : "", // solo para mostrar en el selector
         });
         setNcEditando(item.id);
         setNcFormError(null);
@@ -463,9 +522,6 @@ export default function GestionConvenios() {
         setNcProdResultados([]);
         // Si es scope producto, mostramos el idPlex ya seleccionado como descripción
         setNcProdSelDesc(item.scope === "producto" && item.scope_valor ? `idPlex: ${item.scope_valor}` : "");
-        setNcLabBuscar("");
-        setNcLabResultados([]);
-        setNcLabSelNombre(item.scope === "laboratorio" ? (item.nombre_lab ?? "") : "");
         setNcModalForm(true);
     };
 
@@ -756,15 +812,10 @@ export default function GestionConvenios() {
                                     />
                                 </label>
                             ) : (
-                                <label className="conv_label">
-                                    CodLab
-                                    <input
-                                        type="text"
-                                        value={form.codlab}
-                                        placeholder="Ej: ABC123"
-                                        onChange={e => setForm(f => ({ ...f, codlab: e.target.value }))}
-                                    />
-                                </label>
+                                <LabSelector
+                                    value={form.codlab}
+                                    onChange={v => setForm(f => ({ ...f, codlab: v }))}
+                                />
                             )}
                             <PrioridadEditor
                                 prioridad={form.prioridad}
@@ -1093,9 +1144,6 @@ export default function GestionConvenios() {
                                         setNcProdBuscar("");
                                         setNcProdResultados([]);
                                         setNcProdSelDesc("");
-                                        setNcLabBuscar("");
-                                        setNcLabResultados([]);
-                                        setNcLabSelNombre("");
                                     }}
                                 >
                                     {Object.entries(SCOPE_LABEL).map(([v, l]) => (
@@ -1184,43 +1232,11 @@ export default function GestionConvenios() {
                                 </div>
                             )}
                             {ncForm.scope === "laboratorio" && (
-                                <div className="conv_label">
-                                    <span className="conv_label_text">Laboratorio (buscar por nombre)</span>
-                                    <input
-                                        type="text"
-                                        value={ncLabBuscar}
-                                        placeholder="Ej: Roemmers, Bagó..."
-                                        onChange={e => setNcLabBuscar(e.target.value)}
-                                    />
-                                    {ncLabLoading && <p className="conv_nc_prod_sel">Buscando...</p>}
-                                    {ncLabResultados.length > 0 && (
-                                        <div className="conv_nc_prod_lista">
-                                            {ncLabResultados.map(l => (
-                                                <button
-                                                    key={l.CodLab}
-                                                    type="button"
-                                                    className={`conv_nc_prod_item ${ncForm.scope_valor === String(l.CodLab) ? "sel" : ""}`}
-                                                    onClick={() => {
-                                                        setNcForm(f => ({ ...f, scope_valor: String(l.CodLab) }));
-                                                        setNcLabSelNombre(l.laboratorio);
-                                                        setNcLabResultados([]);
-                                                        setNcLabBuscar("");
-                                                    }}
-                                                >
-                                                    <span className="conv_nc_prod_desc">{l.laboratorio}</span>
-                                                    <span className="conv_nc_prod_id">{l.CodLab} · {l.productos} prod.</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {ncForm.scope_valor && (
-                                        <p className="conv_nc_prod_sel">
-                                            Seleccionado: <strong>{ncLabSelNombre || ncForm.scope_valor}</strong>
-                                            {ncLabSelNombre && <> ({ncForm.scope_valor})</>}
-                                            <button type="button" className="conv_nc_prod_quitar" onClick={() => { setNcForm(f => ({ ...f, scope_valor: "" })); setNcLabSelNombre(""); }}>×</button>
-                                        </p>
-                                    )}
-                                </div>
+                                <LabSelector
+                                    value={ncForm.scope_valor}
+                                    nombre={ncForm.nombre_lab}
+                                    onChange={v => setNcForm(f => ({ ...f, scope_valor: v }))}
+                                />
                             )}
                             {ncForm.scope === "cluster" && (
                                 <label className="conv_label">
