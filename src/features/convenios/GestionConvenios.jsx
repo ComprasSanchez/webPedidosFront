@@ -1226,6 +1226,7 @@ export default function GestionConvenios() {
                                     {ncForm.scope_valor && (
                                         <p className="conv_nc_prod_sel">
                                             Seleccionado: <strong>{ncProdSelDesc || ncForm.scope_valor}</strong>
+
                                             <button type="button" className="conv_nc_prod_quitar" onClick={() => { setNcForm(f => ({ ...f, scope_valor: "" })); setNcProdSelDesc(""); }}>×</button>
                                         </p>
                                     )}
