@@ -8,6 +8,8 @@ function normalizeProveedorSlug(value) {
     return slug;
 }
 
+const normalizarCodLab = (v) => String(v ?? "").trim().toUpperCase();
+
 const esPerfumeriaManual = (item) => item?.esPerfumeria === true;
 const noEsMedicamento = () => false;
 const sinClusters = () => [];
@@ -40,8 +42,16 @@ export function useConvenios({ sucursal, authFetch, esPerfumeria = esPerfumeriaM
                     ])
                 );
 
+                // por laboratorio: clave CodLab normalizada (texto, sin espacios, mayúsculas)
+                const porLab = Object.fromEntries(
+                    Object.entries(data?.byLAB ?? {}).map(([codLab, prioridad]) => [
+                        normalizarCodLab(codLab),
+                        (Array.isArray(prioridad) ? prioridad : []).map((s) => normalizeProveedorSlug(s)),
+                    ])
+                );
+
                 if (!cancel) {
-                    setReglas({ porEan });
+                    setReglas({ porEan, porLab });
                     // porcentaje llega como string ("10.00") por ser DECIMAL: se normaliza a número para comparar
                     setDescuentosNC(Array.isArray(ncData)
                         ? ncData.filter(r => r.activo).map(r => ({ ...r, porcentaje: Number(r.porcentaje) }))
@@ -49,7 +59,7 @@ export function useConvenios({ sucursal, authFetch, esPerfumeria = esPerfumeriaM
                 }
             } catch (err) {
                 console.warn("useConvenios: no se pudieron cargar convenios:", err?.message || err);
-                if (!cancel) setReglas({ porEan: {} });
+                if (!cancel) setReglas({ porEan: {}, porLab: {} });
             } finally {
                 if (!cancel) setReady(true);
             }
@@ -58,14 +68,18 @@ export function useConvenios({ sucursal, authFetch, esPerfumeria = esPerfumeriaM
         return () => { cancel = true; };
     }, [sucursal]);
 
-    // 👉 Busca SOLO por EAN exacto dentro de reglas.porEan
+    // 👉 EAN exacto (reglas.porEan) gana; si no hay, convenio del laboratorio (reglas.porLab por CodLab)
     const matchConvenio = useCallback(
         (item, reglasArg = reglas) => {
             const key = String(item?.ean ?? "");
-            const prioridad = reglasArg?.porEan?.[key] || [];
-            return prioridad.length
-                ? { aplica: true, prioridad, fuente: "EAN" }
-                : { aplica: false, prioridad: [], fuente: null };
+            const prioridadEan = reglasArg?.porEan?.[key] || [];
+            if (prioridadEan.length) return { aplica: true, prioridad: prioridadEan, fuente: "EAN" };
+
+            const cod = normalizarCodLab(item?.CodLab);
+            const prioridadLab = (cod && reglasArg?.porLab?.[cod]) || [];
+            if (prioridadLab.length) return { aplica: true, prioridad: prioridadLab, fuente: "LAB" };
+
+            return { aplica: false, prioridad: [], fuente: null };
         },
         [reglas]
     );
