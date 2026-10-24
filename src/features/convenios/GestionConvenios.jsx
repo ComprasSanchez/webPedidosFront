@@ -337,6 +337,7 @@ export default function GestionConvenios() {
             tipo: item.tipo,
             ean: item.ean || "",
             codlab: item.codlab || "",
+            laboratorio: item.tipo === "LAB" ? (item.laboratorio ?? "") : "", // solo para mostrar en el selector
             prioridad: Array.isArray(item.prioridad) ? [...item.prioridad] : [],
         });
         setEditando(item.id);
@@ -723,7 +724,12 @@ export default function GestionConvenios() {
                                         </span>
                                     </td>
                                     <td className="conv_td_valor">
-                                        {item.tipo === "EAN" ? item.ean : item.codlab}
+                                        {item.tipo === "EAN" ? item.ean : (
+                                            <div className="conv_nc_enriched">
+                                                <span className="conv_nc_enriched_nombre">{item.laboratorio ?? item.codlab}</span>
+                                                {item.laboratorio && <span className="conv_nc_enriched_id">{item.codlab}</span>}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="conv_td_desc">{item.descripcion ?? "—"}</td>
                                     <td className="conv_td_lab">{item.laboratorio ?? "—"}</td>
@@ -814,6 +820,7 @@ export default function GestionConvenios() {
                             ) : (
                                 <LabSelector
                                     value={form.codlab}
+                                    nombre={form.laboratorio}
                                     onChange={v => setForm(f => ({ ...f, codlab: v }))}
                                 />
                             )}
