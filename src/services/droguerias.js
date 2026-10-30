@@ -608,7 +608,13 @@ export async function getPreciosKellerhoff(carrito, sucursal, opts = {}) {
             const effectiveDiscountPct = (typeof priceList === 'number' && typeof finalPrice === 'number')
                 ? Number(((1 - (finalPrice / priceList)) * 100).toFixed(2))
                 : null;
-            const offers = Array.isArray(r.offers) ? r.offers : [];
+            // Kellerhoff devuelve todos los tramos aunque no se alcance el mínimo: se adaptan a la forma
+            // que usa calcularPrecioEfectivo (Condicion_Compra.minimo_unids + precioOferta) para recalcular por cantidad
+            const offers = (Array.isArray(r.offers) ? r.offers : []).map(o => ({
+                ...o,
+                Condicion_Compra: { minimo_unids: Number.isFinite(o?.minimo) ? o.minimo : 1 },
+                precioOferta: typeof o?.apiPrice === 'number' ? o.apiPrice : null
+            }));
             return {
                 ean: it.ean,
                 stock,

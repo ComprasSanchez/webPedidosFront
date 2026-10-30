@@ -440,7 +440,7 @@ export default function RevisarPedido() {
                 precio = getPrecioFinal(p, "delsud");
             } else if (proveedor === "kellerhoff") {
                 const p = preciosKellerhoff.find(p => p.ean === item.ean);
-                precio = getPrecioFinal(p, "kellerhoff");
+                precio = getPrecioFinal(p, "kellerhoff", item.unidades);
             } else if (proveedor === "suizaTuc") {
                 precio = 0;
             }
