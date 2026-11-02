@@ -103,6 +103,7 @@ const PanelCredenciales = () => {
     const [abierto, setAbierto] = useState(null);
     const [formData, setFormData] = useState({});
     const [nuevo, setNuevo] = useState(NUEVA_CRED_BASE);
+    const [nuevaAbierta, setNuevaAbierta] = useState(false);
     const [cargando, setCargando] = useState(false);
     // Estado del descifrado por fila: "cargando" | "ok" | "error" (sin entrada = todavía no se abrió)
     const [descifrado, setDescifrado] = useState({});
@@ -249,6 +250,7 @@ const PanelCredenciales = () => {
                 // Refrescar la grilla
                 await cargarLista();
                 setNuevo(NUEVA_CRED_BASE); // limpiar form
+                setNuevaAbierta(false);
             } else {
                 alert(`❌ Error al crear: ${data?.error || res.status}`);
             }
@@ -264,55 +266,67 @@ const PanelCredenciales = () => {
 
             <h2 className="panel_credenciales_titulo">Credenciales de Droguerías</h2>
 
-            {/* ➕ Nueva credencial */}
-            <div className="nueva_cred_card">
-                <h3>➕ Nueva credencial</h3>
-                <div className="nueva_cred_grid">
-                    {/* sucursal_codigo */}
-                    <div className="cred_input_group">
-                        <label>sucursal_codigo *</label>
-                        <input
-                            value={nuevo.sucursal_codigo}
-                            onChange={(e) => setNuevo({ ...nuevo, sucursal_codigo: e.target.value })}
-                            placeholder="Ej: SA3"
-                        />
-                    </div>
+            {/* ➕ Nueva credencial (desplegable, igual que el listado de sucursales) */}
+            <div className="accordion_item nueva_cred_item">
+                <div
+                    className="accordion_header"
+                    onClick={() => setNuevaAbierta((v) => !v)}
+                >
+                    ➕ Nueva credencial
+                </div>
 
-                    {/* drogueria */}
-                    <div className="cred_input_group">
-                        <label>drogueria *</label>
-                        <select
-                            value={nuevo.drogueria}
-                            onChange={(e) => setNuevo({ ...nuevo, drogueria: e.target.value })}
-                        >
-                            <option value="">-- seleccionar --</option>
-                            {DROGUERIAS.map(d => <option key={d} value={d}>{d}</option>)}
-                        </select>
-                    </div>
-
-                    {/* Credenciales por proveedor (se llenan solo las que correspondan a la sucursal) */}
-                    {GRUPOS_ALTA.map((grupo) => (
-                        <div key={grupo.titulo} className="cred_grupo">
-                            <h4 className="cred_grupo_titulo">{grupo.titulo}</h4>
-                            {grupo.ayuda && <p className="cred_grupo_ayuda">{grupo.ayuda}</p>}
-                            <div className="cred_grupo_campos">
-                                {grupo.campos.map((campo) => (
-                                    <CampoCredencial
-                                        key={campo}
-                                        campo={campo}
-                                        valor={nuevo[campo]}
-                                        onChange={(v) => setNuevo({ ...nuevo, [campo]: v })}
+                {nuevaAbierta && (
+                    <div className="accordion_body">
+                        <div className="nueva_cred_card">
+                            <div className="nueva_cred_grid">
+                                {/* sucursal_codigo */}
+                                <div className="cred_input_group">
+                                    <label>sucursal_codigo *</label>
+                                    <input
+                                        value={nuevo.sucursal_codigo}
+                                        onChange={(e) => setNuevo({ ...nuevo, sucursal_codigo: e.target.value })}
+                                        placeholder="Ej: SA3"
                                     />
+                                </div>
+
+                                {/* drogueria */}
+                                <div className="cred_input_group">
+                                    <label>drogueria *</label>
+                                    <select
+                                        value={nuevo.drogueria}
+                                        onChange={(e) => setNuevo({ ...nuevo, drogueria: e.target.value })}
+                                    >
+                                        <option value="">-- seleccionar --</option>
+                                        {DROGUERIAS.map(d => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                </div>
+
+                                {/* Credenciales por proveedor (se llenan solo las que correspondan a la sucursal) */}
+                                {GRUPOS_ALTA.map((grupo) => (
+                                    <div key={grupo.titulo} className="cred_grupo">
+                                        <h4 className="cred_grupo_titulo">{grupo.titulo}</h4>
+                                        {grupo.ayuda && <p className="cred_grupo_ayuda">{grupo.ayuda}</p>}
+                                        <div className="cred_grupo_campos">
+                                            {grupo.campos.map((campo) => (
+                                                <CampoCredencial
+                                                    key={campo}
+                                                    campo={campo}
+                                                    valor={nuevo[campo]}
+                                                    onChange={(v) => setNuevo({ ...nuevo, [campo]: v })}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
+                            <div style={{ marginTop: 8 }}>
+                                <button type="button" onClick={handleCrear}>
+                                    Crear credencial
+                                </button>
+                            </div>
                         </div>
-                    ))}
-                </div>
-                <div style={{ marginTop: 8 }}>
-                    <button type="button" onClick={handleCrear}>
-                        Crear credencial
-                    </button>
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Lista existente */}

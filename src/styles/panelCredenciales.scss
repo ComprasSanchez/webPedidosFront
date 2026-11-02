@@ -114,6 +114,19 @@
     }
 }
 
+// El alta es un desplegable como las sucursales: dentro del cuerpo el formulario no repite el recuadro
+.nueva_cred_item {
+    margin-bottom: 1rem;
+}
+
+.accordion_body .nueva_cred_card {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+}
+
 // Campo con botón Ver/Ocultar para los datos sensibles
 .cred_input_fila {
     display: flex;
