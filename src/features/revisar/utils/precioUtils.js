@@ -13,7 +13,13 @@ import { calcularPrecioEfectivo } from './precioTiers';
 export function getPrecioFinal(producto, proveedor, cantidad = 1) {
     if (!producto) return 0;
 
-    // Suizo y Kellerhoff: el servidor ya computó el precio efectivo, confiamos en finalPrice
+    // Kellerhoff: tramos por cantidad (Kellerhoff devuelve todos); sin tramos con precio, se usa finalPrice del servidor
+    if (proveedor === 'kellerhoff' && (producto.offers || []).some(o => o.precioOferta != null)) {
+        const { precioEfectivo } = calcularPrecioEfectivo(producto.priceList, producto.offers, cantidad);
+        return precioEfectivo ?? 0;
+    }
+
+    // Suizo y Kellerhoff (sin tramos): el servidor ya computó el precio efectivo, confiamos en finalPrice
     if (proveedor === 'suizo' || proveedor === 'kellerhoff') {
         if (typeof producto.finalPrice === 'number') return producto.finalPrice;
         return producto.priceList ?? 0;

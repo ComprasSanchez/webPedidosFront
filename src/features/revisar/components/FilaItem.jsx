@@ -174,6 +174,7 @@ export default function FilaItem({
                     idQuantio={itemId}
                     ean={item.ean}
                     precios={preciosKellerhoff}
+                    cantidad={item.unidades ?? 1}
                     seleccionado={proveedorActual === "kellerhoff"}
                     onSelect={onElegirProveedorDrogueria}
                     factorNC={getFactorNC ? getFactorNC(item, "kellerhoff") : 1}

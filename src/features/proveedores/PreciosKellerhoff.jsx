@@ -1,6 +1,7 @@
 import React from "react";
+import { calcularPrecioEfectivo } from "../revisar/utils/precioTiers";
 
-const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, factorNC = 1, soloDepo = false }) => {
+const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, cantidad = 1, factorNC = 1, soloDepo = false }) => {
     const listaPrecios = Array.isArray(precios) ? precios : [];
     const p = listaPrecios.find((m) => m.ean === ean);
     const clase = seleccionado ? "precio_celda activa" : "precio_celda";
@@ -41,9 +42,14 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, fa
         return <div className={clase}>{p.error}</div>;
     }
 
-    const precioApi = typeof p.finalPrice === "number"
-        ? p.finalPrice
-        : (typeof p.priceList === "number" ? p.priceList : null);
+    // Los tramos se recalculan con la cantidad actual; sin tramos con precio se usa el finalPrice del servidor
+    const hayTramos = Array.isArray(p.offers) && p.offers.some((o) => o.precioOferta != null);
+    const { precioEfectivo, siguienteTier } = calcularPrecioEfectivo(p.priceList, p.offers, cantidad);
+    const precioApi = hayTramos && typeof precioEfectivo === "number"
+        ? precioEfectivo
+        : (typeof p.finalPrice === "number"
+            ? p.finalPrice
+            : (typeof p.priceList === "number" ? p.priceList : null));
 
     if (precioApi == null) {
         if (p.stock === false) return <div className={clase}>SIN STOCK</div>;
@@ -54,6 +60,11 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, fa
     const ncPct = factorNC < 1 ? Math.round((1 - factorNC) * 100) : 0;
 
     const tieneDescuento = typeof p.priceList === "number" && precio < p.priceList;
+
+    // Porcentaje de la API (sin NC) segun la cantidad actual: p.effectiveDiscountPct quedaria fijo en el valor de la primera consulta
+    const apiPct = (typeof p.priceList === "number" && p.priceList > 0 && precioApi < p.priceList)
+        ? Number(((1 - precioApi / p.priceList) * 100).toFixed(2))
+        : 0;
 
     return (
         <div className={clase} onClick={handleClick}>
@@ -74,14 +85,20 @@ const PreciosKellerhoff = ({ idQuantio, ean, precios, seleccionado, onSelect, fa
                     ✔
                 </span>
             </div>
-            {typeof p.effectiveDiscountPct === "number" && p.effectiveDiscountPct > 0 && (
+            {apiPct > 0 && (
                 <div style={{ marginTop: "3px", fontSize: "11px", color: "#555" }}>
-                    -{p.effectiveDiscountPct}%
+                    -{apiPct}%
                 </div>
             )}
             {ncPct > 0 && (
                 <div style={{ marginTop: "2px", fontSize: "10px", color: "#e67e00", fontWeight: "600" }}>
                     Extra -{ncPct}%
+                </div>
+            )}
+            {/* Hint: proximo tramo no alcanzado */}
+            {siguienteTier && (
+                <div style={{ marginTop: "3px", fontSize: "11px", color: "#e67e00", fontWeight: "500" }}>
+                    Con {siguienteTier.minimo_unids}u: ${siguienteTier.precioOferta.toFixed(2)}
                 </div>
             )}
             {p.stock === false && (
