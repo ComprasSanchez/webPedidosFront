@@ -2,6 +2,7 @@ import { FaTrash } from "react-icons/fa";
 import { useState, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import { useCarrito } from "../../context/CarritoContext";
+import QtyInput from "./QtyInput";
 
 const CarritoNormal = ({
     carrito,
@@ -102,7 +103,10 @@ const CarritoNormal = ({
                                         −
                                     </button>
 
-                                    <span className="qty__num">{item.unidades || 1}</span>
+                                    <QtyInput
+                                        value={item.unidades || 1}
+                                        onCommit={(n) => actualizarCantidad(obtenerCarritoId(item), n)}
+                                    />
 
                                     <button
                                         className="qty__btn"
